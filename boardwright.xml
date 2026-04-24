@@ -1,0 +1,442 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/github/workspace/boardwright.kicad_sch</source>
+    <date>Date1</date>
+    <tool>Eeschema 9.0.7+1</tool>
+    <textvar name="ASSEMBLY_NOTES"/>
+    <textvar name="BOARD_NAME">BOARD NAME</textvar>
+    <textvar name="COMPANY">COMPANY</textvar>
+    <textvar name="DESIGNER">F. LAST</textvar>
+    <textvar name="FABRICATION_NOTES"/>
+    <textvar name="GIT_HASH_PCB">65a0bfd</textvar>
+    <textvar name="GIT_HASH_SCH">0e558a0</textvar>
+    <textvar name="GIT_URL">https://github.com/nguyen-v/KDT_Hierarchical_KiBot</textvar>
+    <textvar name="PROJECT_NAME">PROJECT NAME</textvar>
+    <textvar name="RELEASE_BODY_1.0.0"/>
+    <textvar name="RELEASE_BODY_1.0.1"/>
+    <textvar name="RELEASE_BODY_1.0.2"/>
+    <textvar name="RELEASE_BODY_1.1.0"/>
+    <textvar name="RELEASE_BODY_UNRELEASED"/>
+    <textvar name="RELEASE_DATE">25-Apr-2026</textvar>
+    <textvar name="RELEASE_DATE_NUM">2026-04-25</textvar>
+    <textvar name="RELEASE_TITLE_1.0.0"/>
+    <textvar name="RELEASE_TITLE_1.0.1"/>
+    <textvar name="RELEASE_TITLE_1.0.2"/>
+    <textvar name="RELEASE_TITLE_1.1.0"/>
+    <textvar name="RELEASE_TITLE_UNRELEASED"/>
+    <textvar name="REVHIST_10_BODY"/>
+    <textvar name="REVHIST_10_TITLE"/>
+    <textvar name="REVHIST_11_BODY"/>
+    <textvar name="REVHIST_11_TITLE"/>
+    <textvar name="REVHIST_12_BODY"/>
+    <textvar name="REVHIST_12_TITLE"/>
+    <textvar name="REVHIST_1_BODY">Added:
+  - Add simple fixture circuit for Boardwright CI validation</textvar>
+    <textvar name="REVHIST_1_TITLE">Unreleased</textvar>
+    <textvar name="REVHIST_2_BODY"/>
+    <textvar name="REVHIST_2_TITLE"/>
+    <textvar name="REVHIST_3_BODY"/>
+    <textvar name="REVHIST_3_TITLE"/>
+    <textvar name="REVHIST_4_BODY"/>
+    <textvar name="REVHIST_4_TITLE"/>
+    <textvar name="REVHIST_5_BODY"/>
+    <textvar name="REVHIST_5_TITLE"/>
+    <textvar name="REVHIST_6_BODY"/>
+    <textvar name="REVHIST_6_TITLE"/>
+    <textvar name="REVHIST_7_BODY"/>
+    <textvar name="REVHIST_7_TITLE"/>
+    <textvar name="REVHIST_8_BODY"/>
+    <textvar name="REVHIST_8_TITLE"/>
+    <textvar name="REVHIST_9_BODY"/>
+    <textvar name="REVHIST_9_TITLE"/>
+    <textvar name="REVISION">+ (Unreleased)</textvar>
+    <textvar name="SHEET_NAME_1">COVER PAGE</textvar>
+    <textvar name="SHEET_NAME_10">................................</textvar>
+    <textvar name="SHEET_NAME_11">................................</textvar>
+    <textvar name="SHEET_NAME_12">................................</textvar>
+    <textvar name="SHEET_NAME_13">................................</textvar>
+    <textvar name="SHEET_NAME_14">................................</textvar>
+    <textvar name="SHEET_NAME_15">................................</textvar>
+    <textvar name="SHEET_NAME_16">................................</textvar>
+    <textvar name="SHEET_NAME_17">................................</textvar>
+    <textvar name="SHEET_NAME_18">................................</textvar>
+    <textvar name="SHEET_NAME_19">................................</textvar>
+    <textvar name="SHEET_NAME_2">Block Diagram</textvar>
+    <textvar name="SHEET_NAME_20">................................</textvar>
+    <textvar name="SHEET_NAME_21">................................</textvar>
+    <textvar name="SHEET_NAME_22">................................</textvar>
+    <textvar name="SHEET_NAME_23">................................</textvar>
+    <textvar name="SHEET_NAME_24">................................</textvar>
+    <textvar name="SHEET_NAME_25">................................</textvar>
+    <textvar name="SHEET_NAME_26">................................</textvar>
+    <textvar name="SHEET_NAME_27">................................</textvar>
+    <textvar name="SHEET_NAME_28">................................</textvar>
+    <textvar name="SHEET_NAME_29">................................</textvar>
+    <textvar name="SHEET_NAME_3">Project Architecture</textvar>
+    <textvar name="SHEET_NAME_30">................................</textvar>
+    <textvar name="SHEET_NAME_31">................................</textvar>
+    <textvar name="SHEET_NAME_32">................................</textvar>
+    <textvar name="SHEET_NAME_33">................................</textvar>
+    <textvar name="SHEET_NAME_34">................................</textvar>
+    <textvar name="SHEET_NAME_35">................................</textvar>
+    <textvar name="SHEET_NAME_36">................................</textvar>
+    <textvar name="SHEET_NAME_37">................................</textvar>
+    <textvar name="SHEET_NAME_38">................................</textvar>
+    <textvar name="SHEET_NAME_39">................................</textvar>
+    <textvar name="SHEET_NAME_4">................................</textvar>
+    <textvar name="SHEET_NAME_40">................................</textvar>
+    <textvar name="SHEET_NAME_5">................................</textvar>
+    <textvar name="SHEET_NAME_6">Power - Sequencing</textvar>
+    <textvar name="SHEET_NAME_7">Revision History</textvar>
+    <textvar name="SHEET_NAME_8">................................</textvar>
+    <textvar name="SHEET_NAME_9">................................</textvar>
+    <textvar name="VARIANT">DRAFT</textvar>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title/>
+        <company>COMPANY</company>
+        <rev>+ (Unreleased)</rev>
+        <date>Date2</date>
+        <source>boardwright.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+    <sheet number="2" name="/Block Diagram/" tstamps="/82da9dbf-ba38-4d08-ba35-a220fa2963b1/">
+      <title_block>
+        <title>Block Diagram</title>
+        <company>COMPANY</company>
+        <rev>+ (Unreleased)</rev>
+        <date>Date2</date>
+        <source>block-diagram.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+    <sheet number="3" name="/Project Architecture/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/">
+      <title_block>
+        <title>Project Architecture</title>
+        <company>COMPANY</company>
+        <rev>+ (Unreleased)</rev>
+        <date>Date2</date>
+        <source>project-architecture.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+    <sheet number="4" name="/Project Architecture/Section A - Title A/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/f06537ee-772d-44d3-8c50-e0ba41038c9c/">
+      <title_block>
+        <title>SUB SCHEMATIC A</title>
+        <company>COMPANY</company>
+        <rev>+ (Unreleased)</rev>
+        <date>Date2</date>
+        <source>subschematic-a.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+    <sheet number="5" name="/Project Architecture/Section B - Title B/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/e744f3ce-03a6-44a6-8792-1447ef232b9a/">
+      <title_block>
+        <title>SUB SCHEMATIC B</title>
+        <company>COMPANY</company>
+        <rev>+ (Unreleased)</rev>
+        <date>Date2</date>
+        <source>subschematic-b.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+    <sheet number="6" name="/Power - Sequencing/" tstamps="/5fb05893-0da3-4f58-a52b-cb6d6f4cb80b/">
+      <title_block>
+        <title>POWER - SEQUENCING</title>
+        <company>COMPANY</company>
+        <rev>+ (Unreleased)</rev>
+        <date>Date2</date>
+        <source>power-sequencing.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+    <sheet number="7" name="/Revision History/" tstamps="/6e125bd6-2f99-4e5d-b3ea-4899f4540739/">
+      <title_block>
+        <title>REVISION HISTORY</title>
+        <company>COMPANY</company>
+        <rev>+ (Unreleased)</rev>
+        <date>Date2</date>
+        <source>revision-history.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="D1">
+      <value>LED</value>
+      <footprint>LED_THT:LED_D5.0mm_FlatTop</footprint>
+      <datasheet>~</datasheet>
+      <description>Light emitting diode</description>
+      <fields>
+        <field name="Sim.Pins">1=K 2=A</field>
+        <field name="Footprint">LED_THT:LED_D5.0mm_FlatTop</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Light emitting diode</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="Sim.Pins" value="1=K 2=A"/>
+      <property name="Sheetname" value="Section A - Title A"/>
+      <property name="Sheetfile" value="subschematic-a.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/Project Architecture/Section A - Title A/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/f06537ee-772d-44d3-8c50-e0ba41038c9c/"/>
+      <tstamps>ee84effe-b4bb-4e30-80eb-e32897663de9</tstamps>
+    </comp>
+    <comp ref="R1">
+      <value>R</value>
+      <footprint>Resistor_THT:R_Axial_DIN0617_L17.0mm_D6.0mm_P30.48mm_Horizontal</footprint>
+      <datasheet>~</datasheet>
+      <description>Resistor</description>
+      <fields>
+        <field name="MPN">12313</field>
+        <field name="Manufacturer">WhoKnows</field>
+        <field name="SPN">123141</field>
+        <field name="Supplier">Someone</field>
+        <field name="Footprint">Resistor_THT:R_Axial_DIN0617_L17.0mm_D6.0mm_P30.48mm_Horizontal</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MPN" value="12313"/>
+      <property name="Manufacturer" value="WhoKnows"/>
+      <property name="SPN" value="123141"/>
+      <property name="Supplier" value="Someone"/>
+      <property name="Sheetname" value="Section A - Title A"/>
+      <property name="Sheetfile" value="subschematic-a.kicad_sch"/>
+      <property name="dnp"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/Project Architecture/Section A - Title A/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/f06537ee-772d-44d3-8c50-e0ba41038c9c/"/>
+      <tstamps>dba32e49-5b49-4868-8588-a7179555eadc</tstamps>
+    </comp>
+    <comp ref="TP1">
+      <value>TestPoint</value>
+      <footprint>RD-Testpoints:TestPoint_Pad_D1.5mm</footprint>
+      <datasheet>~</datasheet>
+      <description>test point</description>
+      <fields>
+        <field name="Footprint">RD-Testpoints:TestPoint_Pad_D1.5mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">test point</field>
+      </fields>
+      <libsource lib="Connector" part="TestPoint" description="test point"/>
+      <property name="Sheetname" value="Section A - Title A"/>
+      <property name="Sheetfile" value="subschematic-a.kicad_sch"/>
+      <property name="ki_keywords" value="test point tp"/>
+      <property name="ki_fp_filters" value="Pin* Test*"/>
+      <sheetpath names="/Project Architecture/Section A - Title A/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/f06537ee-772d-44d3-8c50-e0ba41038c9c/"/>
+      <tstamps>ba7fde43-2106-4acd-99b1-144ef1d13cc2</tstamps>
+    </comp>
+    <comp ref="U1">
+      <value>NE555D</value>
+      <footprint>Package_SO:SOIC-8_3.9x4.9mm_P1.27mm</footprint>
+      <datasheet>http://www.ti.com/lit/ds/symlink/ne555.pdf</datasheet>
+      <description>Precision Timers, 555 compatible, SOIC-8</description>
+      <fields>
+        <field name="Footprint">Package_SO:SOIC-8_3.9x4.9mm_P1.27mm</field>
+        <field name="Datasheet">http://www.ti.com/lit/ds/symlink/ne555.pdf</field>
+        <field name="Description">Precision Timers, 555 compatible, SOIC-8</field>
+      </fields>
+      <libsource lib="Timer" part="NE555D" description="Precision Timers, 555 compatible, SOIC-8"/>
+      <property name="Sheetname" value="Section A - Title A"/>
+      <property name="Sheetfile" value="subschematic-a.kicad_sch"/>
+      <property name="ki_keywords" value="single timer 555"/>
+      <property name="ki_fp_filters" value="SOIC*3.9x4.9mm*P1.27mm*"/>
+      <sheetpath names="/Project Architecture/Section A - Title A/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/f06537ee-772d-44d3-8c50-e0ba41038c9c/"/>
+      <tstamps>a76f689f-8bfe-4e30-bc1f-34a1f657b5b6</tstamps>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="Connector" part="TestPoint">
+      <description>test point</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Pin*</fp>
+        <fp>Test*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">TP</field>
+        <field name="Value">TestPoint</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">test point</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="LED">
+      <description>Light emitting diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>LED*</fp>
+        <fp>LED_SMD:*</fp>
+        <fp>LED_THT:*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">LED</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Light emitting diode</field>
+        <field name="Sim.Pins">1=K 2=A</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R">
+      <description>Resistor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Timer" part="NE555D">
+      <description>Precision Timers, 555 compatible, SOIC-8</description>
+      <docs>http://www.ti.com/lit/ds/symlink/ne555.pdf</docs>
+      <footprints>
+        <fp>SOIC*3.9x4.9mm*P1.27mm*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">NE555D</field>
+        <field name="Footprint">Package_SO:SOIC-8_3.9x4.9mm_P1.27mm</field>
+        <field name="Datasheet">http://www.ti.com/lit/ds/symlink/ne555.pdf</field>
+        <field name="Description">Precision Timers, 555 compatible, SOIC-8</field>
+      </fields>
+      <pins>
+        <pin num="1" name="GND" type="power_in"/>
+        <pin num="2" name="TR" type="input"/>
+        <pin num="3" name="Q" type="output"/>
+        <pin num="4" name="R" type="input"/>
+        <pin num="5" name="CV" type="input"/>
+        <pin num="6" name="THR" type="input"/>
+        <pin num="7" name="DIS" type="input"/>
+        <pin num="8" name="VCC" type="power_in"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries>
+    <library logical="Connector">
+      <uri>/usr/share/kicad/symbols//Connector.kicad_sym</uri>
+    </library>
+    <library logical="Device">
+      <uri>/usr/share/kicad/symbols//Device.kicad_sym</uri>
+    </library>
+    <library logical="Timer">
+      <uri>/usr/share/kicad/symbols//Timer.kicad_sym</uri>
+    </library>
+  </libraries>
+  <nets>
+    <net code="1" name="unconnected-(D1-A-Pad2)" class="Default">
+      <node ref="D1" pin="2" pinfunction="A" pintype="passive+no_connect"/>
+    </net>
+    <net code="2" name="unconnected-(D1-K-Pad1)" class="Default">
+      <node ref="D1" pin="1" pinfunction="K" pintype="passive+no_connect"/>
+    </net>
+    <net code="3" name="unconnected-(R1-Pad1)" class="Default">
+      <node ref="R1" pin="1" pintype="passive+no_connect"/>
+    </net>
+    <net code="4" name="unconnected-(R1-Pad2)" class="Default">
+      <node ref="R1" pin="2" pintype="passive+no_connect"/>
+    </net>
+    <net code="5" name="unconnected-(TP1-Pad1)" class="Default">
+      <node ref="TP1" pin="1" pinfunction="1" pintype="passive+no_connect"/>
+    </net>
+    <net code="6" name="unconnected-(U1-CV-Pad5)" class="Default">
+      <node ref="U1" pin="5" pinfunction="CV" pintype="input+no_connect"/>
+    </net>
+    <net code="7" name="unconnected-(U1-DIS-Pad7)" class="Default">
+      <node ref="U1" pin="7" pinfunction="DIS" pintype="input+no_connect"/>
+    </net>
+    <net code="8" name="unconnected-(U1-GND-Pad1)" class="Default">
+      <node ref="U1" pin="1" pinfunction="GND" pintype="power_in+no_connect"/>
+    </net>
+    <net code="9" name="unconnected-(U1-Q-Pad3)" class="Default">
+      <node ref="U1" pin="3" pinfunction="Q" pintype="output+no_connect"/>
+    </net>
+    <net code="10" name="unconnected-(U1-R-Pad4)" class="Default">
+      <node ref="U1" pin="4" pinfunction="R" pintype="input+no_connect"/>
+    </net>
+    <net code="11" name="unconnected-(U1-THR-Pad6)" class="Default">
+      <node ref="U1" pin="6" pinfunction="THR" pintype="input+no_connect"/>
+    </net>
+    <net code="12" name="unconnected-(U1-TR-Pad2)" class="Default">
+      <node ref="U1" pin="2" pinfunction="TR" pintype="input+no_connect"/>
+    </net>
+    <net code="13" name="unconnected-(U1-VCC-Pad8)" class="Default">
+      <node ref="U1" pin="8" pinfunction="VCC" pintype="power_in+no_connect"/>
+    </net>
+  </nets>
+</export>
