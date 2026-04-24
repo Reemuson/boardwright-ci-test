@@ -86,12 +86,31 @@ def _release_title(release: ReleaseSection) -> str:
 
 
 def _release_body(release: ReleaseSection) -> str:
-    lines: list[str] = []
+    sections: list[tuple[str, list[str]]] = []
+    current_section = ""
+    current_items: list[str] = []
+
     for line in release.body.splitlines():
         stripped = line.strip()
-        if not stripped or stripped.startswith("###"):
+        if not stripped:
             continue
-        lines.append(_normalize_bullet(stripped))
+        if stripped.startswith("###"):
+            if current_items:
+                sections.append((current_section, current_items))
+            current_section = stripped.lstrip("#").strip()
+            current_items = []
+            continue
+        if stripped.startswith("-"):
+            current_items.append(_normalize_bullet(stripped))
+
+    if current_items:
+        sections.append((current_section, current_items))
+
+    lines: list[str] = []
+    for section, items in sections:
+        if section:
+            lines.append(f"{section}:")
+        lines.extend(f"  {item}" for item in items)
     return "\n".join(lines)
 
 

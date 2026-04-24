@@ -26,6 +26,9 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 0
 
+      - name: Ensure 3D cache directory
+        run: mkdir -p ~/cache_3d
+
       - name: Cache 3D models
         uses: set-soft/cache@main
         with:

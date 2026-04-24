@@ -144,7 +144,7 @@ def _insert_unreleased_entry(text: str, section: str, message: str) -> str:
         section_body = body[insert_at:section_end].rstrip()
         replacement = f"\n\n{entry}\n"
         if section_body.strip():
-            replacement = f"{section_body}\n{entry}\n"
+            replacement = f"{section_body}\n{entry}\n\n"
         body = body[:insert_at] + replacement + body[section_end:]
     else:
         prefix = body.rstrip()

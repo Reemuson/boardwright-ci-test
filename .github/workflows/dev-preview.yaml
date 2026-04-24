@@ -63,6 +63,9 @@ jobs:
           echo "KIBOT_VARIANT=$variant" >> "$GITHUB_ENV"
           echo "KIBOT_ADDITIONAL_ARGS=$additional_args" >> "$GITHUB_ENV"
 
+      - name: Ensure 3D cache directory
+        run: mkdir -p ~/cache_3d
+
       - name: Cache 3D models
         uses: set-soft/cache@main
         with:

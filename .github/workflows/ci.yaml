@@ -100,6 +100,9 @@ jobs:
           file_pattern: CHANGELOG.md
           push_options: '--force'
 
+      - name: Ensure 3D cache directory
+        run: mkdir -p ~/cache_3d
+
       - name: Cache 3D models data
         id: models-cache
         uses: set-soft/cache@main

@@ -24,6 +24,20 @@ class ChangelogTests(unittest.TestCase):
 
         self.assertIn("- Existing\n- New item", updated)
 
+    def test_add_unreleased_entry_keeps_blank_before_next_section(self) -> None:
+        text = (
+            "# Changelog\n\n"
+            "## [Unreleased]\n\n"
+            "### Added\n\n"
+            "- Existing\n\n"
+            "### Changed\n\n"
+            "- Other\n"
+        )
+
+        updated = _insert_unreleased_entry(text, "Added", "New item")
+
+        self.assertIn("- Existing\n- New item\n\n### Changed", updated)
+
     def test_promote_unreleased(self) -> None:
         text = "# Changelog\n\n## [Unreleased]\n\n### Added\n\n- Thing\n"
 

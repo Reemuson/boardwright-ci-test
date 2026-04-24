@@ -38,7 +38,7 @@ class RevisionHistoryTests(unittest.TestCase):
         self.assertEqual("0.1.0", slots[2].version)
         self.assertEqual("", slots[3].version)
         self.assertEqual("0.3.0 - 2026-04-25", slots[0].title)
-        self.assertEqual("- Second", slots[1].body)
+        self.assertEqual("Changed:\n  - Second", slots[1].body)
 
     def test_visible_variables_are_title_and_body_only(self) -> None:
         text = "# Changelog\n\n## [0.1.0] - 2026-04-25\n\n### Added\n\n- First\n"
@@ -46,7 +46,20 @@ class RevisionHistoryTests(unittest.TestCase):
         slots = build_revision_slots_from_text(text, slot_count=1)
 
         self.assertEqual("0.1.0 - 2026-04-25", slots[0].title)
-        self.assertEqual("- First", slots[0].body)
+        self.assertEqual("Added:\n  - First", slots[0].body)
+
+    def test_omits_empty_sections(self) -> None:
+        text = (
+            "# Changelog\n\n"
+            "## [Unreleased]\n\n"
+            "### Added\n\n"
+            "### Fixed\n\n"
+            "- Actual fix\n"
+        )
+
+        slots = build_revision_slots_from_text(text, slot_count=1)
+
+        self.assertEqual("Fixed:\n  - Actual fix", slots[0].body)
 
 
 if __name__ == "__main__":
