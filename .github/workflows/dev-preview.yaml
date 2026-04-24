@@ -9,7 +9,7 @@ on:
       variant:
         description: KiBot variant to generate
         required: false
-        default: CHECKED
+        default: DRAFT
         type: choice
         options:
           - DRAFT
@@ -41,7 +41,7 @@ jobs:
         run: |
           variant="${{ github.event.inputs.variant }}"
           if [[ -z "$variant" ]]; then
-            variant="CHECKED"
+            variant="DRAFT"
           fi
 
           case "$variant" in

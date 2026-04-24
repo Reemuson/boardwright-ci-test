@@ -65,10 +65,13 @@ selection, runs verification, uploads artefacts, and may update `preview`.
 For v1, GitHub Actions is the primary preview/build engine. Local KiBot runs are
 optional future support because Docker and native KiBot are not assumed to be
 installed on contributor machines.
+The default dev-preview variant is `DRAFT` so a template or early schematic can
+prove the pipeline before a valid PCB outline, DRC-clean board, or complete BoM
+exists.
 
-`main-outputs.yaml` runs on `main`, generates accepted checked outputs, and may
-commit generated outputs to `main` if the project has explicitly enabled that
-mode.
+`main-outputs.yaml` is manually dispatched for accepted checked outputs on
+`main`, and may commit generated outputs to `main` if the project has explicitly
+enabled that mode.
 By default, it uploads artefacts only. Committing generated outputs back to
 `main` should require an explicit manual workflow input or project setting.
 
