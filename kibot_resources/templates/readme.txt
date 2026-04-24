@@ -1,5 +1,5 @@
 <p align="center" width="100%">
-  <img alt="Logo" width="33%" src="Logos/dummy_logo.svg">
+  <img alt="Logo" width="33%" src="Logos/rd-logo.png">
 </p>
 
 <h1 align="center">${BOARD_NAME}</h1>
@@ -69,3 +69,15 @@
     │  └─ Testpoints      # Testpoints tables      
     │
     └─ Variants           # Outputs for assembly variants
+***
+
+## LEGAL
+
+This repository contains open hardware design files, protected project branding,
+and third-party workflow content.
+
+- The primary hardware licence is listed in `LICENSE`.
+- Project-specific scope notes, branding exclusions, compatibility wording,
+  non-affiliation wording, and safety notes are in `NOTICE.md`.
+- Third-party copyright and licence notices are preserved in
+  `THIRD_PARTY_NOTICES.md`.

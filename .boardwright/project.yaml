@@ -1,0 +1,27 @@
+project:
+  id: BOARDWRIGHT-TEMPLATE
+  name: Boardwright KiCad/KiBot Template
+  company: RYAN DYNAMICS
+  designer: R. HICKS
+  git_url: ""
+  product_family: BOARDWRIGHT
+  product_generation: TEMPLATE
+
+variants:
+  dev_default: DRAFT
+  preview_default: PRELIMINARY
+  main_default: CHECKED
+  release_default: RELEASED
+
+outputs:
+  commit_generated_outputs_to_main: false
+  use_preview_branch: true
+  preview_engine: github-actions
+  preview_workflow: dev-preview.yaml
+  main_workflow: main-outputs.yaml
+  release_workflow: release.yaml
+  release_include_source_archive: false
+
+assets:
+  logo: Logos/rd-logo.png
+  product_image: Images/dummy_image.png

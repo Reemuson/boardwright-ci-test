@@ -14,3 +14,25 @@ kibot_*.kicad_pcb
 kibot_*.kicad_dru
 kibot_*.kicad_prl
 kibot_*.kicad_pro
+
+# Python / packaging
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+.venv/
+venv/
+
+# Boardwright local scratch/output
+.boardwright-sandbox/
+boardwright-preview/
+boardwright-release/
+boardwright-*-release.zip
+
+# KiBot / workflow logs and generated run detritus
+kibot*.log
+Reports/

@@ -191,8 +191,8 @@
 	)
 	(text_box "[${#}] ${TITLE}"
 		(exclude_from_sim no)
-		(at 121.92 15 0)
-		(size 181.61 15)
+		(at 20.32 10.16 0)
+		(size 389.89 20.32)
 		(margins 5.9999 5.9999 5.9999 5.9999)
 		(stroke
 			(width -0.0001)
@@ -277,7 +277,7 @@
 				(justify left bottom)
 			)
 		)
-		(property "Sheetfile" "Section B - TItle B.kicad_sch"
+		(property "Sheetfile" "subschematic-b.kicad_sch"
 			(at 190.5 135.2046 0)
 			(effects
 				(font
@@ -288,7 +288,7 @@
 			)
 		)
 		(instances
-			(project "KDT_Hierarchical_KiBot"
+			(project "boardwright"
 				(path "/f9e05184-c88b-4a88-ae9c-ab2bdb32be7c/c5103ceb-5325-4a84-a025-9638a412984e"
 					(page "5")
 				)
@@ -321,7 +321,7 @@
 				(justify left bottom)
 			)
 		)
-		(property "Sheetfile" "Section A - Title A.kicad_sch"
+		(property "Sheetfile" "subschematic-a.kicad_sch"
 			(at 190.5 97.1046 0)
 			(effects
 				(font
@@ -332,7 +332,7 @@
 			)
 		)
 		(instances
-			(project "KDT_Hierarchical_KiBot"
+			(project "boardwright"
 				(path "/f9e05184-c88b-4a88-ae9c-ab2bdb32be7c/c5103ceb-5325-4a84-a025-9638a412984e"
 					(page "4")
 				)

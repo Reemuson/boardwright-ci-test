@@ -1,0 +1,85 @@
+name: Boardwright Release
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+  actions: read
+
+env:
+  KIBOT_CONFIG: kibot_yaml/kibot_main.yaml
+  KIBOT_LOG: kibot_release.log
+  KICAD_VERSION: "9"
+  RELEASE_DIR: boardwright-release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Cache 3D models
+        uses: set-soft/cache@main
+        with:
+          path: ~/cache_3d
+          key: cache-3d-kicad-${{ env.KICAD_VERSION }}
+
+      - name: Generate release notes
+        uses: INTI-CMNB/KiBot@v2_dk9
+        with:
+          skip: all
+          variant: RELEASED
+          config: ${{ env.KIBOT_CONFIG }}
+          additional_args: --log kibot_release_notes.log notes
+
+      - name: Generate release outputs
+        uses: INTI-CMNB/KiBot@v2_dk9
+        with:
+          additional_args: --log ${{ env.KIBOT_LOG }} all_group_k9
+          variant: RELEASED
+          config: ${{ env.KIBOT_CONFIG }}
+          cache3D: YES
+
+      - name: Collect release assets
+        shell: bash
+        run: |
+          rm -rf "$RELEASE_DIR"
+          mkdir -p "$RELEASE_DIR"
+
+          for path in Schematic Manufacturing Images HTML KiRI 3D Testing Reports README.md NOTICE.md THIRD_PARTY_NOTICES.md LICENSE; do
+            if [[ -e "$path" ]]; then
+              cp -a "$path" "$RELEASE_DIR/"
+            fi
+          done
+
+          find "$RELEASE_DIR" -type f -print | sort > "$RELEASE_DIR/MANIFEST.txt"
+          zip -r "boardwright-${{ github.ref_name }}-release.zip" "$RELEASE_DIR"
+
+      - name: Upload release package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: boardwright-release-${{ github.ref_name }}
+          path: boardwright-${{ github.ref_name }}-release.zip
+
+      - name: Upload KiBot logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boardwright-release-logs
+          path: |
+            kibot_release*.log
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: boardwright-${{ github.ref_name }}-release.zip
+          prerelease: false
+          generate_release_notes: true

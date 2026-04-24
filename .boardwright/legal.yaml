@@ -1,0 +1,12 @@
+legal:
+  hardware_license: CERN-OHL-W-2.0
+  branding_reserved: true
+  compatibility:
+    enabled: false
+    wording: ""
+    trademark_owner: ""
+  safety_notice: >
+    This is a hardware/electronics project. Anyone building, modifying,
+    testing, selling, or using the design is responsible for verifying
+    isolation, creepage and clearance, electrical safety, regulatory
+    compliance, and fitness for purpose.

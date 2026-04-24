@@ -961,8 +961,8 @@
 	)
 	(text_box "[${#}] ${TITLE}"
 		(exclude_from_sim no)
-		(at 144.78 15 0)
-		(size 130.81 15)
+		(at 20.32 10.16 0)
+		(size 389.89 20.32)
 		(margins 5.9999 5.9999 5.9999 5.9999)
 		(stroke
 			(width -0.0001)

@@ -1,0 +1,131 @@
+name: Boardwright Main Outputs
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: KiBot variant to generate
+        required: false
+        default: CHECKED
+        type: choice
+        options:
+          - PRELIMINARY
+          - CHECKED
+      commit_outputs:
+        description: Commit generated outputs back to main
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  actions: read
+
+env:
+  KIBOT_CONFIG: kibot_yaml/kibot_main.yaml
+  KIBOT_LOG: kibot_main_outputs.log
+  KICAD_VERSION: "9"
+
+jobs:
+  outputs:
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'branch'
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select variant and group
+        shell: bash
+        run: |
+          variant="${{ github.event.inputs.variant }}"
+          if [[ -z "$variant" ]]; then
+            variant="CHECKED"
+          fi
+
+          case "$variant" in
+            PRELIMINARY)
+              additional_args="--skip-pre erc,drc --log $KIBOT_LOG all_group_k9"
+              ;;
+            CHECKED)
+              additional_args="--log $KIBOT_LOG all_group_k9"
+              ;;
+            *)
+              echo "Unsupported variant for main outputs: $variant" >&2
+              exit 1
+              ;;
+          esac
+
+          echo "KIBOT_VARIANT=$variant" >> "$GITHUB_ENV"
+          echo "KIBOT_ADDITIONAL_ARGS=$additional_args" >> "$GITHUB_ENV"
+
+      - name: Cache 3D models
+        uses: set-soft/cache@main
+        with:
+          path: ~/cache_3d
+          key: cache-3d-kicad-${{ env.KICAD_VERSION }}
+
+      - name: Generate notes
+        uses: INTI-CMNB/KiBot@v2_dk9
+        with:
+          skip: all
+          variant: ${{ env.KIBOT_VARIANT }}
+          config: ${{ env.KIBOT_CONFIG }}
+          additional_args: --log kibot_main_notes.log notes
+
+      - name: Generate checked outputs
+        uses: INTI-CMNB/KiBot@v2_dk9
+        with:
+          additional_args: ${{ env.KIBOT_ADDITIONAL_ARGS }}
+          variant: ${{ env.KIBOT_VARIANT }}
+          config: ${{ env.KIBOT_CONFIG }}
+          cache3D: YES
+
+      - name: Discard KiCad source side effects
+        shell: bash
+        run: |
+          git checkout HEAD -- '*.kicad_pcb' '*.kicad_pro' '*.kicad_dru' '*.kicad_prl' || true
+          git clean -f '*.kicad_pcb' '*.kicad_pro' '*.kicad_dru' '*.kicad_prl' || true
+
+      - name: Upload checked outputs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: boardwright-main-outputs-${{ env.KIBOT_VARIANT }}
+          path: |
+            Schematic
+            Manufacturing
+            Images
+            HTML
+            KiRI
+            3D
+            Testing
+            Reports
+            README.md
+
+      - name: Upload KiBot logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boardwright-main-output-logs
+          path: |
+            kibot_main*.log
+
+      - name: Commit accepted outputs
+        if: github.event_name == 'workflow_dispatch' && inputs.commit_outputs
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(outputs): update checked outputs"
+          file_pattern: >
+            Schematic/**
+            Manufacturing/**
+            Images/**
+            HTML/**
+            KiRI/**
+            3D/**
+            Testing/**
+            Reports/**
+            README.md

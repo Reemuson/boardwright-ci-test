@@ -5,7 +5,7 @@
 	(uuid "ea8c4f5e-7a49-4faf-a994-dbc85ed86b0a")
 	(paper "A3")
 	(title_block
-		(title "Sheet Title B")
+		(title "SUB SCHEMATIC B")
 		(date "2025-01-12")
 		(rev "${REVISION}")
 		(company "${COMPANY}")
@@ -232,8 +232,8 @@
 	)
 	(text_box "[${#}] ${TITLE}"
 		(exclude_from_sim no)
-		(at 140.97 15 0)
-		(size 147.32 15)
+		(at 20.32 10.16 0)
+		(size 389.89 20.32)
 		(margins 5.9999 5.9999 5.9999 5.9999)
 		(stroke
 			(width -0.0001)

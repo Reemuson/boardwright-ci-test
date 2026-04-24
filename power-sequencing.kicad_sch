@@ -5,7 +5,7 @@
 	(uuid "26e99a33-043b-499d-a26e-816ff79b487a")
 	(paper "A4")
 	(title_block
-		(title "Power - Sequencing")
+		(title "POWER - SEQUENCING")
 		(date "2025-01-12")
 		(rev "${REVISION}")
 		(company "${COMPANY}")
@@ -1298,8 +1298,8 @@
 	)
 	(text_box "[${#}] ${TITLE}"
 		(exclude_from_sim no)
-		(at 80.01 15 0)
-		(size 137.16 15)
+		(at 20.32 10.16 0)
+		(size 266.7 20.32)
 		(margins 4.4999 4.4999 4.4999 4.4999)
 		(stroke
 			(width -0.0001)
