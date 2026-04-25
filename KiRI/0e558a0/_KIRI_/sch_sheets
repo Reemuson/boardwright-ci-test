@@ -1,0 +1,7 @@
+boardwright|boardwright.kicad_sch||boardwright|boardwright
+block-diagram|block-diagram.kicad_sch||Block Diagram|boardwright-Block Diagram
+power-sequencing|power-sequencing.kicad_sch||Power - Sequencing|boardwright-Power - Sequencing
+project-architecture|project-architecture.kicad_sch||Project Architecture|boardwright-Project Architecture
+subschematic-a|subschematic-a.kicad_sch||Section A - Title A|boardwright-Project Architecture-Section A - Title A
+subschematic-b|subschematic-b.kicad_sch||Section B - Title B|boardwright-Project Architecture-Section B - Title B
+revision-history|revision-history.kicad_sch||Revision History|boardwright-Revision History

@@ -1,0 +1,3 @@
+Row,Quantity Per PCB,References,Value,Datasheet,Footprint,Description,Manufacturer,MPN,Supplier,SPN,Notes
+1,1,D1,LED,~,LED_D5.0mm_FlatTop,Light emitting diode,,,,,
+2,1,U1,NE555D,http://www.ti.com/lit/ds/symlink/ne555.pdf,SOIC-8_3.9x4.9mm_P1.27mm,"Precision Timers, 555 compatible, SOIC-8",,,,,
