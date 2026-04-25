@@ -75,7 +75,8 @@ def promote_unreleased(text: str, version: str, release_date: date | None = None
 
     insert_at = unreleased_match.end()
     heading = f"\n\n## [{version}] - {release_date.isoformat()}"
-    return text[:insert_at].rstrip() + heading + text[insert_at:]
+    promoted = text[:insert_at].rstrip() + heading + text[insert_at:]
+    return re.sub(r"(?<!\n)\n(?=## \[)", "\n\n", promoted)
 
 
 def promote_unreleased_file(root: Path, version: str, release_date: date | None = None) -> None:

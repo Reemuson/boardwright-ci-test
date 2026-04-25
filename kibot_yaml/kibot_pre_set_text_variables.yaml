@@ -10,8 +10,7 @@ preflight:
 
     # Git related information
     - variable: 'REVISION'
-      # command: 'git describe --tags --abbrev=0 || echo ""'
-      text: '@REVISION@'
+      command: 'git describe --tags --exact-match 2>/dev/null || git describe --tags --abbrev=0 2>/dev/null || echo ""'
     - variable: 'RELEASE_DATE'
       command: 'git log -1 --format="%ad" --date="format:%d-%b-%Y"'
     - variable: 'RELEASE_DATE_NUM'

@@ -1,4 +1,5 @@
 import argparse
+import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -41,18 +42,42 @@ def get_sheet_title(file_path, page_number, dots_number):
 
 
 def _title_from_schematic(file_path, page_number, dots_number):
-    if not file_path.exists():
+    titles = _titles_from_schematic(file_path, page_number, set())
+    if not titles:
         return '.' * dots_number
+    if len(set(titles)) > 1:
+        return "Conflicting page numbers"
+    return titles[0]
+
+
+def _titles_from_schematic(file_path, page_number, seen):
+    if not file_path.exists():
+        return []
+
+    resolved_path = file_path.resolve()
+    if resolved_path in seen:
+        return []
+    seen.add(resolved_path)
 
     text = file_path.read_text(encoding="utf-8", errors="replace")
-    sheet_blocks = text.split("\n\t(sheet\n")[1:]
+    titles = []
+    sheet_blocks = _sheet_blocks(text)
     for block in sheet_blocks:
-        if f'(page "{page_number}")' not in block:
-            continue
         name = _property_value(block, "Sheetname")
-        if name:
-            return name
-    return '.' * dots_number
+        sheet_file = _property_value(block, "Sheetfile")
+        if _block_has_page(block, page_number) and name:
+            titles.append(name)
+        if sheet_file:
+            titles.extend(_titles_from_schematic(file_path.parent / sheet_file, page_number, seen))
+    return titles
+
+
+def _sheet_blocks(text):
+    return text.split("\n\t(sheet\n")[1:]
+
+
+def _block_has_page(block, page_number):
+    return str(page_number) in re.findall(r'\(page "([^"]+)"\)', block)
 
 
 def _property_value(block, property_name):
