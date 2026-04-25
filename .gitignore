@@ -32,6 +32,12 @@ venv/
 boardwright-preview/
 boardwright-release/
 boardwright-*-release.zip
+3D/
+HTML/
+KiRI/
+Manufacturing/
+Schematic/
+Testing/
 
 # KiBot / workflow logs and generated run detritus
 kibot*.log

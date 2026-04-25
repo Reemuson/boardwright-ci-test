@@ -14,7 +14,7 @@ on:
           - CHECKED
           - RELEASED
       commit_outputs:
-        description: Commit generated outputs back to main
+        description: Commit generated README snapshot back to main
         required: false
         default: false
         type: boolean
@@ -121,16 +121,18 @@ jobs:
 
       - name: Commit accepted outputs
         if: github.event_name == 'workflow_dispatch' && inputs.commit_outputs
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore(outputs): update checked outputs"
-          file_pattern: >
-            Schematic/**
-            Manufacturing/**
-            Images/**
-            HTML/**
-            KiRI/**
-            3D/**
-            Testing/**
-            Reports/**
-            README.md
+        shell: bash
+        run: |
+          git config user.name "boardwright[bot]"
+          git config user.email "boardwright[bot]@users.noreply.github.com"
+
+          git rm -r --ignore-unmatch 3D HTML KiRI Manufacturing Reports Schematic Testing
+          git add README.md Images/*.png || true
+
+          if git diff --cached --quiet; then
+            echo "No README snapshot changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore(outputs): update README snapshot"
+          git push origin HEAD:${{ github.ref_name }}

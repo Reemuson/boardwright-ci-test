@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Keep main limited to release metadata, generated README, and README image assets.
+
 ## [0.1.2] - 2026-04-25
 ### Added
 

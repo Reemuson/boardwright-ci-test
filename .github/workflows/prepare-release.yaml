@@ -141,8 +141,9 @@ jobs:
           version="${{ inputs.version }}"
           variant="${{ inputs.variant }}"
 
+          git rm -r --ignore-unmatch 3D HTML KiRI Manufacturing Reports Schematic Testing
           git add CHANGELOG.md .boardwright/revision_history_variables.env .boardwright/release.env
-          git add README.md Schematic Manufacturing Images HTML KiRI 3D Testing Reports || true
+          git add README.md Images/*.png || true
 
           if git diff --cached --quiet; then
             echo "No release changes to commit." >&2
