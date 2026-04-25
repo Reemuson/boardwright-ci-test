@@ -29,7 +29,7 @@ on:
 
 permissions:
   contents: write
-  actions: read
+  actions: write
 
 env:
   KIBOT_CONFIG: kibot_yaml/kibot_main.yaml
@@ -168,6 +168,14 @@ jobs:
 
           git tag "$version"
           git push origin "$version"
+
+      - name: Dispatch tag release workflow
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${{ inputs.version }}"
+          gh workflow run release.yaml --ref "$version" --repo "$GITHUB_REPOSITORY"
 
       - name: Upload prepare logs
         if: always()
