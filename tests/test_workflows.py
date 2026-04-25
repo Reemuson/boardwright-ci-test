@@ -7,6 +7,7 @@ class WorkflowTests(unittest.TestCase):
         expected = {
             "dev-preview.yaml": ("Boardwright Dev Preview", "Publish preview branch"),
             "main-outputs.yaml": ("Boardwright Main Outputs", "Commit accepted outputs"),
+            "prepare-release.yaml": ("Boardwright Prepare Release", "Create and push tag"),
             "release.yaml": ("Boardwright Release", "Publish GitHub Release"),
         }
 

@@ -14,6 +14,8 @@ env:
   KIBOT_LOG: kibot_release.log
   KICAD_VERSION: "9"
   RELEASE_DIR: boardwright-release
+  RELEASE_KIND: release
+  RELEASE_VARIANT: RELEASED
 
 jobs:
   release:
@@ -35,19 +37,53 @@ jobs:
           path: ~/cache_3d
           key: cache-3d-kicad-${{ env.KICAD_VERSION }}
 
+      - name: Load release metadata
+        shell: bash
+        run: |
+          if [[ -f .boardwright/release.env ]]; then
+            sed -n 's/^\(RELEASE_KIND\|RELEASE_VARIANT\)=/export \1=/p' .boardwright/release.env > release_metadata.sh
+            source release_metadata.sh
+            echo "RELEASE_KIND=${RELEASE_KIND:-release}" >> "$GITHUB_ENV"
+            echo "RELEASE_VARIANT=${RELEASE_VARIANT:-RELEASED}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Select KiBot generation mode
+        shell: bash
+        run: |
+          variant="${RELEASE_VARIANT:-RELEASED}"
+
+          case "$variant" in
+            DRAFT)
+              additional_args="--skip-pre erc,drc --log $KIBOT_LOG draft_group md_readme"
+              ;;
+            PRELIMINARY)
+              additional_args="--skip-pre erc,drc --log $KIBOT_LOG all_group_k9"
+              ;;
+            CHECKED|RELEASED)
+              additional_args="--log $KIBOT_LOG all_group_k9"
+              ;;
+            *)
+              echo "Unsupported release variant: $variant" >&2
+              exit 1
+              ;;
+          esac
+
+          echo "KIBOT_VARIANT=$variant" >> "$GITHUB_ENV"
+          echo "KIBOT_ADDITIONAL_ARGS=$additional_args" >> "$GITHUB_ENV"
+
       - name: Generate release notes
         uses: INTI-CMNB/KiBot@v2_dk9
         with:
           skip: all
-          variant: RELEASED
+          variant: ${{ env.KIBOT_VARIANT }}
           config: ${{ env.KIBOT_CONFIG }}
           additional_args: --log kibot_release_notes.log notes
 
       - name: Generate release outputs
         uses: INTI-CMNB/KiBot@v2_dk9
         with:
-          additional_args: --log ${{ env.KIBOT_LOG }} all_group_k9
-          variant: RELEASED
+          additional_args: ${{ env.KIBOT_ADDITIONAL_ARGS }}
+          variant: ${{ env.KIBOT_VARIANT }}
           config: ${{ env.KIBOT_CONFIG }}
           cache3D: YES
 
@@ -76,19 +112,23 @@ jobs:
           {
             echo "# ${tag}"
             echo
-            echo "Generated release package for \`${repo}\`."
+            echo "Generated \`${RELEASE_VARIANT}\` package for \`${repo}\`."
             echo
             if [[ -n "$top_image" || -n "$bottom_image" ]]; then
               echo "## Board Images"
               echo
+              echo '<p align="center">'
               if [[ -n "$top_image" ]]; then
-                echo "![Top board render](${release_url}/$(basename "$top_image"))"
-                echo
+                echo "  <img alt=\"Top board render\" src=\"${release_url}/$(basename "$top_image")\" width=\"45%\">"
               fi
               if [[ -n "$bottom_image" ]]; then
-                echo "![Bottom board render](${release_url}/$(basename "$bottom_image"))"
-                echo
+                if [[ -n "$top_image" ]]; then
+                  echo '&nbsp; &nbsp; &nbsp; &nbsp;'
+                fi
+                echo "  <img alt=\"Bottom board render\" src=\"${release_url}/$(basename "$bottom_image")\" width=\"45%\">"
               fi
+              echo '</p>'
+              echo
             fi
             echo "## Changes"
             echo
@@ -148,5 +188,6 @@ jobs:
             boardwright-${{ github.ref_name }}-release.zip
             README.md
             *.png
-          prerelease: false
+          draft: ${{ env.RELEASE_KIND == 'draft' }}
+          prerelease: ${{ env.RELEASE_KIND == 'prerelease' }}
           generate_release_notes: false

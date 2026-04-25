@@ -9,8 +9,10 @@ on:
         default: CHECKED
         type: choice
         options:
+          - DRAFT
           - PRELIMINARY
           - CHECKED
+          - RELEASED
       commit_outputs:
         description: Commit generated outputs back to main
         required: false
@@ -45,10 +47,13 @@ jobs:
           fi
 
           case "$variant" in
+            DRAFT)
+              additional_args="--skip-pre erc,drc --log $KIBOT_LOG draft_group md_readme"
+              ;;
             PRELIMINARY)
               additional_args="--skip-pre erc,drc --log $KIBOT_LOG all_group_k9"
               ;;
-            CHECKED)
+            CHECKED|RELEASED)
               additional_args="--log $KIBOT_LOG all_group_k9"
               ;;
             *)
@@ -88,8 +93,8 @@ jobs:
       - name: Discard KiCad source side effects
         shell: bash
         run: |
-          git checkout HEAD -- '*.kicad_pcb' '*.kicad_pro' '*.kicad_dru' '*.kicad_prl' || true
-          git clean -f '*.kicad_pcb' '*.kicad_pro' '*.kicad_dru' '*.kicad_prl' || true
+          git checkout HEAD -- '*.kicad_pcb' '*.kicad_pro' '*.kicad_dru' '*.kicad_prl' '*.kicad_sch' || true
+          git clean -f '*.kicad_pcb' '*.kicad_pro' '*.kicad_dru' '*.kicad_prl' '*.kicad_sch' || true
 
       - name: Upload checked outputs artifact
         uses: actions/upload-artifact@v4

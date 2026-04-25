@@ -16,6 +16,7 @@ DEFAULT_CONFIG_FILES = {
   company: RYAN DYNAMICS
   designer: R. HICKS
   git_url: ""
+  github_repo: ""
   product_family: BOARDWRIGHT
   product_generation: TEMPLATE
 
@@ -31,6 +32,7 @@ outputs:
   preview_engine: github-actions
   preview_workflow: dev-preview.yaml
   main_workflow: main-outputs.yaml
+  prepare_release_workflow: prepare-release.yaml
   release_workflow: release.yaml
   release_include_source_archive: false
 
@@ -83,6 +85,10 @@ class BoardwrightConfig:
         return str(self.project.get("project", {}).get("name", "unknown"))
 
     @property
+    def github_repo(self) -> str:
+        return str(self.project.get("project", {}).get("github_repo", "")).strip()
+
+    @property
     def dev_branch(self) -> str:
         return str(self.branches.get("branches", {}).get("development", "dev"))
 
@@ -118,6 +124,11 @@ class BoardwrightConfig:
     def release_workflow(self) -> str:
         outputs = self.project.get("outputs", {})
         return str(outputs.get("release_workflow", "release.yaml"))
+
+    @property
+    def prepare_release_workflow(self) -> str:
+        outputs = self.project.get("outputs", {})
+        return str(outputs.get("prepare_release_workflow", "prepare-release.yaml"))
 
     @property
     def assets(self) -> dict[str, Any]:

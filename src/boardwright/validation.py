@@ -86,6 +86,12 @@ def _validate_project_config(
     )
     _validate_workflow_exists(
         config,
+        str(outputs.get("prepare_release_workflow", "prepare-release.yaml")),
+        "Prepare release",
+        issues,
+    )
+    _validate_workflow_exists(
+        config,
         str(outputs.get("release_workflow", "release.yaml")),
         "Release",
         issues,

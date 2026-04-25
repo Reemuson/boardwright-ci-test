@@ -5,7 +5,12 @@ from pathlib import Path
 from .errors import BoardwrightError
 
 
-WORKFLOW_FILES = ("dev-preview.yaml", "main-outputs.yaml", "release.yaml")
+WORKFLOW_FILES = (
+    "dev-preview.yaml",
+    "main-outputs.yaml",
+    "prepare-release.yaml",
+    "release.yaml",
+)
 
 
 def install_workflows(root: Path, force: bool = False) -> list[Path]:

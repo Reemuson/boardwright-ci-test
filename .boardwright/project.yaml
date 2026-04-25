@@ -3,7 +3,8 @@ project:
   name: Boardwright KiCad/KiBot Template
   company: RYAN DYNAMICS
   designer: R. HICKS
-  git_url: ""
+  git_url: "https://github.com/Reemuson/boardwright-ci-test"
+  github_repo: Reemuson/boardwright-ci-test
   product_family: BOARDWRIGHT
   product_generation: TEMPLATE
 
@@ -19,6 +20,7 @@ outputs:
   preview_engine: github-actions
   preview_workflow: dev-preview.yaml
   main_workflow: main-outputs.yaml
+  prepare_release_workflow: prepare-release.yaml
   release_workflow: release.yaml
   release_include_source_archive: false
 

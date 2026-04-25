@@ -1,91 +1,69 @@
 # Boardwright TODO
 
-Active implementation tracker for Boardwright.
+Active implementation tracker. Product rules live in `SPEC.md`; sequencing
+lives in `ROADMAP.md`.
 
-For the durable product rules and workflow design, see `SPEC.md`.
-For milestone sequencing, see `ROADMAP.md`.
+## Done
 
-## Milestone 1: Minimum Useful Boardwright
-
-Goal: create a small local tool that can understand a project, report its state,
-record changelog entries, and validate core project files.
-
-- [x] Split long-form planning into `SPEC.md`, `ROADMAP.md`, and this active TODO.
-- [x] Choose `.boardwright/` as the project config directory.
-- [x] Add initial `.boardwright/project.yaml`.
-- [x] Add initial `.boardwright/branches.yaml`.
-- [x] Add initial `.boardwright/legal.yaml`.
-- [x] Add initial `.boardwright/revision_history.yaml`.
-- [x] Scaffold Python package.
-- [x] Add initial `boardwright status`.
-- [x] Add changelog parser.
-- [x] Add changelog writer for new unreleased entries.
-- [x] Add initial `boardwright change`.
-- [x] Add simple commit message suggestion.
-- [x] Add `boardwright init` for default project files.
-- [x] Install Boardwright GitHub workflows during `boardwright init`.
-- [x] Add legal template generator.
-- [x] Add README template validator.
-- [x] Add `boardwright validate`.
-- [x] Add basic console TUI shell.
-- [x] Replace console TUI shell with optional Textual app.
-- [x] Keep console fallback when Textual is not installed.
+- [x] Split planning into `SPEC.md`, `ROADMAP.md`, and `TODO.md`.
+- [x] Add `.boardwright/` project config.
+- [x] Scaffold Python package and CLI.
+- [x] Add `boardwright init`, `status`, `change`, `validate`, `legal`,
+      `revision-history`, `preview`, and `release`.
+- [x] Add changelog parser/writer and release promotion.
+- [x] Add legal/notice generation.
+- [x] Add README template validation.
+- [x] Add optional Textual TUI with console fallback.
 - [x] Add TUI changelog-entry form.
-- [x] Add safe git status and commit dry-run helpers.
+- [x] Add safe git status and dry-run commit helpers.
+- [x] Add GitHub Actions preview workflow.
+- [x] Add GitHub Actions main-output workflow.
+- [x] Add tag publish workflow.
+- [x] Add KiBot revision-history variables with newest release first.
+- [x] Make schematic ToC recurse through nested KiCad sheets.
+- [x] Populate `${REVISION}` from git tags during release builds.
+- [x] Attach generated README and board images to GitHub Releases.
 
-Milestone 1 is successful when:
+## Active: Boardwright-Orchestrated Release Flow
 
-- [x] A user can initialise project metadata.
-- [x] A user can add changelog entries from the CLI.
-- [x] A user can get a suggested commit message.
-- [x] A user can validate key project files.
+- [x] Add shared action layer used by CLI and TUI.
+- [x] Add `boardwright promote` planner/dispatcher.
+- [x] Add `prepare-release.yaml` workflow.
+- [x] Commit `.boardwright/release.env` during release preparation.
+- [x] Make tag workflow read release metadata for variant and release kind.
+- [ ] Let Boardwright dispatch CI-owned tag creation.
+- [ ] Add TUI controls for Promote To Main and Create Release.
+- [ ] Add workflow status polling where GitHub CLI is available.
+- [ ] Add preview artifact download/fetch helper.
 
-## Milestone 2: Preview Generation
+## Active: Generated Main README
 
-Goal: generate reviewable KiBot outputs without dirtying source branches.
+- [ ] Refresh `kibot_resources/templates/readme.txt` for Boardwright projects.
+- [ ] Add CI status badges.
+- [ ] Add current revision and variant.
+- [ ] Add board dimensions.
+- [ ] Add brief stackup/fabrication summary.
+- [ ] Add component count summary.
+- [ ] Add latest release/package links.
+- [x] Keep board images side by side in README and release markdown.
 
-- [x] Add CI KiBot runner through GitHub Actions.
-- [x] Add variant selection.
-- [x] Add CI-first `boardwright preview` planner.
-- [x] Add preview branch support.
-- [x] Add GitHub Actions preview workflow template.
-- [x] Add output path summary.
-- [x] Add logo/path validation.
-- [x] Add optional GitHub Actions dispatch through `gh`.
-- [x] Add split `main-outputs.yaml` workflow for accepted outputs.
+## Verification Targets
 
-Milestone 2 is successful when:
-
-- [ ] A push to `dev` generates preview outputs.
-- [ ] Preview outputs are available on the `preview` branch or as artefacts.
-- [ ] Source branch remains clean.
-- [x] Dummy repo onboarding flow validates locally.
-
-## Milestone 3: Release Preparation
-
-Goal: prepare release commits and tags without tag workflows mutating `main`.
-
-- [x] Add release command.
-- [x] Add tag checks.
-- [x] Add changelog release promotion.
-- [x] Add revision history slot filler.
-- [x] Wire KiBot fixed `REVHIST_N_TITLE` / `REVHIST_N_BODY` variables.
-- [x] Support configurable revision history slot count up to preflight ceiling.
-- [x] Preserve previous releases by shifting them down slots.
-- [x] Add release workflow template.
-- [x] Add initial GitHub release package asset set.
-- [x] Add dry-run default for release-affecting commands.
-
-Milestone 3 is successful when:
-
-- [x] `boardwright release 0.1.0 --prepare` prepares release files.
-- [ ] The tag workflow creates a release package without mutating `main`.
+- [x] Dummy repo can generate preview outputs.
+- [x] Dummy repo can publish a tag release.
+- [x] Revision history populates on generated schematic.
+- [x] Revision variable populates on generated schematic.
+- [x] Cover ToC includes nested sheets.
+- [ ] Prepare-release workflow can create a draft tag from `main`.
+- [ ] Prepare-release workflow can create a prerelease tag from `main`.
+- [ ] Prepare-release workflow can create a full release tag from `main`.
+- [ ] TUI can drive the full happy path without manual git commands.
 
 ## Later
 
 - [ ] Add `boardwright adopt` for existing projects.
 - [ ] Add richer legal/licence profiles.
-- [ ] Add generated output package manifests.
-- [ ] Add optional GitHub CLI integration.
-- [x] Decide whether local KiBot runs support Windows directly, Docker only, or both.
-- [x] Decide whether v1 supports multiple board/assembly variants.
+- [ ] Add curated source package support if needed.
+- [ ] Add local KiBot/Docker runner support after CI-first flow is solid.
+- [ ] Revisit multi-board or assembly variants after KiCad/KiBot variant support
+      settles.

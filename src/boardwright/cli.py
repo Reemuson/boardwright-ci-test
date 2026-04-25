@@ -3,6 +3,12 @@ from __future__ import annotations
 import argparse
 import sys
 
+from .actions import (
+    RELEASE_KINDS,
+    build_prepare_release_action,
+    build_promote_action,
+    dispatch_workflow_action,
+)
 from .changelog import SUPPORTED_SECTIONS, add_unreleased_entry
 from .commit_messages import suggest_commit_message
 from .config import init_config, load_config
@@ -31,6 +37,8 @@ def main(argv: list[str] | None = None) -> int:
             return _legal(args)
         if args.command == "preview":
             return _preview(args)
+        if args.command == "promote":
+            return _promote(args)
         if args.command == "release":
             return _release(args)
         if args.command == "revision-history":
@@ -115,6 +123,27 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Dispatch the configured GitHub Actions preview workflow.",
     )
 
+    promote = subparsers.add_parser(
+        "promote",
+        help="Plan or dispatch accepted output generation on main.",
+    )
+    promote.add_argument(
+        "--variant",
+        "-v",
+        default="CHECKED",
+        help="Variant to promote to main.",
+    )
+    promote.add_argument(
+        "--no-commit-outputs",
+        action="store_true",
+        help="Generate/upload outputs without committing them to main.",
+    )
+    promote.add_argument(
+        "--dispatch",
+        action="store_true",
+        help="Dispatch the configured main output workflow.",
+    )
+
     release = subparsers.add_parser("release", help="Prepare a release locally.")
     release.add_argument("version", help="Semantic version, such as 0.1.0.")
     release.add_argument(
@@ -126,6 +155,23 @@ def _build_parser() -> argparse.ArgumentParser:
         "--allow-dirty",
         action="store_true",
         help="Allow release preparation with a dirty working tree.",
+    )
+    release.add_argument(
+        "--variant",
+        "-v",
+        default="RELEASED",
+        help="Variant for CI-owned release preparation when using --dispatch.",
+    )
+    release.add_argument(
+        "--kind",
+        choices=RELEASE_KINDS,
+        default="release",
+        help="GitHub Release state for CI-owned release preparation.",
+    )
+    release.add_argument(
+        "--dispatch",
+        action="store_true",
+        help="Dispatch the CI-owned prepare-release workflow.",
     )
 
     subparsers.add_parser(
@@ -239,8 +285,51 @@ def _preview(args: argparse.Namespace) -> int:
     return 0
 
 
+def _promote(args: argparse.Namespace) -> int:
+    config = load_config()
+    action = build_promote_action(
+        config,
+        args.variant,
+        commit_outputs=not args.no_commit_outputs,
+    )
+    print(f"Workflow: {action.workflow}")
+    print(f"Ref: {action.ref}")
+    print(f"GitHub CLI: {'available' if action.gh_available else 'not found'}")
+    print("Inputs:")
+    for key, value in action.fields:
+        print(f"- {key}: {value}")
+    print("Command:")
+    print(" ".join(action.command))
+
+    if args.dispatch:
+        dispatch_workflow_action(config, action)
+        print("Promote workflow dispatched.")
+    else:
+        print("Promote dispatch skipped. Use --dispatch to run the workflow.")
+    return 0
+
+
 def _release(args: argparse.Namespace) -> int:
     config = load_config()
+    if args.dispatch:
+        action = build_prepare_release_action(
+            config,
+            args.version,
+            args.variant,
+            args.kind,
+        )
+        print(f"Workflow: {action.workflow}")
+        print(f"Ref: {action.ref}")
+        print(f"GitHub CLI: {'available' if action.gh_available else 'not found'}")
+        print("Inputs:")
+        for key, value in action.fields:
+            print(f"- {key}: {value}")
+        print("Command:")
+        print(" ".join(action.command))
+        dispatch_workflow_action(config, action)
+        print("Prepare-release workflow dispatched.")
+        return 0
+
     if args.prepare:
         plan = prepare_release(
             config,

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Add Boardwright-managed promotion and CI-owned release tagging workflow.
+
 ## [0.1.1] - 2026-04-25
 ### Fixed
 
