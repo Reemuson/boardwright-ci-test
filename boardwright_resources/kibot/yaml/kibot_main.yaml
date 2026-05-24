@@ -218,13 +218,6 @@ import:
       GERBER_OUTPUT: @GERBER_OUTPUT@
       NOTE: @STACKUP_TABLE_NOTE@
 
-  # Fill generated CSV table placeholders in PCB user layers.
-  - file: kibot_pre_include_table.yaml
-    definitions:
-      NAME_TP_TOP: @CSV_TP_TOP_OUTPUT@
-      NAME_TP_BOTTOM: @CSV_TP_BOTTOM_OUTPUT@
-      NAME_COMP_COUNT: @CSV_COMP_COUNT_OUPUT@
-
 # Generated outputs ============================================================
 
   # Schematic variant with split fields ----------------------------------------
@@ -465,9 +458,11 @@ import:
       SCALING: @FAB_SCALING@
       FAB_EXCLUDE_FILTER: @FILT_TP_ONLY@
       LAYER_DRILL_MAP: @LAYER_DRILL_MAP@
-      LAYER_FAB_NOTES: @LAYER_FAB_NOTES@
       LAYER_TP_LIST_TOP: @LAYER_TP_LIST_TOP@
       LAYER_TP_LIST_BOTTOM: @LAYER_TP_LIST_BOTTOM@
+      NAME_TP_TOP: @CSV_TP_TOP_OUTPUT@
+      NAME_TP_BOTTOM: @CSV_TP_BOTTOM_OUTPUT@
+      NAME_DRILL_TABLE: @CSV_DRILL_TABLE_OUTPUT@
 
   # Assembly Document in PDF format
   - file: kibot_out_pdf_assembly.yaml
@@ -483,6 +478,7 @@ import:
       LAYER_ASSEMBLY_TEXT_BOTTOM: @LAYER_ASSEMBLY_TEXT_BOTTOM@
       LAYER_DNP_CROSS_TOP: @LAYER_DNP_CROSS_TOP@
       LAYER_DNP_CROSS_BOTTOM: @LAYER_DNP_CROSS_BOTTOM@
+      NAME_COMP_COUNT: @CSV_COMP_COUNT_OUPUT@
 
   # Compress fabrication files into ZIP archive --------------------------------
   - file: kibot_out_compress_fab.yaml
@@ -609,7 +605,6 @@ definitions:
   LAYER_DNP_TOP: F.DNP
   LAYER_DNP_BOTTOM: B.DNP
   LAYER_DRILL_MAP: DrillMap
-  LAYER_FAB_NOTES: F.Dimensions
   LAYER_TP_LIST_TOP: F.TestPointList
   LAYER_TP_LIST_BOTTOM: B.TestPointList
   LAYER_ASSEMBLY_TEXT_TOP: F.AssemblyText

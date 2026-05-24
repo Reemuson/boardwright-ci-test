@@ -21,6 +21,42 @@ outputs:
     dnf_filter: _kibom_dnf_Config
     frame_plot_mechanism: 'internal' 
     sheet_reference_layout: '@SHEET_WKS@'
+    include_table:
+      outputs:
+        - name: '@NAME_TP_TOP@'
+          text_alignment: 'left'
+          invert_columns_order: false
+          border_width: 0.4
+          header_rule_width: 0.2
+          horizontal_rule_width: 0
+          vertical_rule_width: 0.2
+          top_rule_width: 0.2
+          bottom_rule_width: 0.2
+          column_spacing: 2
+          force_font_width: 1.27 # mm
+        - name: '@NAME_TP_BOTTOM@'
+          text_alignment: 'right'
+          invert_columns_order: true
+          border_width: 0.4
+          header_rule_width: 0.2
+          horizontal_rule_width: 0
+          vertical_rule_width: 0.2
+          top_rule_width: 0.2
+          bottom_rule_width: 0.2
+          column_spacing: 2
+          force_font_width: 1.27 # mm
+        - name: '@NAME_DRILL_TABLE@'
+          text_alignment: 'left'
+          invert_columns_order: false
+          border_width: 0.4
+          header_rule_width: 0.2
+          horizontal_rule_width: 0
+          vertical_rule_width: 0.2
+          top_rule_width: 0.2
+          bottom_rule_width: 0.2
+          row_spacing: 3
+          column_spacing: 2
+          force_font_width: 1 # mm
     pages:
       - scaling: @SCALING@
         title: '@DOC_TITLE@'
@@ -81,15 +117,6 @@ outputs:
         sheet_reference_color: '#000000'
         layers:
           - layer: '@LAYER_DRILL_MAP@'
-            color: '#000000'
-
-      - scaling: @SCALING@
-        title: '@DOC_TITLE@'
-        sheet: 'FABRICATION NOTES'
-        layer_var: 'FABRICATION NOTES'
-        sheet_reference_color: '#000000'
-        layers:
-          - layer: '@LAYER_FAB_NOTES@'
             color: '#000000'
 
       - scaling: @SCALING@
@@ -168,6 +195,8 @@ definitions:
   SCALING: 1.0
   FAB_EXCLUDE_FILTER: only_testpoints
   LAYER_DRILL_MAP: DrillMap
-  LAYER_FAB_NOTES: F.Dimensions
   LAYER_TP_LIST_TOP: F.TestPointList
   LAYER_TP_LIST_BOTTOM: B.TestPointList
+  NAME_TP_TOP: csv_testpoints_top
+  NAME_TP_BOTTOM: csv_testpoints_bottom
+  NAME_DRILL_TABLE: csv_drill_table
