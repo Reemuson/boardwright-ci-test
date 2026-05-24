@@ -1,4 +1,4 @@
-name: Boardwright Release
+name: Boardwright Publish Release
 
 on:
   push:
@@ -48,7 +48,7 @@ jobs:
             echo "RELEASE_VARIANT=${RELEASE_VARIANT:-RELEASED}" >> "$GITHUB_ENV"
           fi
 
-      - name: Select KiBot generation mode
+      - name: Choose KiBot variant and output set
         shell: bash
         run: |
           variant="${RELEASE_VARIANT:-RELEASED}"
@@ -72,7 +72,12 @@ jobs:
           echo "KIBOT_VARIANT=$variant" >> "$GITHUB_ENV"
           echo "KIBOT_ADDITIONAL_ARGS=$additional_args" >> "$GITHUB_ENV"
 
-      - name: Generate table sources
+      - name: Prepare Boardwright PDF table placeholders
+        if: env.KIBOT_VARIANT != 'DRAFT'
+        shell: bash
+        run: python boardwright_resources/kibot/resources/scripts/prepare_pcb_tables.py .
+
+      - name: Generate KiBot PDF table CSV sources
         if: env.KIBOT_VARIANT != 'DRAFT'
         uses: INTI-CMNB/KiBot@v2_dk9
         with:
@@ -81,7 +86,7 @@ jobs:
           config: ${{ env.KIBOT_CONFIG }}
           cache3D: YES
 
-      - name: Generate release outputs
+      - name: Generate release output package
         uses: INTI-CMNB/KiBot@v2_dk9
         with:
           additional_args: ${{ env.KIBOT_ADDITIONAL_ARGS }}

@@ -129,7 +129,6 @@ groups:
 
   - name: table_sources
     outputs:
-      - @CSV_COMP_COUNT_OUPUT@
       - @CSV_DRILL_TABLE_OUTPUT@
       - testpoints
 
@@ -359,15 +358,6 @@ import:
       TITLE: @BOARD_NAME@ Assembly
       MPN_FIELD: @MPN_FIELD@
 
-  # CSV components count report ------------------------------------------------
-  - file: kibot_out_csv_report.yaml
-    definitions:
-      NAME: @CSV_COMP_COUNT_OUPUT@
-      COMMENT: Component report (count) in CSV format
-      DIR: @ASSEMBLY_DIR@
-      OUTPUT_ID: components_count
-      TEMPLATE: total_components
-
   # TXT fabrication notes ------------------------------------------------------
   - file: kibot_out_txt_report.yaml
     definitions:
@@ -484,7 +474,6 @@ import:
       LAYER_ASSEMBLY_TEXT_BOTTOM: @LAYER_ASSEMBLY_TEXT_BOTTOM@
       LAYER_DNP_CROSS_TOP: @LAYER_DNP_CROSS_TOP@
       LAYER_DNP_CROSS_BOTTOM: @LAYER_DNP_CROSS_BOTTOM@
-      NAME_COMP_COUNT: @CSV_COMP_COUNT_OUPUT@
 
   # Compress fabrication files into ZIP archive --------------------------------
   - file: kibot_out_compress_fab.yaml
@@ -648,7 +637,6 @@ definitions:
   XLSX_BOM_OUTPUT: xlsx_bom
   HTML_IBOM_OUTPUT: html_bom_interactive
   HTML_BOM_OUTPUT: html_bom
-  CSV_COMP_COUNT_OUPUT: csv_comp_count
 
   TXT_FAB_NOTES_OUTPUT: txt_fabrication_notes
   TXT_ASSEMBLY_NOTES_OUTPUT: txt_assembly_notes

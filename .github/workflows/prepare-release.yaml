@@ -1,4 +1,4 @@
-name: Boardwright Prepare Release
+name: Boardwright Prepare Release Tag
 
 on:
   workflow_dispatch:
@@ -72,7 +72,7 @@ jobs:
           RELEASE_KIND=$release_kind
           EOF
 
-      - name: Select KiBot generation mode
+      - name: Choose KiBot variant and output set
         shell: bash
         run: |
           variant="${{ inputs.variant }}"
@@ -105,7 +105,12 @@ jobs:
           path: ~/cache_3d
           key: cache-3d-kicad-${{ env.KICAD_VERSION }}
 
-      - name: Generate table sources
+      - name: Prepare Boardwright PDF table placeholders
+        if: env.KIBOT_VARIANT != 'DRAFT'
+        shell: bash
+        run: python boardwright_resources/kibot/resources/scripts/prepare_pcb_tables.py .
+
+      - name: Generate KiBot PDF table CSV sources
         if: env.KIBOT_VARIANT != 'DRAFT'
         uses: INTI-CMNB/KiBot@v2_dk9
         with:

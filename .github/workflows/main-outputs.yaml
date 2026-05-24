@@ -1,4 +1,4 @@
-name: Boardwright Main Outputs
+name: Boardwright Accepted Outputs
 
 on:
   workflow_dispatch:
@@ -38,7 +38,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Select variant and group
+      - name: Choose KiBot variant and output set
         shell: bash
         run: |
           variant="${{ github.event.inputs.variant }}"
@@ -74,7 +74,12 @@ jobs:
           path: ~/cache_3d
           key: cache-3d-kicad-${{ env.KICAD_VERSION }}
 
-      - name: Generate table sources
+      - name: Prepare Boardwright PDF table placeholders
+        if: env.KIBOT_VARIANT != 'DRAFT'
+        shell: bash
+        run: python boardwright_resources/kibot/resources/scripts/prepare_pcb_tables.py .
+
+      - name: Generate KiBot PDF table CSV sources
         if: env.KIBOT_VARIANT != 'DRAFT'
         uses: INTI-CMNB/KiBot@v2_dk9
         with:
@@ -83,7 +88,7 @@ jobs:
           config: ${{ env.KIBOT_CONFIG }}
           cache3D: YES
 
-      - name: Generate checked outputs
+      - name: Generate accepted output package
         uses: INTI-CMNB/KiBot@v2_dk9
         with:
           additional_args: ${{ env.KIBOT_ADDITIONAL_ARGS }}
@@ -105,7 +110,7 @@ jobs:
           git checkout HEAD -- '*.kicad_pcb' '*.kicad_pro' '*.kicad_dru' '*.kicad_prl' '*.kicad_sch' || true
           git clean -f '*.kicad_pcb' '*.kicad_pro' '*.kicad_dru' '*.kicad_prl' '*.kicad_sch' || true
 
-      - name: Upload checked outputs artifact
+      - name: Upload accepted outputs artifact
         uses: actions/upload-artifact@v4
         with:
           name: boardwright-main-outputs-${{ env.KIBOT_VARIANT }}

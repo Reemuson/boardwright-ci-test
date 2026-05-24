@@ -1,9 +1,6 @@
-name: Boardwright Dev Preview
+name: Boardwright Preview Artifacts
 
 on:
-  push:
-    branches:
-      - dev
   workflow_dispatch:
     inputs:
       variant:
@@ -27,7 +24,7 @@ env:
   PREVIEW_DIR: boardwright-preview
 
 jobs:
-  preview:
+  build-preview-artifacts:
     runs-on: ubuntu-latest
     if: github.ref_type == 'branch'
     steps:
@@ -36,7 +33,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Select variant and group
+      - name: Choose KiBot variant and output set
         shell: bash
         run: |
           variant="${{ github.event.inputs.variant }}"
@@ -72,7 +69,7 @@ jobs:
           path: ~/cache_3d
           key: cache-3d-kicad-${{ env.KICAD_VERSION }}
 
-      - name: Generate README
+      - name: Generate draft README
         if: env.KIBOT_VARIANT == 'DRAFT'
         uses: INTI-CMNB/KiBot@v2_dk9
         with:
@@ -81,7 +78,12 @@ jobs:
           config: ${{ env.KIBOT_CONFIG }}
           additional_args: --log kibot_preview_readme.log md_readme
 
-      - name: Generate table sources
+      - name: Prepare Boardwright PDF table placeholders
+        if: env.KIBOT_VARIANT != 'DRAFT'
+        shell: bash
+        run: python boardwright_resources/kibot/resources/scripts/prepare_pcb_tables.py .
+
+      - name: Generate KiBot PDF table CSV sources
         if: env.KIBOT_VARIANT != 'DRAFT'
         uses: INTI-CMNB/KiBot@v2_dk9
         with:
@@ -90,7 +92,7 @@ jobs:
           config: ${{ env.KIBOT_CONFIG }}
           cache3D: YES
 
-      - name: Generate preview outputs
+      - name: Generate reviewable preview artifact package
         uses: INTI-CMNB/KiBot@v2_dk9
         with:
           additional_args: ${{ env.KIBOT_ADDITIONAL_ARGS }}
@@ -106,7 +108,7 @@ jobs:
         shell: bash
         run: python boardwright_resources/kibot/resources/scripts/clean_generated_outputs.py .
 
-      - name: Collect preview outputs
+      - name: Package preview artifact
         shell: bash
         run: |
           rm -rf "$PREVIEW_DIR"
@@ -133,7 +135,7 @@ jobs:
           echo "Preview artifact contents:"
           cat "$PREVIEW_DIR/MANIFEST.txt"
 
-      - name: Upload preview artifact
+      - name: Upload reviewable preview artifact
         uses: actions/upload-artifact@v4
         with:
           name: boardwright-preview-${{ env.KIBOT_VARIANT }}
