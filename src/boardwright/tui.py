@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from threading import Thread
 from dataclasses import dataclass
 from importlib.util import find_spec
 from typing import TYPE_CHECKING
@@ -243,7 +244,7 @@ def _build_textual_app():
             with Vertical(id="dialog"):
                 yield Label("Review Artifacts", classes="section-title")
                 yield Static(self.preview_text, id="preview_evidence")
-                yield Label("Recent Runs", classes="section-title")
+                yield Label("Recent CI", classes="section-title")
                 yield Static(self.runs_text, id="recent_runs")
                 yield Button("Fetch Artifact", id="fetch_artifact")
                 yield Button("Close", id="close_review")
@@ -626,20 +627,30 @@ def _build_textual_app():
         def _review_artifacts(self, result: str | None) -> None:
             if result != "fetch":
                 return
-            self.ci_status = _download_progress_text(self.review_variant or load_config().preview_variant)
+            variant = self.review_variant or load_config().preview_variant
+            self.ci_status = _download_progress_text(variant)
             self._render_state()
             self.notify("Downloading preview artifact...")
+            Thread(target=self._fetch_review_artifact, args=(variant,), daemon=True).start()
+
+        def _fetch_review_artifact(self, variant: str) -> None:
             try:
-                result = fetch_latest_preview_artifact(load_config(), self.review_variant or None)
+                result = fetch_latest_preview_artifact(load_config(), variant)
             except BoardwrightError as exc:
-                self.ci_status = str(exc)
+                self.call_from_thread(self._finish_review_fetch, None, str(exc))
+                return
+            self.call_from_thread(self._finish_review_fetch, result, None)
+
+        def _finish_review_fetch(self, result: str | None, error: str | None) -> None:
+            if error:
+                self.ci_status = error
                 self._render_state()
-                self.notify(str(exc), severity="error")
+                self.notify(error, severity="error")
                 return
             self.state = collect_dashboard_state()
             self.ci_status = result
             self._render_state()
-            self.notify(result)
+            self.notify(result or "Preview artifact fetched.")
 
         def action_record_change(self) -> None:
             self.push_screen(ChangelogEntryScreen(), self._record_change)
@@ -931,7 +942,23 @@ def _format_inspector(state: DashboardState, ci_status: str = "CI not polled") -
 
 
 def _format_review_artifacts(preview_state: "PreviewState", runs_text: str) -> str:
-    return f"{format_preview_state(preview_state)}\n\nRecent runs:\n{runs_text}"
+    run = preview_state.run
+    lines = [
+        f"{preview_state.state.upper()}: {preview_state.artifact_name}",
+        preview_state.message,
+    ]
+    if run is not None:
+        lines.extend(
+            [
+                "",
+                f"Run {run.database_id or 'unknown'} | {run.status}/{run.conclusion or 'unknown'}",
+                f"{run.branch or 'unknown'} @ {(run.head_sha or '')[:12] or 'unknown'}",
+                f"Created {run.created_at or 'unknown'}",
+                f"Reviewed: {'yes' if preview_state.reviewed else 'no'}",
+            ]
+        )
+    lines.extend(["", "Recent CI:", runs_text])
+    return "\n".join(lines)
 
 
 def _download_progress_text(variant: str) -> str:

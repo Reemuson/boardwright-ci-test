@@ -70,6 +70,17 @@ Goal: prove workflows still work after moving visible generated media under
       include numbered PDF page shards or empty generated CSV tables.
 - [x] Stop generating the placeholder impedance CSV by default until there is a
       reliable project data source for controlled-impedance traces.
+- [x] Make TUI preview artifact fetch non-blocking and simplify the review
+      evidence display.
+- [x] Re-enable generated table placeholders for drill, component-count, and
+      testpoint CSVs without reintroducing the impedance placeholder.
+- [x] Restore fabrication drill-table/notes pages without using the crashing
+      embedded drill-pair drawing.
+- [x] Remove the PCB template's explicit Arial dependency for CI rendering.
+- [ ] Decide how Boardwright should model/edit fabrication notes,
+      assembly notes, testpoint policy, and controlled-impedance requirements
+      from the TUI.
+- [ ] Review stackup legend layer colors against the original template.
 - [ ] Preview workflow uses `assets/renders` and `assets/3d` correctly.
 - [ ] Preview artifact includes `README.md`, `assets/`, and expected output
       folders.

@@ -78,9 +78,9 @@ class TuiTests(unittest.TestCase):
 
         text = tui._format_review_artifacts(preview_state, "Boardwright Dev Preview: completed/success")
 
-        self.assertIn("Artifact: boardwright-preview-CHECKED", text)
-        self.assertIn("Recent runs", text)
-        self.assertIn("Run: 42", text)
+        self.assertIn("READY: boardwright-preview-CHECKED", text)
+        self.assertIn("Recent CI", text)
+        self.assertIn("Run 42", text)
 
     def test_review_artifact_summary_shows_selected_variant_artifact(self) -> None:
         run = PreviewRun(
@@ -96,7 +96,7 @@ class TuiTests(unittest.TestCase):
 
         text = tui._format_review_artifacts(preview_state, "Boardwright Dev Preview: completed/success")
 
-        self.assertIn("Artifact: boardwright-preview-PRELIMINARY", text)
+        self.assertIn("READY: boardwright-preview-PRELIMINARY", text)
 
     def test_download_progress_text_mentions_variant(self) -> None:
         text = tui._download_progress_text("PRELIMINARY")

@@ -218,6 +218,13 @@ import:
       GERBER_OUTPUT: @GERBER_OUTPUT@
       NOTE: @STACKUP_TABLE_NOTE@
 
+  # Fill generated CSV table placeholders in PCB user layers.
+  - file: kibot_pre_include_table.yaml
+    definitions:
+      NAME_TP_TOP: @CSV_TP_TOP_OUTPUT@
+      NAME_TP_BOTTOM: @CSV_TP_BOTTOM_OUTPUT@
+      NAME_COMP_COUNT: @CSV_COMP_COUNT_OUPUT@
+
 # Generated outputs ============================================================
 
   # Schematic variant with split fields ----------------------------------------
@@ -457,6 +464,8 @@ import:
       SHEET_WKS: @SHEET_WKS@
       SCALING: @FAB_SCALING@
       FAB_EXCLUDE_FILTER: @FILT_TP_ONLY@
+      LAYER_DRILL_MAP: @LAYER_DRILL_MAP@
+      LAYER_FAB_NOTES: @LAYER_FAB_NOTES@
       LAYER_TP_LIST_TOP: @LAYER_TP_LIST_TOP@
       LAYER_TP_LIST_BOTTOM: @LAYER_TP_LIST_BOTTOM@
 
@@ -599,6 +608,8 @@ definitions:
   LAYER_TITLE_PAGE: TitlePage
   LAYER_DNP_TOP: F.DNP
   LAYER_DNP_BOTTOM: B.DNP
+  LAYER_DRILL_MAP: DrillMap
+  LAYER_FAB_NOTES: F.Dimensions
   LAYER_TP_LIST_TOP: F.TestPointList
   LAYER_TP_LIST_BOTTOM: B.TestPointList
   LAYER_ASSEMBLY_TEXT_TOP: F.AssemblyText

@@ -31,8 +31,16 @@ class WorkflowTests(unittest.TestCase):
         for workflow in Path(".github/workflows").glob("*.yaml"):
             text = workflow.read_text(encoding="utf-8")
 
+            self.assertIn("Normalize generated output ownership", text)
+            self.assertIn("sudo chown -R", text)
             self.assertIn("Clean generated outputs", text)
             self.assertIn("clean_generated_outputs.py", text)
+
+    def test_draft_workflows_skip_table_preflight(self) -> None:
+        for workflow in Path(".github/workflows").glob("*.yaml"):
+            text = workflow.read_text(encoding="utf-8")
+
+            self.assertIn("--skip-pre draw_fancy_stackup,include_table,erc,drc", text)
 
 
 if __name__ == "__main__":

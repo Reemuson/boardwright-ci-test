@@ -76,6 +76,24 @@ outputs:
 
       - scaling: @SCALING@
         title: '@DOC_TITLE@'
+        sheet: 'DRILL TABLE'
+        layer_var: 'DRILL TABLE'
+        sheet_reference_color: '#000000'
+        layers:
+          - layer: '@LAYER_DRILL_MAP@'
+            color: '#000000'
+
+      - scaling: @SCALING@
+        title: '@DOC_TITLE@'
+        sheet: 'FABRICATION NOTES'
+        layer_var: 'FABRICATION NOTES'
+        sheet_reference_color: '#000000'
+        layers:
+          - layer: '@LAYER_FAB_NOTES@'
+            color: '#000000'
+
+      - scaling: @SCALING@
+        title: '@DOC_TITLE@'
         sheet: 'TOP TEST POINTS (SCALE @SCALING@:1)'
         layer_var: 'TOP TEST POINTS (SCALE @SCALING@:1)'
         sheet_reference_color: '#000000'
@@ -149,5 +167,7 @@ definitions:
   SHEET_WKS: ${KIPRJMOD}/Templates/KDT_Template_PCB_GIT_A4.kicad_wks
   SCALING: 1.0
   FAB_EXCLUDE_FILTER: only_testpoints
+  LAYER_DRILL_MAP: DrillMap
+  LAYER_FAB_NOTES: F.Dimensions
   LAYER_TP_LIST_TOP: F.TestPointList
   LAYER_TP_LIST_BOTTOM: B.TestPointList

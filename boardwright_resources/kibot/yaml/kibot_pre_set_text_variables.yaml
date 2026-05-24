@@ -87,13 +87,13 @@ preflight:
     # Fabrication notes
     - variable: 'FABRICATION_NOTES'
       expand_in_command: true
-      command: '[ -f "@FABRICATION_DIR@/%f-fabrication_notes%v.txt" ] && cat "@FABRICATION_DIR@/%f-fabrication_notes%v.txt" || echo ""'
+      command: '[ -s "@FABRICATION_DIR@/%f-fabrication_notes%v.txt" ] && cat "@FABRICATION_DIR@/%f-fabrication_notes%v.txt" || printf "%s\n" "FABRICATION NOTES (UNLESS OTHERWISE SPECIFIED)" "" "1) FABRICATE PER IPC-6012 CLASS 2." "2) OUTLINE IS DEFINED BY EDGE.CUTS GERBER DATA." "3) SEE DRILL FILES FOR HOLE LOCATIONS." "4) ALL DIMENSIONS ARE IN MILLIMETERS UNLESS OTHERWISE SPECIFIED."'
 
 
     # Fabrication notes
     - variable: 'ASSEMBLY_NOTES'
       expand_in_command: true
-      command: '[ -f "@ASSEMBLY_DIR@/%f-assembly_notes%v.txt" ] && cat "@ASSEMBLY_DIR@/%f-assembly_notes%v.txt" || echo ""'
+      command: '[ -s "@ASSEMBLY_DIR@/%f-assembly_notes%v.txt" ] && cat "@ASSEMBLY_DIR@/%f-assembly_notes%v.txt" || printf "%s\n" "ASSEMBLY NOTES (UNLESS OTHERWISE SPECIFIED)" "" "1) DO NOT POPULATE PARTS ARE MARKED WITH A RED CROSS." "2) DO NOT POPULATE PARTS ARE NOT PRESENT IN THE BOM." "3) USE THE BOM AS THE SOURCE OF TRUTH IF ASSEMBLY DATA CONFLICTS."'
 
     # Page titles for automatic ToC
     - variable: '@SHEET_NAME_VAR@1'

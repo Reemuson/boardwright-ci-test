@@ -134,6 +134,11 @@ as `boardwright-schematic-1.pdf` are removed when the combined
 component counts, and impedance-style reports are removed instead of being
 shipped as blank review files.
 
+The fabrication PDF intentionally omits the impedance table unless Boardwright
+has a controlled-impedance source to render. Drill, component-count, and
+testpoint placeholders are filled by KiBot's `include_table` preflight for
+PRELIMINARY/CHECKED/RELEASED runs. DRAFT runs skip that preflight.
+
 ## Accept To Main
 
 After the preview artifact is fresh and reviewed:

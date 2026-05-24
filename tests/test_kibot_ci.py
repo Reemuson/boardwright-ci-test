@@ -15,6 +15,11 @@ class KiBotCiTests(unittest.TestCase):
             self.assertNotIn("color_theme:", text, str(path))
             self.assertNotIn("KiCad_Theme", text, str(path))
 
+    def test_pcb_template_does_not_require_arial(self) -> None:
+        pcb = Path("boardwright.kicad_pcb").read_text(encoding="utf-8")
+
+        self.assertNotIn('face "Arial"', pcb)
+
     def test_pdf_outputs_do_not_embed_generated_tables(self) -> None:
         for path in (
             Path("boardwright_resources/kibot/yaml/kibot_out_pdf_fabrication.yaml"),
@@ -35,16 +40,31 @@ class KiBotCiTests(unittest.TestCase):
         )
 
         self.assertNotIn("repeat_layers: 'drill_pairs'", fabrication)
-        self.assertNotIn("LAYER_DRILL_MAP", fabrication)
-        self.assertNotIn("LAYER_DRILL_MAP", main)
+        self.assertNotIn("repeat_layers: 'drill_pairs'", main)
 
     def test_impedance_table_is_not_generated_by_default(self) -> None:
         main = Path("boardwright_resources/kibot/yaml/kibot_main.yaml").read_text(
             encoding="utf-8"
         )
+        include_table = Path(
+            "boardwright_resources/kibot/yaml/kibot_pre_include_table.yaml"
+        ).read_text(encoding="utf-8")
 
         self.assertNotIn("CSV_IMPEDANCE_TABLE_OUTPUT", main)
         self.assertNotIn("impedance_table", main)
+        self.assertNotIn("NAME_IMPEDANCE_TABLE", include_table)
+        self.assertNotIn("csv_impedance_table", include_table)
+
+    def test_fabrication_pdf_has_non_crashing_drill_and_notes_pages(self) -> None:
+        fabrication = Path(
+            "boardwright_resources/kibot/yaml/kibot_out_pdf_fabrication.yaml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("sheet: 'DRILL TABLE'", fabrication)
+        self.assertIn("layer: '@LAYER_DRILL_MAP@'", fabrication)
+        self.assertIn("sheet: 'FABRICATION NOTES'", fabrication)
+        self.assertIn("layer: '@LAYER_FAB_NOTES@'", fabrication)
+        self.assertNotIn("draw_drill_map", fabrication)
 
 
 if __name__ == "__main__":

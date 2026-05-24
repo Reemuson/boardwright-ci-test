@@ -46,7 +46,7 @@ jobs:
 
           case "$variant" in
             DRAFT)
-              additional_args="--skip-pre draw_fancy_stackup,erc,drc --log $KIBOT_LOG draft_group"
+              additional_args="--skip-pre draw_fancy_stackup,include_table,erc,drc --log $KIBOT_LOG draft_group"
               ;;
             PRELIMINARY)
               additional_args="--skip-pre erc,drc --log $KIBOT_LOG all_group_k9"
