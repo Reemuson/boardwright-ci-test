@@ -1,0 +1,4 @@
+branches:
+  development: dev
+  preview: preview
+  release: main

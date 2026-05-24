@@ -1,0 +1,133 @@
+name: Boardwright Main Outputs
+
+on:
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: KiBot variant to generate
+        required: false
+        default: CHECKED
+        type: choice
+        options:
+          - DRAFT
+          - PRELIMINARY
+          - CHECKED
+          - RELEASED
+      commit_outputs:
+        description: Commit generated README snapshot back to main
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  actions: read
+
+env:
+  KIBOT_CONFIG: boardwright_resources/kibot/yaml/kibot_main.yaml
+  KIBOT_LOG: kibot_main_outputs.log
+  KICAD_VERSION: "9"
+
+jobs:
+  outputs:
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'branch'
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select variant and group
+        shell: bash
+        run: |
+          variant="${{ github.event.inputs.variant }}"
+          if [[ -z "$variant" ]]; then
+            variant="CHECKED"
+          fi
+
+          case "$variant" in
+            DRAFT)
+              additional_args="--skip-pre erc,drc --log $KIBOT_LOG draft_group md_readme"
+              ;;
+            PRELIMINARY)
+              additional_args="--skip-pre erc,drc --log $KIBOT_LOG all_group_k9"
+              ;;
+            CHECKED|RELEASED)
+              additional_args="--log $KIBOT_LOG all_group_k9"
+              ;;
+            *)
+              echo "Unsupported variant for main outputs: $variant" >&2
+              exit 1
+              ;;
+          esac
+
+          echo "KIBOT_VARIANT=$variant" >> "$GITHUB_ENV"
+          echo "KIBOT_ADDITIONAL_ARGS=$additional_args" >> "$GITHUB_ENV"
+
+      - name: Ensure 3D cache directory
+        run: mkdir -p ~/cache_3d
+
+      - name: Cache 3D models
+        uses: set-soft/cache@main
+        with:
+          path: ~/cache_3d
+          key: cache-3d-kicad-${{ env.KICAD_VERSION }}
+
+      - name: Generate checked outputs
+        uses: INTI-CMNB/KiBot@v2_dk9
+        with:
+          additional_args: ${{ env.KIBOT_ADDITIONAL_ARGS }}
+          variant: ${{ env.KIBOT_VARIANT }}
+          config: ${{ env.KIBOT_CONFIG }}
+          cache3D: YES
+
+      - name: Clean generated outputs
+        shell: bash
+        run: python boardwright_resources/kibot/resources/scripts/clean_generated_outputs.py .
+
+      - name: Discard KiCad source side effects
+        shell: bash
+        run: |
+          git checkout HEAD -- '*.kicad_pcb' '*.kicad_pro' '*.kicad_dru' '*.kicad_prl' '*.kicad_sch' || true
+          git clean -f '*.kicad_pcb' '*.kicad_pro' '*.kicad_dru' '*.kicad_prl' '*.kicad_sch' || true
+
+      - name: Upload checked outputs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: boardwright-main-outputs-${{ env.KIBOT_VARIANT }}
+          path: |
+            Schematic
+            Manufacturing
+            assets
+            HTML
+            KiRI
+            Testing
+            Reports
+            README.md
+
+      - name: Upload KiBot logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boardwright-main-output-logs
+          path: |
+            kibot_main*.log
+
+      - name: Commit accepted outputs
+        if: github.event_name == 'workflow_dispatch' && inputs.commit_outputs
+        shell: bash
+        run: |
+          git config user.name "boardwright[bot]"
+          git config user.email "boardwright[bot]@users.noreply.github.com"
+
+          git rm -r --ignore-unmatch HTML KiRI Manufacturing Reports Schematic Testing
+          git add README.md assets/renders/*.png || true
+
+          if git diff --cached --quiet; then
+            echo "No README snapshot changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore(outputs): update README snapshot"
+          git push origin HEAD:${{ github.ref_name }}

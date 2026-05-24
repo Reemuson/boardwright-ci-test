@@ -1,0 +1,47 @@
+*-backups
+\#auto_saved_files#
+_autosave-*
+*.lck
+*.bak
+*.ini
+*.kicad_sch-bak
+*.kicad_pro-bak
+*.kicad_pcb-bak
+*.kicad_prl-bak
+*.kicad_prl
+fp-info-cache
+*Zone.Identifier
+kibot_*.kicad_pcb
+kibot_*.kicad_dru
+kibot_*.kicad_prl
+kibot_*.kicad_pro
+
+# Python / packaging
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+.venv/
+venv/
+
+# Boardwright local scratch/output
+.boardwright/revision_history_variables.env
+.boardwright-sandbox/
+boardwright-preview/
+boardwright-release/
+boardwright-*-release.zip
+HTML/
+KiRI/
+Manufacturing/
+Schematic/
+Testing/
+assets/3d/*
+!assets/3d/.gitkeep
+
+# KiBot / workflow logs and generated run detritus
+kibot*.log
+Reports/
