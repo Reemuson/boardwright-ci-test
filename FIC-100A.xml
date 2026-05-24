@@ -1,0 +1,1892 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/github/workspace/FIC-100A.kicad_sch</source>
+    <date>Date1</date>
+    <tool>Eeschema 9.0.7+1</tool>
+    <textvar name="ASSEMBLY_NOTES">ASSEMBLY NOTES (UNLESS OTHERWISE SPECIFIED)
+
+1)	DO NOT POPULATE PARTS ARE MARKED WITH A RED CROSS.
+
+2)	DO NOT POPULATE PARTS ARE NOT PRESENT IN THE BOM.
+
+3)	IF CONFLICTING INFORMATION IS FOUND BETWEEN THE ASSEMBLY
+	FILE AND BOM, BOM SHOULD BE USED AS THE MAIN SOURCE.
+
+4)	CONFORMAL COATING IS NOT REQUIRED.
+
+5)	DOT IDENTIFIES PIN #1 LOCATION AND DEVICE ORIENTATION
+	WHEN VIEWED FROM THE TOP.</textvar>
+    <textvar name="BOARD_NAME">FIC-100A</textvar>
+    <textvar name="COMPANY">RYAN DYNAMICS</textvar>
+    <textvar name="DESIGNER">R. HICKS</textvar>
+    <textvar name="FABRICATION_NOTES">FABRICATION NOTES (UNLESS OTHERWISE SPECIFIED)
+
+1)	FABRICATE PER IPC-6012A CLASS 2.
+
+2)	OUTLINE DEFINED IN SEPARATE GERBER FILE WITH
+	"Edge_Cuts.GBR" SUFFIX.
+
+	DIMENSIONS OF CIRCUMSIZED RECTANGLE SHOWN ON THIS
+	DRAWING FOR REFERENCE ONLY.
+
+3)	SEE SEPARATE DRILL FILES WITH ".DRL" SUFFIX 
+	FOR HOLE LOCATIONS.
+
+	SELECTED HOLE LOCATIONS SHOWN ON THIS DRAWING 
+	FOR REFERENCE ONLY.
+
+4)	SURFACE FINISH: ENIG
+
+5)	SOLDERMASK ON BOTH SIDES OF THE BOARD SHALL 
+	BE LPI, COLOR GREEN.
+
+6)	SILK SCREEN LEGEND TO BE APPLIED PER LAYER 
+	STACKUP USING YELLOW NON-CONDUCTIVE EPOXY INK.
+
+7)	ALL VIAS ARE TENTED ON BOTH SIDES UNLESS 
+	SOLDERMASK OPENED IN GERBER.
+
+8)	VENDOR SHOULD FOLLOW ROHS COMPLIANT PROCESS 
+	AND Pb FREE FOR MANUFACTURING
+
+9)	PCB MATERIAL REQUIREMENTS:
+
+	A.	FLAMMABILITY RATING MUST MEET OR EXCEED 
+		UL94V-0 REQUIREMENTS.
+	B.	Tg 170 C OR EQUIVALENT.
+	C.	EQUIVALENT MATERIAL SHALL BE RoHS COMPLIANT, 
+		HALOGEN FREE AND APPROVED BY RYAN DYNAMICS.
+
+10)	DESIGN GEOMETRY MINIMUM FEATURE SIZES:
+
+	BOARD SIZE				40.000 × 25.000 mm
+	BOARD THICKNESS		1.600 mm
+	TRACE WIDTH			0.200 mm
+	TRACE TO TRACE		0.200 mm
+	MIN. HOLE (PTH)			0.300 mm
+	MIN. HOLE (NPTH)		0.650 mm
+	ANNULAR RING			0.150 mm
+	COPPER TO HOLE		0.254 mm
+	COPPER TO EDGE		0.250 mm
+	HOLE TO HOLE			0.254 mm</textvar>
+    <textvar name="GIT_HASH_PCB">9d2a3c6</textvar>
+    <textvar name="GIT_HASH_SCH">9d2a3c6</textvar>
+    <textvar name="GIT_URL">https://github.com/Reemuson/FIC-100A</textvar>
+    <textvar name="PROJECT_NAME">USB IR ADPT</textvar>
+    <textvar name="RELEASE_BODY_0.1.0">___________________________________
+
+Status
+
+-   Checked pre-release.
+
+-   Schematic capture completed from the working breadboard prototype.
+
+-   Breadboard prototype tested with a Fluke 289 multimeter.
+
+-   PCB layout completed and ready to fabricate for further hardware testing.
+
+___________________________________
+
+Added
+
+-   Initial KiCad schematic for the FIC-100A USB IR adapter.
+
+-   Initial 2-layer PCB layout.
+
+-   Initial generated manufacturing and documentation workflow.
+
+___________________________________
+
+Notes
+
+-   This release is intended for fabrication and test validation. The PCB has not yet been validated as an assembled production unit.</textvar>
+    <textvar name="RELEASE_BODY_1.0.0"/>
+    <textvar name="RELEASE_BODY_1.0.1"/>
+    <textvar name="RELEASE_BODY_1.0.2"/>
+    <textvar name="RELEASE_BODY_1.1.0"/>
+    <textvar name="RELEASE_BODY_UNRELEASED">Version Unreleased not found.</textvar>
+    <textvar name="RELEASE_DATE">24-Apr-2026</textvar>
+    <textvar name="RELEASE_DATE_NUM">2026-04-24</textvar>
+    <textvar name="RELEASE_TITLE_0.1.0">Version 0.1.0 - 2026-04-24</textvar>
+    <textvar name="RELEASE_TITLE_1.0.0"/>
+    <textvar name="RELEASE_TITLE_1.0.1"/>
+    <textvar name="RELEASE_TITLE_1.0.2"/>
+    <textvar name="RELEASE_TITLE_1.1.0"/>
+    <textvar name="RELEASE_TITLE_UNRELEASED">Version Unreleased not found.</textvar>
+    <textvar name="REVISION">0.1.0</textvar>
+    <textvar name="SHEET_NAME_1">COVER PAGE</textvar>
+    <textvar name="SHEET_NAME_10">................................</textvar>
+    <textvar name="SHEET_NAME_11">................................</textvar>
+    <textvar name="SHEET_NAME_12">................................</textvar>
+    <textvar name="SHEET_NAME_13">................................</textvar>
+    <textvar name="SHEET_NAME_14">................................</textvar>
+    <textvar name="SHEET_NAME_15">................................</textvar>
+    <textvar name="SHEET_NAME_16">................................</textvar>
+    <textvar name="SHEET_NAME_17">................................</textvar>
+    <textvar name="SHEET_NAME_18">................................</textvar>
+    <textvar name="SHEET_NAME_19">................................</textvar>
+    <textvar name="SHEET_NAME_2">CIRCUIT</textvar>
+    <textvar name="SHEET_NAME_20">................................</textvar>
+    <textvar name="SHEET_NAME_21">................................</textvar>
+    <textvar name="SHEET_NAME_22">................................</textvar>
+    <textvar name="SHEET_NAME_23">................................</textvar>
+    <textvar name="SHEET_NAME_24">................................</textvar>
+    <textvar name="SHEET_NAME_25">................................</textvar>
+    <textvar name="SHEET_NAME_26">................................</textvar>
+    <textvar name="SHEET_NAME_27">................................</textvar>
+    <textvar name="SHEET_NAME_28">................................</textvar>
+    <textvar name="SHEET_NAME_29">................................</textvar>
+    <textvar name="SHEET_NAME_3">REVISION HISTORY</textvar>
+    <textvar name="SHEET_NAME_30">................................</textvar>
+    <textvar name="SHEET_NAME_31">................................</textvar>
+    <textvar name="SHEET_NAME_32">................................</textvar>
+    <textvar name="SHEET_NAME_33">................................</textvar>
+    <textvar name="SHEET_NAME_34">................................</textvar>
+    <textvar name="SHEET_NAME_35">................................</textvar>
+    <textvar name="SHEET_NAME_36">................................</textvar>
+    <textvar name="SHEET_NAME_37">................................</textvar>
+    <textvar name="SHEET_NAME_38">................................</textvar>
+    <textvar name="SHEET_NAME_39">................................</textvar>
+    <textvar name="SHEET_NAME_4">................................</textvar>
+    <textvar name="SHEET_NAME_40">................................</textvar>
+    <textvar name="SHEET_NAME_5">................................</textvar>
+    <textvar name="SHEET_NAME_6">................................</textvar>
+    <textvar name="SHEET_NAME_7">................................</textvar>
+    <textvar name="SHEET_NAME_8">................................</textvar>
+    <textvar name="SHEET_NAME_9">................................</textvar>
+    <textvar name="VARIANT">RELEASED</textvar>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title/>
+        <company>RYAN DYNAMICS</company>
+        <rev>0.1.0</rev>
+        <date>Date2</date>
+        <source>FIC-100A.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+    <sheet number="2" name="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/">
+      <title_block>
+        <title>CIRCUIT</title>
+        <company>RYAN DYNAMICS</company>
+        <rev>0.1.0</rev>
+        <date>Date2</date>
+        <source>Project Architecture.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+    <sheet number="3" name="/REVISION HISTORY/" tstamps="/6e125bd6-2f99-4e5d-b3ea-4899f4540739/">
+      <title_block>
+        <title>REVISION HISTORY</title>
+        <company>RYAN DYNAMICS</company>
+        <rev>0.1.0</rev>
+        <date>Date2</date>
+        <source>Revision History.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="C1">
+      <value>100n</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/931/C_Series_GeneralAppl_B11.pdf</datasheet>
+      <description>CAP CER 100N 16V X7R 0603</description>
+      <fields>
+        <field name="MPN">C1608X7R1C104KT</field>
+        <field name="Manufacturer">TPK</field>
+        <field name="Dielectric">X7R</field>
+        <field name="Voltage_Rating">16V</field>
+        <field name="Tolerance">10%</field>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/931/C_Series_GeneralAppl_B11.pdf</field>
+        <field name="Description">CAP CER 100N 16V X7R 0603</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="C1608X7R1C104KT"/>
+      <property name="Manufacturer" value="TPK"/>
+      <property name="Dielectric" value="X7R"/>
+      <property name="Voltage_Rating" value="16V"/>
+      <property name="Tolerance" value="10%"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>1d21e675-96fa-463d-b7d9-aa952fb9c911</tstamps>
+    </comp>
+    <comp ref="C2">
+      <value>100n</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/931/C_Series_GeneralAppl_B11.pdf</datasheet>
+      <description>CAP CER 100N 16V X7R 0603</description>
+      <fields>
+        <field name="MPN">C1608X7R1C104KT</field>
+        <field name="Manufacturer">TPK</field>
+        <field name="Dielectric">X7R</field>
+        <field name="Voltage_Rating">16V</field>
+        <field name="Tolerance">10%</field>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/931/C_Series_GeneralAppl_B11.pdf</field>
+        <field name="Description">CAP CER 100N 16V X7R 0603</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="C1608X7R1C104KT"/>
+      <property name="Manufacturer" value="TPK"/>
+      <property name="Dielectric" value="X7R"/>
+      <property name="Voltage_Rating" value="16V"/>
+      <property name="Tolerance" value="10%"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>885bdd0f-6768-4e31-903e-d46fe7003345</tstamps>
+    </comp>
+    <comp ref="C3">
+      <value>100n</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/931/C_Series_GeneralAppl_B11.pdf</datasheet>
+      <description>CAP CER 100N 16V X7R 0603</description>
+      <fields>
+        <field name="MPN">C1608X7R1C104KT</field>
+        <field name="Manufacturer">TPK</field>
+        <field name="Dielectric">X7R</field>
+        <field name="Voltage_Rating">16V</field>
+        <field name="Tolerance">10%</field>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/931/C_Series_GeneralAppl_B11.pdf</field>
+        <field name="Description">CAP CER 100N 16V X7R 0603</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="C1608X7R1C104KT"/>
+      <property name="Manufacturer" value="TPK"/>
+      <property name="Dielectric" value="X7R"/>
+      <property name="Voltage_Rating" value="16V"/>
+      <property name="Tolerance" value="10%"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>8a554841-d7e2-40e7-8841-7b859c2d1411</tstamps>
+    </comp>
+    <comp ref="C4">
+      <value>10n</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/931/C_Series_GeneralAppl_B11.pdf</datasheet>
+      <description>CAP CER 10N 50V X7R 0603</description>
+      <fields>
+        <field name="MPN">C1608X7R1H103KT</field>
+        <field name="Manufacturer">TPK</field>
+        <field name="Dielectric">X7R</field>
+        <field name="Voltage_Rating">50V</field>
+        <field name="Tolerance">10%</field>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/931/C_Series_GeneralAppl_B11.pdf</field>
+        <field name="Description">CAP CER 10N 50V X7R 0603</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="C1608X7R1H103KT"/>
+      <property name="Manufacturer" value="TPK"/>
+      <property name="Dielectric" value="X7R"/>
+      <property name="Voltage_Rating" value="50V"/>
+      <property name="Tolerance" value="10%"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>3bc40fb1-4d4e-4466-acdd-8114b15e6085</tstamps>
+    </comp>
+    <comp ref="C5">
+      <value>100n</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/931/C_Series_GeneralAppl_B11.pdf</datasheet>
+      <description>CAP CER 100N 16V X7R 0603</description>
+      <fields>
+        <field name="MPN">C1608X7R1C104KT</field>
+        <field name="Manufacturer">TPK</field>
+        <field name="Dielectric">X7R</field>
+        <field name="Voltage_Rating">16V</field>
+        <field name="Tolerance">10%</field>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/931/C_Series_GeneralAppl_B11.pdf</field>
+        <field name="Description">CAP CER 100N 16V X7R 0603</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="C1608X7R1C104KT"/>
+      <property name="Manufacturer" value="TPK"/>
+      <property name="Dielectric" value="X7R"/>
+      <property name="Voltage_Rating" value="16V"/>
+      <property name="Tolerance" value="10%"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>116d575a-0226-46ae-af1c-8ae0bcb74043</tstamps>
+    </comp>
+    <comp ref="C6">
+      <value>4.7u</value>
+      <footprint>Capacitor_Tantalum_SMD:CP_EIA-3216-18_Kemet-A</footprint>
+      <datasheet>https://yageogroup.com/content/datasheet/asset/file/KEM_T2005_T491</datasheet>
+      <description>CAP TANT 4.7UF 10% 25V 1206</description>
+      <fields>
+        <field name="MPN">T491A475K025AT</field>
+        <field name="Manufacturer">KEMET</field>
+        <field name="SPN">399-10128-1-ND</field>
+        <field name="Supplier">DigiKey</field>
+        <field name="Tolerance">10%</field>
+        <field name="Voltage">25V</field>
+        <field name="Footprint">Capacitor_Tantalum_SMD:CP_EIA-3216-18_Kemet-A</field>
+        <field name="Datasheet">https://yageogroup.com/content/datasheet/asset/file/KEM_T2005_T491</field>
+        <field name="Description">CAP TANT 4.7UF 10% 25V 1206</field>
+      </fields>
+      <libsource lib="Device" part="C_Polarized" description="Polarized capacitor"/>
+      <property name="MPN" value="T491A475K025AT"/>
+      <property name="Manufacturer" value="KEMET"/>
+      <property name="SPN" value="399-10128-1-ND"/>
+      <property name="Supplier" value="DigiKey"/>
+      <property name="Tolerance" value="10%"/>
+      <property name="Voltage" value="25V"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="CP_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>f65f97c1-04f7-4471-9817-bc6302a6eb16</tstamps>
+    </comp>
+    <comp ref="D1">
+      <value>TVS</value>
+      <footprint>Diode_SMD:D_SMB</footprint>
+      <datasheet>https://www.st.com/resource/en/datasheet/sm6t.pdf</datasheet>
+      <description>600W unidirectional Transil Transient Voltage Suppressor, 6.8Vrwm, DO-214AA</description>
+      <fields>
+        <field name="Footprint">Diode_SMD:D_SMB</field>
+        <field name="Datasheet">https://www.st.com/resource/en/datasheet/sm6t.pdf</field>
+        <field name="Description">600W unidirectional Transil Transient Voltage Suppressor, 6.8Vrwm, DO-214AA</field>
+      </fields>
+      <libsource lib="Diode" part="SM6T6V8A" description="600W unidirectional Transil Transient Voltage Suppressor, 6.8Vrwm, DO-214AA"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="dnp"/>
+      <property name="ki_keywords" value="diode TVS voltage suppressor"/>
+      <property name="ki_fp_filters" value="D*SMB*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>6b6fbaae-ae55-4c5f-8ed8-36704777d9ee</tstamps>
+    </comp>
+    <comp ref="D2">
+      <value>TSAL6100</value>
+      <footprint>LED_THT:LED_D5.0mm_IRBlack</footprint>
+      <datasheet>https://www.vishay.com/docs/81009/tsal6100.pdf</datasheet>
+      <description>EMITTER IR 940NM 100MA RADIAL</description>
+      <fields>
+        <field name="Sim.Pins">1=K 2=A</field>
+        <field name="MPN">TSAL6100</field>
+        <field name="Manufacturer">Vishay Semiconductor Opto Division</field>
+        <field name="SPN">751-1203-ND</field>
+        <field name="Supplier">DigiKey</field>
+        <field name="Footprint">LED_THT:LED_D5.0mm_IRBlack</field>
+        <field name="Datasheet">https://www.vishay.com/docs/81009/tsal6100.pdf</field>
+        <field name="Description">EMITTER IR 940NM 100MA RADIAL</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="Sim.Pins" value="1=K 2=A"/>
+      <property name="MPN" value="TSAL6100"/>
+      <property name="Manufacturer" value="Vishay Semiconductor Opto Division"/>
+      <property name="SPN" value="751-1203-ND"/>
+      <property name="Supplier" value="DigiKey"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>5f68c13f-da6d-4485-8e37-4f26b41a9d6f</tstamps>
+    </comp>
+    <comp ref="D3">
+      <value>LED</value>
+      <footprint>LED_SMD:LED_0805_2012Metric</footprint>
+      <datasheet>https://optoelectronics.liteon.com/upload/download/DS22-2000-073/LTST-C170KGKT.pdf</datasheet>
+      <description>LED GRN CLEAR SMD</description>
+      <fields>
+        <field name="Sim.Pins">1=K 2=A</field>
+        <field name="Manufacturer">Lite-On Inc.</field>
+        <field name="MPN">LTST-C170KGKT</field>
+        <field name="Notes">Any low power green 0805 LED</field>
+        <field name="Colour">GRN</field>
+        <field name="Supplier">DigiKey</field>
+        <field name="SPN">160-1414-1-ND</field>
+        <field name="Vf">1.9-2.4V</field>
+        <field name="Footprint">LED_SMD:LED_0805_2012Metric</field>
+        <field name="Datasheet">https://optoelectronics.liteon.com/upload/download/DS22-2000-073/LTST-C170KGKT.pdf</field>
+        <field name="Description">LED GRN CLEAR SMD</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="Sim.Pins" value="1=K 2=A"/>
+      <property name="Manufacturer" value="Lite-On Inc."/>
+      <property name="MPN" value="LTST-C170KGKT"/>
+      <property name="Notes" value="Any low power green 0805 LED"/>
+      <property name="Colour" value="GRN"/>
+      <property name="Supplier" value="DigiKey"/>
+      <property name="SPN" value="160-1414-1-ND"/>
+      <property name="Vf" value="1.9-2.4V"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>ddd2da58-4f1c-4291-a258-6f8570f47355</tstamps>
+    </comp>
+    <comp ref="D4">
+      <value>LED</value>
+      <footprint>LED_SMD:LED_0805_2012Metric</footprint>
+      <datasheet>https://optoelectronics.liteon.com/upload/download/DS-22-99-0150/LTST-C170KRKT.pdf</datasheet>
+      <description>LED RED CLEAR SMD</description>
+      <fields>
+        <field name="Sim.Pins">1=K 2=A</field>
+        <field name="Manufacturer">Lite-On Inc.</field>
+        <field name="MPN">LTST-C170KRKT</field>
+        <field name="Notes">Any low power red 0805 LED</field>
+        <field name="Colour">RED</field>
+        <field name="Supplier">DigiKey</field>
+        <field name="SPN">160-1415-1-ND</field>
+        <field name="Vf">2.0-2.4V</field>
+        <field name="Footprint">LED_SMD:LED_0805_2012Metric</field>
+        <field name="Datasheet">https://optoelectronics.liteon.com/upload/download/DS-22-99-0150/LTST-C170KRKT.pdf</field>
+        <field name="Description">LED RED CLEAR SMD</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="Sim.Pins" value="1=K 2=A"/>
+      <property name="Manufacturer" value="Lite-On Inc."/>
+      <property name="MPN" value="LTST-C170KRKT"/>
+      <property name="Notes" value="Any low power red 0805 LED"/>
+      <property name="Colour" value="RED"/>
+      <property name="Supplier" value="DigiKey"/>
+      <property name="SPN" value="160-1415-1-ND"/>
+      <property name="Vf" value="2.0-2.4V"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>0e13b48a-c2e5-4b04-8ab3-f44526ba403a</tstamps>
+    </comp>
+    <comp ref="D5">
+      <value>LED</value>
+      <footprint>LED_SMD:LED_0805_2012Metric</footprint>
+      <datasheet>https://optoelectronics.liteon.com/upload/download/DS22-2000-073/LTST-C170KGKT.pdf</datasheet>
+      <description>LED GRN CLEAR SMD</description>
+      <fields>
+        <field name="Sim.Pins">1=K 2=A</field>
+        <field name="Manufacturer">Lite-On Inc.</field>
+        <field name="MPN">LTST-C170KGKT</field>
+        <field name="Notes">Any low power green 0805 LED</field>
+        <field name="Colour">GRN</field>
+        <field name="Supplier">DigiKey</field>
+        <field name="SPN">160-1414-1-ND</field>
+        <field name="Vf">1.9-2.4V</field>
+        <field name="Footprint">LED_SMD:LED_0805_2012Metric</field>
+        <field name="Datasheet">https://optoelectronics.liteon.com/upload/download/DS22-2000-073/LTST-C170KGKT.pdf</field>
+        <field name="Description">LED GRN CLEAR SMD</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="Sim.Pins" value="1=K 2=A"/>
+      <property name="Manufacturer" value="Lite-On Inc."/>
+      <property name="MPN" value="LTST-C170KGKT"/>
+      <property name="Notes" value="Any low power green 0805 LED"/>
+      <property name="Colour" value="GRN"/>
+      <property name="Supplier" value="DigiKey"/>
+      <property name="SPN" value="160-1414-1-ND"/>
+      <property name="Vf" value="1.9-2.4V"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>4c2ed6a3-3d13-4029-9bc0-4fe282f617c7</tstamps>
+    </comp>
+    <comp ref="FB1">
+      <value>BLM18KG601BH1D</value>
+      <footprint>Inductor_SMD:L_0603_1608Metric</footprint>
+      <datasheet>https://pim.murata.com/asset/pim4/ferriteBeadInductortypefilter/QNFA9129_PDF_FERRITEBEADINDUCTORTYPEFILTER?lastModifiedDatetime=20250918112959</datasheet>
+      <description>FERRITE BEAD 600 OHM 0603 1LN</description>
+      <fields>
+        <field name="Manufacturer">Murata Electronics</field>
+        <field name="MPN">BLM18KG101JH1D</field>
+        <field name="Supplier">DigiKey</field>
+        <field name="SPN">490-14032-1-ND</field>
+        <field name="Impedance">600R @ 100MHz</field>
+        <field name="Footprint">Inductor_SMD:L_0603_1608Metric</field>
+        <field name="Datasheet">https://pim.murata.com/asset/pim4/ferriteBeadInductortypefilter/QNFA9129_PDF_FERRITEBEADINDUCTORTYPEFILTER?lastModifiedDatetime=20250918112959</field>
+        <field name="Description">FERRITE BEAD 600 OHM 0603 1LN</field>
+      </fields>
+      <libsource lib="Device" part="FerriteBead_Small" description="Ferrite bead, small symbol"/>
+      <property name="Manufacturer" value="Murata Electronics"/>
+      <property name="MPN" value="BLM18KG101JH1D"/>
+      <property name="Supplier" value="DigiKey"/>
+      <property name="SPN" value="490-14032-1-ND"/>
+      <property name="Impedance" value="600R @ 100MHz"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="L ferrite bead inductor filter"/>
+      <property name="ki_fp_filters" value="Inductor_* L_* *Ferrite*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>9530f5d6-6524-4cfb-808e-c3c717309bc2</tstamps>
+    </comp>
+    <comp ref="FID1">
+      <value>FIDUCIAL</value>
+      <footprint>Fiducial:Fiducial_1mm_Mask2mm</footprint>
+      <datasheet>~</datasheet>
+      <description>Fiducial Marker</description>
+      <fields>
+        <field name="Arrow Part Number"/>
+        <field name="Arrow Price/Stock"/>
+        <field name="Config"/>
+        <field name="Height"/>
+        <field name="Manufacturer Part Number"/>
+        <field name="Manufacturer_Name"/>
+        <field name="Manufacturer_Part_Number"/>
+        <field name="Mouser Part Number"/>
+        <field name="Mouser Price/Stock"/>
+        <field name="Footprint">Fiducial:Fiducial_1mm_Mask2mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Fiducial Marker</field>
+      </fields>
+      <libsource lib="Mechanical" part="Fiducial" description="Fiducial Marker"/>
+      <property name="Arrow Part Number" value=""/>
+      <property name="Arrow Price/Stock" value=""/>
+      <property name="Config" value=""/>
+      <property name="Height" value=""/>
+      <property name="Manufacturer Part Number" value=""/>
+      <property name="Manufacturer_Name" value=""/>
+      <property name="Manufacturer_Part_Number" value=""/>
+      <property name="Mouser Part Number" value=""/>
+      <property name="Mouser Price/Stock" value=""/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="fiducial marker"/>
+      <property name="ki_fp_filters" value="Fiducial*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>5da9979e-621a-4861-82a4-9db544fc990d</tstamps>
+    </comp>
+    <comp ref="FID2">
+      <value>FIDUCIAL</value>
+      <footprint>Fiducial:Fiducial_1mm_Mask2mm</footprint>
+      <datasheet>~</datasheet>
+      <description>Fiducial Marker</description>
+      <fields>
+        <field name="Arrow Part Number"/>
+        <field name="Arrow Price/Stock"/>
+        <field name="Config"/>
+        <field name="Height"/>
+        <field name="Manufacturer Part Number"/>
+        <field name="Manufacturer_Name"/>
+        <field name="Manufacturer_Part_Number"/>
+        <field name="Mouser Part Number"/>
+        <field name="Mouser Price/Stock"/>
+        <field name="Footprint">Fiducial:Fiducial_1mm_Mask2mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Fiducial Marker</field>
+      </fields>
+      <libsource lib="Mechanical" part="Fiducial" description="Fiducial Marker"/>
+      <property name="Arrow Part Number" value=""/>
+      <property name="Arrow Price/Stock" value=""/>
+      <property name="Config" value=""/>
+      <property name="Height" value=""/>
+      <property name="Manufacturer Part Number" value=""/>
+      <property name="Manufacturer_Name" value=""/>
+      <property name="Manufacturer_Part_Number" value=""/>
+      <property name="Mouser Part Number" value=""/>
+      <property name="Mouser Price/Stock" value=""/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="fiducial marker"/>
+      <property name="ki_fp_filters" value="Fiducial*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>84a0f0cd-8876-4fd9-86ef-7cf7643f32d2</tstamps>
+    </comp>
+    <comp ref="FID3">
+      <value>FIDUCIAL</value>
+      <footprint>Fiducial:Fiducial_1mm_Mask2mm</footprint>
+      <datasheet>~</datasheet>
+      <description>Fiducial Marker</description>
+      <fields>
+        <field name="Arrow Part Number"/>
+        <field name="Arrow Price/Stock"/>
+        <field name="Config"/>
+        <field name="Height"/>
+        <field name="Manufacturer Part Number"/>
+        <field name="Manufacturer_Name"/>
+        <field name="Manufacturer_Part_Number"/>
+        <field name="Mouser Part Number"/>
+        <field name="Mouser Price/Stock"/>
+        <field name="Footprint">Fiducial:Fiducial_1mm_Mask2mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Fiducial Marker</field>
+      </fields>
+      <libsource lib="Mechanical" part="Fiducial" description="Fiducial Marker"/>
+      <property name="Arrow Part Number" value=""/>
+      <property name="Arrow Price/Stock" value=""/>
+      <property name="Config" value=""/>
+      <property name="Height" value=""/>
+      <property name="Manufacturer Part Number" value=""/>
+      <property name="Manufacturer_Name" value=""/>
+      <property name="Manufacturer_Part_Number" value=""/>
+      <property name="Mouser Part Number" value=""/>
+      <property name="Mouser Price/Stock" value=""/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="fiducial marker"/>
+      <property name="ki_fp_filters" value="Fiducial*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>c17ae12b-7b0c-4733-85a9-e6dcd9e22842</tstamps>
+    </comp>
+    <comp ref="H1">
+      <value>MOUNT_M2.5</value>
+      <footprint>MountingHole:MountingHole_2.7mm_M2.5_ISO7380_Pad</footprint>
+      <datasheet>~</datasheet>
+      <description>Mounting Hole with connection</description>
+      <fields>
+        <field name="Arrow Part Number"/>
+        <field name="Arrow Price/Stock"/>
+        <field name="Config"/>
+        <field name="Height"/>
+        <field name="Manufacturer Part Number"/>
+        <field name="Manufacturer_Name"/>
+        <field name="Manufacturer_Part_Number"/>
+        <field name="Mouser Part Number"/>
+        <field name="Mouser Price/Stock"/>
+        <field name="Footprint">MountingHole:MountingHole_2.7mm_M2.5_ISO7380_Pad</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Mounting Hole with connection</field>
+      </fields>
+      <libsource lib="Mechanical" part="MountingHole_Pad" description="Mounting Hole with connection"/>
+      <property name="Arrow Part Number" value=""/>
+      <property name="Arrow Price/Stock" value=""/>
+      <property name="Config" value=""/>
+      <property name="Height" value=""/>
+      <property name="Manufacturer Part Number" value=""/>
+      <property name="Manufacturer_Name" value=""/>
+      <property name="Manufacturer_Part_Number" value=""/>
+      <property name="Mouser Part Number" value=""/>
+      <property name="Mouser Price/Stock" value=""/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="mounting hole"/>
+      <property name="ki_fp_filters" value="MountingHole*Pad*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>ce91a7f2-bbce-4af7-ad08-7a90d463883e</tstamps>
+    </comp>
+    <comp ref="H2">
+      <value>MOUNT_M2.5</value>
+      <footprint>MountingHole:MountingHole_2.7mm_M2.5_ISO7380_Pad</footprint>
+      <datasheet>~</datasheet>
+      <description>Mounting Hole with connection</description>
+      <fields>
+        <field name="Arrow Part Number"/>
+        <field name="Arrow Price/Stock"/>
+        <field name="Config"/>
+        <field name="Height"/>
+        <field name="Manufacturer Part Number"/>
+        <field name="Manufacturer_Name"/>
+        <field name="Manufacturer_Part_Number"/>
+        <field name="Mouser Part Number"/>
+        <field name="Mouser Price/Stock"/>
+        <field name="Footprint">MountingHole:MountingHole_2.7mm_M2.5_ISO7380_Pad</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Mounting Hole with connection</field>
+      </fields>
+      <libsource lib="Mechanical" part="MountingHole_Pad" description="Mounting Hole with connection"/>
+      <property name="Arrow Part Number" value=""/>
+      <property name="Arrow Price/Stock" value=""/>
+      <property name="Config" value=""/>
+      <property name="Height" value=""/>
+      <property name="Manufacturer Part Number" value=""/>
+      <property name="Manufacturer_Name" value=""/>
+      <property name="Manufacturer_Part_Number" value=""/>
+      <property name="Mouser Part Number" value=""/>
+      <property name="Mouser Price/Stock" value=""/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="mounting hole"/>
+      <property name="ki_fp_filters" value="MountingHole*Pad*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>10cda48e-adc9-44ff-916e-5401391dcac9</tstamps>
+    </comp>
+    <comp ref="H3">
+      <value>MOUNT_M2.5</value>
+      <footprint>MountingHole:MountingHole_2.7mm_M2.5_ISO7380_Pad</footprint>
+      <datasheet>~</datasheet>
+      <description>Mounting Hole with connection</description>
+      <fields>
+        <field name="Arrow Part Number"/>
+        <field name="Arrow Price/Stock"/>
+        <field name="Config"/>
+        <field name="Height"/>
+        <field name="Manufacturer Part Number"/>
+        <field name="Manufacturer_Name"/>
+        <field name="Manufacturer_Part_Number"/>
+        <field name="Mouser Part Number"/>
+        <field name="Mouser Price/Stock"/>
+        <field name="Footprint">MountingHole:MountingHole_2.7mm_M2.5_ISO7380_Pad</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Mounting Hole with connection</field>
+      </fields>
+      <libsource lib="Mechanical" part="MountingHole_Pad" description="Mounting Hole with connection"/>
+      <property name="Arrow Part Number" value=""/>
+      <property name="Arrow Price/Stock" value=""/>
+      <property name="Config" value=""/>
+      <property name="Height" value=""/>
+      <property name="Manufacturer Part Number" value=""/>
+      <property name="Manufacturer_Name" value=""/>
+      <property name="Manufacturer_Part_Number" value=""/>
+      <property name="Mouser Part Number" value=""/>
+      <property name="Mouser Price/Stock" value=""/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="mounting hole"/>
+      <property name="ki_fp_filters" value="MountingHole*Pad*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>1ed94456-2293-48aa-872c-51f2180c6838</tstamps>
+    </comp>
+    <comp ref="H4">
+      <value>MOUNT_M2.5</value>
+      <footprint>MountingHole:MountingHole_2.7mm_M2.5_ISO7380_Pad</footprint>
+      <datasheet>~</datasheet>
+      <description>Mounting Hole with connection</description>
+      <fields>
+        <field name="Arrow Part Number"/>
+        <field name="Arrow Price/Stock"/>
+        <field name="Config"/>
+        <field name="Height"/>
+        <field name="Manufacturer Part Number"/>
+        <field name="Manufacturer_Name"/>
+        <field name="Manufacturer_Part_Number"/>
+        <field name="Mouser Part Number"/>
+        <field name="Mouser Price/Stock"/>
+        <field name="Footprint">MountingHole:MountingHole_2.7mm_M2.5_ISO7380_Pad</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Mounting Hole with connection</field>
+      </fields>
+      <libsource lib="Mechanical" part="MountingHole_Pad" description="Mounting Hole with connection"/>
+      <property name="Arrow Part Number" value=""/>
+      <property name="Arrow Price/Stock" value=""/>
+      <property name="Config" value=""/>
+      <property name="Height" value=""/>
+      <property name="Manufacturer Part Number" value=""/>
+      <property name="Manufacturer_Name" value=""/>
+      <property name="Manufacturer_Part_Number" value=""/>
+      <property name="Mouser Part Number" value=""/>
+      <property name="Mouser Price/Stock" value=""/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="mounting hole"/>
+      <property name="ki_fp_filters" value="MountingHole*Pad*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>55cf5afe-cd67-43bc-9858-2ad7353bab96</tstamps>
+    </comp>
+    <comp ref="ID1">
+      <value>BOARD_STACKUP_MARKER</value>
+      <footprint>RD-Symbols-Silkscreen:STACKUP_ID_2L_SML</footprint>
+      <description>PCB stackup layer identification marker (non-electrical)</description>
+      <fields>
+        <field name="Arrow Part Number"/>
+        <field name="Arrow Price/Stock"/>
+        <field name="Config"/>
+        <field name="Height"/>
+        <field name="Manufacturer Part Number"/>
+        <field name="Manufacturer_Name"/>
+        <field name="Manufacturer_Part_Number"/>
+        <field name="Mouser Part Number"/>
+        <field name="Mouser Price/Stock"/>
+        <field name="Footprint">RD-Symbols-Silkscreen:STACKUP_ID_2L_SML</field>
+        <field name="Datasheet"/>
+        <field name="Description">PCB stackup layer identification marker (non-electrical)</field>
+      </fields>
+      <libsource lib="Ryan-Dynamics" part="BOARD_STACKUP_MARKER" description="PCB stackup layer identification marker (non-electrical)"/>
+      <property name="Arrow Part Number" value=""/>
+      <property name="Arrow Price/Stock" value=""/>
+      <property name="Config" value=""/>
+      <property name="Height" value=""/>
+      <property name="Manufacturer Part Number" value=""/>
+      <property name="Manufacturer_Name" value=""/>
+      <property name="Manufacturer_Part_Number" value=""/>
+      <property name="Mouser Part Number" value=""/>
+      <property name="Mouser Price/Stock" value=""/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="pcb stackup layer id marker fabrication"/>
+      <property name="ki_fp_filters" value="STACKUP_ID_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>0ba8947d-9882-41c9-b287-a1bcd7c00991</tstamps>
+    </comp>
+    <comp ref="J1">
+      <value>USB4105-GF-A</value>
+      <footprint>Connector_USB:USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal</footprint>
+      <datasheet>https://gct.co/files/specs/usb4105-spec.pdf</datasheet>
+      <description>CONN RCP USB2.0 TYP C 16P SMD RA</description>
+      <fields>
+        <field name="MPN">USB4105-GF-A</field>
+        <field name="Manufacturer">GCT</field>
+        <field name="SPN">2073-USB4105-GF-ACT-ND</field>
+        <field name="Supplier">DigiKey</field>
+        <field name="Footprint">Connector_USB:USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal</field>
+        <field name="Datasheet">https://gct.co/files/specs/usb4105-spec.pdf</field>
+        <field name="Description">CONN RCP USB2.0 TYP C 16P SMD RA</field>
+      </fields>
+      <libsource lib="Connector" part="USB_C_Receptacle_USB2.0_16P" description="USB 2.0-only 16P Type-C Receptacle connector"/>
+      <property name="MPN" value="USB4105-GF-A"/>
+      <property name="Manufacturer" value="GCT"/>
+      <property name="SPN" value="2073-USB4105-GF-ACT-ND"/>
+      <property name="Supplier" value="DigiKey"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="usb universal serial bus type-C USB2.0"/>
+      <property name="ki_fp_filters" value="USB*C*Receptacle*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>ce2f26b7-0184-49fa-b514-3db3722c91dc</tstamps>
+    </comp>
+    <comp ref="JP1">
+      <value>VUSB</value>
+      <footprint>Jumper:SolderJumper-2_P1.3mm_Bridged_Pad1.0x1.5mm</footprint>
+      <datasheet>~</datasheet>
+      <description>Solder Jumper, 2-pole, closed/bridged</description>
+      <fields>
+        <field name="Footprint">Jumper:SolderJumper-2_P1.3mm_Bridged_Pad1.0x1.5mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Solder Jumper, 2-pole, closed/bridged</field>
+      </fields>
+      <libsource lib="Jumper" part="SolderJumper_2_Bridged" description="Solder Jumper, 2-pole, closed/bridged"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="solder jumper SPST"/>
+      <property name="ki_fp_filters" value="SolderJumper*Bridged*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>7b52c8d2-e565-4938-9355-446e07e5a6ae</tstamps>
+    </comp>
+    <comp ref="Q1">
+      <value>PT334-6C</value>
+      <footprint>LED_THT:LED_D5.0mm_Clear</footprint>
+      <datasheet>https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/4819/PT334-6C_Rev4_12-23-16.pdf</datasheet>
+      <description>SENSOR PHOTO 940NM TOP VIEW RAD</description>
+      <fields>
+        <field name="MPN">PT334-6C</field>
+        <field name="Manufacturer">Everlight Electronics Co Ltd</field>
+        <field name="SPN">1080-1159-ND</field>
+        <field name="Supplier">DigiKey</field>
+        <field name="Footprint">LED_THT:LED_D5.0mm_Clear</field>
+        <field name="Datasheet">https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/4819/PT334-6C_Rev4_12-23-16.pdf</field>
+        <field name="Description">SENSOR PHOTO 940NM TOP VIEW RAD</field>
+      </fields>
+      <libsource lib="Sensor_Optical" part="BPW40" description="Phototransistor NPN"/>
+      <property name="MPN" value="PT334-6C"/>
+      <property name="Manufacturer" value="Everlight Electronics Co Ltd"/>
+      <property name="SPN" value="1080-1159-ND"/>
+      <property name="Supplier" value="DigiKey"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="npn phototransistor"/>
+      <property name="ki_fp_filters" value="LED*D5.0mm*Clear*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>add56c4f-e6c8-4843-98d0-293533adbb6f</tstamps>
+    </comp>
+    <comp ref="R1">
+      <value>4.7k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</datasheet>
+      <description>RES 4.7K OHM 1% 1/10W 0603</description>
+      <fields>
+        <field name="Manufacturer">Analog Technologies</field>
+        <field name="Tolerance">1%</field>
+        <field name="Power">1/10W</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</field>
+        <field name="Description">RES 4.7K OHM 1% 1/10W 0603</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Manufacturer" value="Analog Technologies"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Power" value="1/10W"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>6872aef9-487b-4164-89af-6ec4685a1d76</tstamps>
+    </comp>
+    <comp ref="R2">
+      <value>4.7k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</datasheet>
+      <description>RES 4.7K OHM 1% 1/10W 0603</description>
+      <fields>
+        <field name="Manufacturer">Analog Technologies</field>
+        <field name="Tolerance">1%</field>
+        <field name="Power">1/10W</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</field>
+        <field name="Description">RES 4.7K OHM 1% 1/10W 0603</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Manufacturer" value="Analog Technologies"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Power" value="1/10W"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>9f6c288a-8601-49e9-9aaf-5cce6473b0df</tstamps>
+    </comp>
+    <comp ref="R3">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</datasheet>
+      <description>RES 10K OHM 1% 1/10W 0603</description>
+      <fields>
+        <field name="Manufacturer">Analog Technologies</field>
+        <field name="Tolerance">1%</field>
+        <field name="Power">1/10W</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</field>
+        <field name="Description">RES 10K OHM 1% 1/10W 0603</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Manufacturer" value="Analog Technologies"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Power" value="1/10W"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>9f875e56-2bb9-4bb5-8fb4-be1f2fd6fb9c</tstamps>
+    </comp>
+    <comp ref="R4">
+      <value>220</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</datasheet>
+      <description>RES 220 OHM 1% 1/10W 0603</description>
+      <fields>
+        <field name="Manufacturer">Analog Technologies</field>
+        <field name="Tolerance">1%</field>
+        <field name="Power">1/10W</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</field>
+        <field name="Description">RES 220 OHM 1% 1/10W 0603</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Manufacturer" value="Analog Technologies"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Power" value="1/10W"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>fd6aab3e-94ff-456b-8422-e960fb42ba24</tstamps>
+    </comp>
+    <comp ref="R5">
+      <value>4.7k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</datasheet>
+      <description>RES 4.7K OHM 1% 1/10W 0603</description>
+      <fields>
+        <field name="Manufacturer">Analog Technologies</field>
+        <field name="Tolerance">1%</field>
+        <field name="Power">1/10W</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</field>
+        <field name="Description">RES 4.7K OHM 1% 1/10W 0603</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Manufacturer" value="Analog Technologies"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Power" value="1/10W"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>b265dfeb-c102-44b4-9ff1-1bb36f986ced</tstamps>
+    </comp>
+    <comp ref="R6">
+      <value>5.11k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</datasheet>
+      <description>RES 5.11K OHM 1% 1/10W 0603</description>
+      <fields>
+        <field name="Manufacturer">Analog Technologies</field>
+        <field name="Tolerance">1%</field>
+        <field name="Power">1/10W</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</field>
+        <field name="Description">RES 5.11K OHM 1% 1/10W 0603</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Manufacturer" value="Analog Technologies"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Power" value="1/10W"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>11ee2d17-3470-46b3-849c-11faab18006a</tstamps>
+    </comp>
+    <comp ref="R7">
+      <value>5.11k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</datasheet>
+      <description>RES 5.11K OHM 1% 1/10W 0603</description>
+      <fields>
+        <field name="Manufacturer">Analog Technologies</field>
+        <field name="Tolerance">1%</field>
+        <field name="Power">1/10W</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</field>
+        <field name="Description">RES 5.11K OHM 1% 1/10W 0603</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Manufacturer" value="Analog Technologies"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Power" value="1/10W"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>255e9250-7b18-4095-99ee-72b7fbd3b078</tstamps>
+    </comp>
+    <comp ref="R8">
+      <value>27</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</datasheet>
+      <description>RES 27 OHM 1% 1/10W 0603</description>
+      <fields>
+        <field name="Manufacturer">Analog Technologies</field>
+        <field name="Tolerance">1%</field>
+        <field name="Power">1/10W</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</field>
+        <field name="Description">RES 27 OHM 1% 1/10W 0603</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Manufacturer" value="Analog Technologies"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Power" value="1/10W"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>8da12342-d50d-4f4b-9ca4-3528c5aa950f</tstamps>
+    </comp>
+    <comp ref="R9">
+      <value>27</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</datasheet>
+      <description>RES 27 OHM 1% 1/10W 0603</description>
+      <fields>
+        <field name="Manufacturer">Analog Technologies</field>
+        <field name="Tolerance">1%</field>
+        <field name="Power">1/10W</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</field>
+        <field name="Description">RES 27 OHM 1% 1/10W 0603</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Manufacturer" value="Analog Technologies"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Power" value="1/10W"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>cab90611-d09d-41e4-b43e-1f5fe6ba0dae</tstamps>
+    </comp>
+    <comp ref="R10">
+      <value>270</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</datasheet>
+      <description>RES 270 OHM 1% 1/10W 0603</description>
+      <fields>
+        <field name="Manufacturer">Analog Technologies</field>
+        <field name="Tolerance">1%</field>
+        <field name="Power">1/10W</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</field>
+        <field name="Description">RES 270 OHM 1% 1/10W 0603</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Manufacturer" value="Analog Technologies"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Power" value="1/10W"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>37a6dd2f-7927-4a87-9185-73206070264f</tstamps>
+    </comp>
+    <comp ref="R11">
+      <value>270</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</datasheet>
+      <description>RES 270 OHM 1% 1/10W 0603</description>
+      <fields>
+        <field name="Manufacturer">Analog Technologies</field>
+        <field name="Tolerance">1%</field>
+        <field name="Power">1/10W</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</field>
+        <field name="Description">RES 270 OHM 1% 1/10W 0603</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Manufacturer" value="Analog Technologies"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Power" value="1/10W"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>2437ef80-3608-4340-8d82-d28ff09207b1</tstamps>
+    </comp>
+    <comp ref="R12">
+      <value>619</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</datasheet>
+      <description>RES 619 OHM 1% 1/10W 0603</description>
+      <fields>
+        <field name="Manufacturer">Analog Technologies</field>
+        <field name="Tolerance">1%</field>
+        <field name="Power">1/10W</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf</field>
+        <field name="Description">RES 619 OHM 1% 1/10W 0603</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="Manufacturer" value="Analog Technologies"/>
+      <property name="Tolerance" value="1%"/>
+      <property name="Power" value="1/10W"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>010bff30-b805-4b65-b67a-8cfa857bf176</tstamps>
+    </comp>
+    <comp ref="TP1">
+      <value>GND</value>
+      <footprint>RD-Testpoints:TestPoint_Pad_1.0x1.0mm</footprint>
+      <datasheet>~</datasheet>
+      <description>test point</description>
+      <fields>
+        <field name="Arrow Part Number"/>
+        <field name="Arrow Price/Stock"/>
+        <field name="Config"/>
+        <field name="Height"/>
+        <field name="Manufacturer Part Number"/>
+        <field name="Manufacturer_Name"/>
+        <field name="Manufacturer_Part_Number"/>
+        <field name="Mouser Part Number"/>
+        <field name="Mouser Price/Stock"/>
+        <field name="Footprint">RD-Testpoints:TestPoint_Pad_1.0x1.0mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">test point</field>
+      </fields>
+      <libsource lib="Connector" part="TestPoint" description="test point"/>
+      <property name="Arrow Part Number" value=""/>
+      <property name="Arrow Price/Stock" value=""/>
+      <property name="Config" value=""/>
+      <property name="Height" value=""/>
+      <property name="Manufacturer Part Number" value=""/>
+      <property name="Manufacturer_Name" value=""/>
+      <property name="Manufacturer_Part_Number" value=""/>
+      <property name="Mouser Part Number" value=""/>
+      <property name="Mouser Price/Stock" value=""/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="test point tp"/>
+      <property name="ki_fp_filters" value="Pin* Test*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>b42db4eb-0dc5-40a6-95f1-9e8f1fb719d4</tstamps>
+    </comp>
+    <comp ref="TP2">
+      <value>+3V3</value>
+      <footprint>RD-Testpoints:TestPoint_Pad_D1.0mm</footprint>
+      <datasheet>~</datasheet>
+      <description>test point</description>
+      <fields>
+        <field name="Footprint">RD-Testpoints:TestPoint_Pad_D1.0mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">test point</field>
+      </fields>
+      <libsource lib="Connector" part="TestPoint" description="test point"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="test point tp"/>
+      <property name="ki_fp_filters" value="Pin* Test*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>c4f0d836-121b-4d29-8c83-560c32445462</tstamps>
+    </comp>
+    <comp ref="U1">
+      <value>LM393</value>
+      <footprint>Package_SO:SOIC-8_3.9x4.9mm_P1.27mm</footprint>
+      <datasheet>http://www.ti.com/lit/ds/symlink/lm393.pdf</datasheet>
+      <description>IC COMPARATOR 2 GEN PUR 8SOIC</description>
+      <fields>
+        <field name="Manufacturer">Texas Instruments</field>
+        <field name="MPN">LM393ADT</field>
+        <field name="Supplier">DigiKey</field>
+        <field name="SPN">497-4267-1-ND</field>
+        <field name="Footprint">Package_SO:SOIC-8_3.9x4.9mm_P1.27mm</field>
+        <field name="Datasheet">http://www.ti.com/lit/ds/symlink/lm393.pdf</field>
+        <field name="Description">IC COMPARATOR 2 GEN PUR 8SOIC</field>
+      </fields>
+      <libsource lib="Comparator" part="LM393" description="Low-Power, Low-Offset Voltage, Dual Comparators, DIP-8/SOIC-8/TO-99-8"/>
+      <property name="Manufacturer" value="Texas Instruments"/>
+      <property name="MPN" value="LM393ADT"/>
+      <property name="Supplier" value="DigiKey"/>
+      <property name="SPN" value="497-4267-1-ND"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="cmp open collector"/>
+      <property name="ki_fp_filters" value="SOIC*3.9x4.9mm*P1.27mm* DIP*W7.62mm* SOP*5.28x5.23mm*P1.27mm* VSSOP*3x3mm*P0.65mm* TSSOP*4.4x3mm*P0.65mm*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>26a975ea-a7da-4d3c-bb9b-1e8d22120e1f a51dd8df-a28e-4c37-b271-de22fa60c81c 129e8902-9655-4b84-a360-80b588dbe477</tstamps>
+    </comp>
+    <comp ref="U2">
+      <value>USBLC6-2SC6</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23-6</footprint>
+      <datasheet>https://www.st.com/resource/en/datasheet/cd00050750.pdf</datasheet>
+      <description>TVS DIODE 5.25VWM 17VC SOT23-6</description>
+      <fields>
+        <field name="MPN">USBLC6-2SC6</field>
+        <field name="Manufacturer">STMicroelectronics</field>
+        <field name="SPN">497-5235-1-ND</field>
+        <field name="Supplier">DigiKey</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-6</field>
+        <field name="Datasheet">https://www.st.com/resource/en/datasheet/cd00050750.pdf</field>
+        <field name="Description">TVS DIODE 5.25VWM 17VC SOT23-6</field>
+      </fields>
+      <libsource lib="Power_Protection" part="USBLC6-2SC6" description="Very low capacitance ESD protection diode, 2 data-line, SOT-23-6"/>
+      <property name="MPN" value="USBLC6-2SC6"/>
+      <property name="Manufacturer" value="STMicroelectronics"/>
+      <property name="SPN" value="497-5235-1-ND"/>
+      <property name="Supplier" value="DigiKey"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="usb ethernet video"/>
+      <property name="ki_fp_filters" value="SOT?23*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>55ff97a7-d387-49da-a42d-696efc5a049b</tstamps>
+    </comp>
+    <comp ref="U3">
+      <value>FT231XS-U</value>
+      <footprint>Package_SO:SSOP-20_3.9x8.7mm_P0.635mm</footprint>
+      <datasheet>https://ftdichip.com/wp-content/uploads/2025/06/DS_FT231X.pdf</datasheet>
+      <description>Full Speed USB to Full Handshake UART, SSOP-20</description>
+      <fields>
+        <field name="MPN">FT231XS-U</field>
+        <field name="Manufacturer">FTDI, Future Technology Devices International Ltd</field>
+        <field name="SPN">768-1156-5-ND</field>
+        <field name="Supplier">DigiKey</field>
+        <field name="Footprint">Package_SO:SSOP-20_3.9x8.7mm_P0.635mm</field>
+        <field name="Datasheet">https://ftdichip.com/wp-content/uploads/2025/06/DS_FT231X.pdf</field>
+        <field name="Description">Full Speed USB to Full Handshake UART, SSOP-20</field>
+      </fields>
+      <libsource lib="Interface_USB" part="FT231XS" description="Full Speed USB to Full Handshake UART, SSOP-20"/>
+      <property name="MPN" value="FT231XS-U"/>
+      <property name="Manufacturer" value="FTDI, Future Technology Devices International Ltd"/>
+      <property name="SPN" value="768-1156-5-ND"/>
+      <property name="Supplier" value="DigiKey"/>
+      <property name="Sheetname" value="CIRCUIT"/>
+      <property name="Sheetfile" value="Project Architecture.kicad_sch"/>
+      <property name="ki_keywords" value="FTDI USB UART interface converter"/>
+      <property name="ki_fp_filters" value="*SSOP*3.9x8.7mm*P0.635mm*"/>
+      <sheetpath names="/CIRCUIT/" tstamps="/c5103ceb-5325-4a84-a025-9638a412984e/"/>
+      <tstamps>70079071-060c-4d76-9d35-af2aee3fe827</tstamps>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="Comparator" part="LM393">
+      <description>Low-Power, Low-Offset Voltage, Dual Comparators, DIP-8/SOIC-8/TO-99-8</description>
+      <docs>http://www.ti.com/lit/ds/symlink/lm393.pdf</docs>
+      <footprints>
+        <fp>SOIC*3.9x4.9mm*P1.27mm*</fp>
+        <fp>DIP*W7.62mm*</fp>
+        <fp>SOP*5.28x5.23mm*P1.27mm*</fp>
+        <fp>VSSOP*3x3mm*P0.65mm*</fp>
+        <fp>TSSOP*4.4x3mm*P0.65mm*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">LM393</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">http://www.ti.com/lit/ds/symlink/lm393.pdf</field>
+        <field name="Description">Low-Power, Low-Offset Voltage, Dual Comparators, DIP-8/SOIC-8/TO-99-8</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="open_collector"/>
+        <pin num="2" name="-" type="input"/>
+        <pin num="3" name="+" type="input"/>
+        <pin num="4" name="V-" type="power_in"/>
+        <pin num="5" name="+" type="input"/>
+        <pin num="6" name="-" type="input"/>
+        <pin num="7" name="" type="open_collector"/>
+        <pin num="8" name="V+" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="TestPoint">
+      <description>test point</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Pin*</fp>
+        <fp>Test*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">TP</field>
+        <field name="Value">TestPoint</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">test point</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="USB_C_Receptacle_USB2.0_16P">
+      <description>USB 2.0-only 16P Type-C Receptacle connector</description>
+      <docs>https://www.usb.org/sites/default/files/documents/usb_type-c.zip</docs>
+      <footprints>
+        <fp>USB*C*Receptacle*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">USB_C_Receptacle_USB2.0_16P</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">https://www.usb.org/sites/default/files/documents/usb_type-c.zip</field>
+        <field name="Description">USB 2.0-only 16P Type-C Receptacle connector</field>
+      </fields>
+      <pins>
+        <pin num="A1" name="GND" type="passive"/>
+        <pin num="A4" name="VBUS" type="passive"/>
+        <pin num="A5" name="CC1" type="bidirectional"/>
+        <pin num="A6" name="D+" type="bidirectional"/>
+        <pin num="A7" name="D-" type="bidirectional"/>
+        <pin num="A8" name="SBU1" type="bidirectional"/>
+        <pin num="A9" name="VBUS" type="passive"/>
+        <pin num="A12" name="GND" type="passive"/>
+        <pin num="B1" name="GND" type="passive"/>
+        <pin num="B4" name="VBUS" type="passive"/>
+        <pin num="B5" name="CC2" type="bidirectional"/>
+        <pin num="B6" name="D+" type="bidirectional"/>
+        <pin num="B7" name="D-" type="bidirectional"/>
+        <pin num="B8" name="SBU2" type="bidirectional"/>
+        <pin num="B9" name="VBUS" type="passive"/>
+        <pin num="B12" name="GND" type="passive"/>
+        <pin num="S1" name="SHIELD" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C">
+      <description>Unpolarized capacitor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C_Polarized">
+      <description>Polarized capacitor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>CP_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C_Polarized</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Polarized capacitor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="FerriteBead_Small">
+      <description>Ferrite bead, small symbol</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Inductor_*</fp>
+        <fp>L_*</fp>
+        <fp>*Ferrite*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">FB</field>
+        <field name="Value">FerriteBead_Small</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Ferrite bead, small symbol</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="LED">
+      <description>Light emitting diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>LED*</fp>
+        <fp>LED_SMD:*</fp>
+        <fp>LED_THT:*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">LED</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Light emitting diode</field>
+        <field name="Sim.Pins">1=K 2=A</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R">
+      <description>Resistor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Resistor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Diode" part="SM6T6V8A">
+      <description>600W unidirectional Transil Transient Voltage Suppressor, 6.8Vrwm, DO-214AA</description>
+      <docs>https://www.st.com/resource/en/datasheet/sm6t.pdf</docs>
+      <footprints>
+        <fp>D*SMB*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">SM6T6V8A</field>
+        <field name="Footprint">Diode_SMD:D_SMB</field>
+        <field name="Datasheet">https://www.st.com/resource/en/datasheet/sm6t.pdf</field>
+        <field name="Description">600W unidirectional Transil Transient Voltage Suppressor, 6.8Vrwm, DO-214AA</field>
+      </fields>
+      <pins>
+        <pin num="1" name="A1" type="passive"/>
+        <pin num="2" name="A2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Interface_USB" part="FT231XS">
+      <description>Full Speed USB to Full Handshake UART, SSOP-20</description>
+      <docs>https://www.ftdichip.com/Support/Documents/DataSheets/ICs/DS_FT231X.pdf</docs>
+      <footprints>
+        <fp>*SSOP*3.9x8.7mm*P0.635mm*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">FT231XS</field>
+        <field name="Footprint">Package_SO:SSOP-20_3.9x8.7mm_P0.635mm</field>
+        <field name="Datasheet">https://www.ftdichip.com/Support/Documents/DataSheets/ICs/DS_FT231X.pdf</field>
+        <field name="Description">Full Speed USB to Full Handshake UART, SSOP-20</field>
+      </fields>
+      <pins>
+        <pin num="1" name="~{DTR}" type="output"/>
+        <pin num="2" name="~{RTS}" type="output"/>
+        <pin num="3" name="VCCIO" type="power_in"/>
+        <pin num="4" name="RXD" type="input"/>
+        <pin num="5" name="~{RI}" type="input"/>
+        <pin num="6" name="GND" type="power_in"/>
+        <pin num="7" name="~{DSR}" type="input"/>
+        <pin num="8" name="~{DCD}" type="input"/>
+        <pin num="9" name="~{CTS}" type="input"/>
+        <pin num="10" name="CBUS2" type="bidirectional"/>
+        <pin num="11" name="USBDP" type="bidirectional"/>
+        <pin num="12" name="USBDM" type="bidirectional"/>
+        <pin num="13" name="3V3OUT" type="power_out"/>
+        <pin num="14" name="~{RESET}" type="input"/>
+        <pin num="15" name="VCC" type="power_in"/>
+        <pin num="16" name="GND" type="power_in"/>
+        <pin num="17" name="CBUS1" type="bidirectional"/>
+        <pin num="18" name="CBUS0" type="bidirectional"/>
+        <pin num="19" name="CBUS3" type="bidirectional"/>
+        <pin num="20" name="TXD" type="output"/>
+      </pins>
+    </libpart>
+    <libpart lib="Jumper" part="SolderJumper_2_Bridged">
+      <description>Solder Jumper, 2-pole, closed/bridged</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>SolderJumper*Bridged*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">JP</field>
+        <field name="Value">SolderJumper_2_Bridged</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Solder Jumper, 2-pole, closed/bridged</field>
+      </fields>
+      <pins>
+        <pin num="1" name="A" type="passive"/>
+        <pin num="2" name="B" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Mechanical" part="Fiducial">
+      <description>Fiducial Marker</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Fiducial*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">FID</field>
+        <field name="Value">Fiducial</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Fiducial Marker</field>
+      </fields>
+    </libpart>
+    <libpart lib="Mechanical" part="MountingHole_Pad">
+      <description>Mounting Hole with connection</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>MountingHole*Pad*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">H</field>
+        <field name="Value">MountingHole_Pad</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Mounting Hole with connection</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="Power_Protection" part="USBLC6-2SC6">
+      <description>Very low capacitance ESD protection diode, 2 data-line, SOT-23-6</description>
+      <docs>https://www.st.com/resource/en/datasheet/usblc6-2.pdf</docs>
+      <footprints>
+        <fp>SOT?23*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">USBLC6-2SC6</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-6</field>
+        <field name="Datasheet">https://www.st.com/resource/en/datasheet/usblc6-2.pdf</field>
+        <field name="Description">Very low capacitance ESD protection diode, 2 data-line, SOT-23-6</field>
+      </fields>
+      <pins>
+        <pin num="1" name="I/O1" type="passive"/>
+        <pin num="2" name="GND" type="passive"/>
+        <pin num="3" name="I/O2" type="passive"/>
+        <pin num="4" name="I/O2" type="passive"/>
+        <pin num="5" name="VBUS" type="passive"/>
+        <pin num="6" name="I/O1" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Ryan-Dynamics" part="BOARD_STACKUP_MARKER">
+      <description>PCB stackup layer identification marker (non-electrical)</description>
+      <footprints>
+        <fp>STACKUP_ID_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">ID?</field>
+        <field name="Value">BOARD_STACKUP_MARKER</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">PCB stackup layer identification marker (non-electrical)</field>
+      </fields>
+    </libpart>
+    <libpart lib="Sensor_Optical" part="BPW40">
+      <description>Phototransistor NPN</description>
+      <docs>https://www.rcscomponents.kiev.ua/datasheets/bpw40.pdf</docs>
+      <footprints>
+        <fp>LED*D5.0mm*Clear*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">Q</field>
+        <field name="Value">BPW40</field>
+        <field name="Footprint">LED_THT:LED_D5.0mm_Clear</field>
+        <field name="Datasheet">https://www.rcscomponents.kiev.ua/datasheets/bpw40.pdf</field>
+        <field name="Description">Phototransistor NPN</field>
+      </fields>
+      <pins>
+        <pin num="1" name="C" type="passive"/>
+        <pin num="2" name="E" type="passive"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries>
+    <library logical="Comparator">
+      <uri>/usr/share/kicad/symbols//Comparator.kicad_sym</uri>
+    </library>
+    <library logical="Connector">
+      <uri>/usr/share/kicad/symbols//Connector.kicad_sym</uri>
+    </library>
+    <library logical="Device">
+      <uri>/usr/share/kicad/symbols//Device.kicad_sym</uri>
+    </library>
+    <library logical="Diode">
+      <uri>/usr/share/kicad/symbols//Diode.kicad_sym</uri>
+    </library>
+    <library logical="Interface_USB">
+      <uri>/usr/share/kicad/symbols//Interface_USB.kicad_sym</uri>
+    </library>
+    <library logical="Jumper">
+      <uri>/usr/share/kicad/symbols//Jumper.kicad_sym</uri>
+    </library>
+    <library logical="Mechanical">
+      <uri>/usr/share/kicad/symbols//Mechanical.kicad_sym</uri>
+    </library>
+    <library logical="Power_Protection">
+      <uri>/usr/share/kicad/symbols//Power_Protection.kicad_sym</uri>
+    </library>
+    <library logical="Sensor_Optical">
+      <uri>/usr/share/kicad/symbols//Sensor_Optical.kicad_sym</uri>
+    </library>
+  </libraries>
+  <nets>
+    <net code="1" name="+3V3" class="Default">
+      <node ref="C3" pin="2" pintype="passive"/>
+      <node ref="R10" pin="1" pintype="passive"/>
+      <node ref="R11" pin="1" pintype="passive"/>
+      <node ref="TP2" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U3" pin="13" pinfunction="3V3OUT" pintype="power_out"/>
+      <node ref="U3" pin="14" pinfunction="~{RESET}" pintype="input"/>
+      <node ref="U3" pin="3" pinfunction="VCCIO" pintype="power_in"/>
+    </net>
+    <net code="2" name="/CIRCUIT/A+" class="Default">
+      <node ref="R9" pin="1" pintype="passive"/>
+      <node ref="U3" pin="11" pinfunction="USBDP" pintype="bidirectional"/>
+    </net>
+    <net code="3" name="/CIRCUIT/A-" class="Default">
+      <node ref="R8" pin="1" pintype="passive"/>
+      <node ref="U3" pin="12" pinfunction="USBDM" pintype="bidirectional"/>
+    </net>
+    <net code="4" name="/CIRCUIT/CC1" class="Default">
+      <node ref="J1" pin="A5" pinfunction="CC1" pintype="bidirectional"/>
+      <node ref="R6" pin="2" pintype="passive"/>
+    </net>
+    <net code="5" name="/CIRCUIT/CC2" class="Default">
+      <node ref="J1" pin="B5" pinfunction="CC2" pintype="bidirectional"/>
+      <node ref="R7" pin="2" pintype="passive"/>
+    </net>
+    <net code="6" name="/CIRCUIT/D+" class="Default">
+      <node ref="J1" pin="A6" pinfunction="D+" pintype="bidirectional"/>
+      <node ref="J1" pin="B6" pinfunction="D+" pintype="bidirectional"/>
+      <node ref="U2" pin="3" pinfunction="I/O2" pintype="passive"/>
+    </net>
+    <net code="7" name="/CIRCUIT/D-" class="Default">
+      <node ref="J1" pin="A7" pinfunction="D-" pintype="bidirectional"/>
+      <node ref="J1" pin="B7" pinfunction="D-" pintype="bidirectional"/>
+      <node ref="U2" pin="1" pinfunction="I/O1" pintype="passive"/>
+    </net>
+    <net code="8" name="/CIRCUIT/PWR_LED" class="Default">
+      <node ref="D5" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="R12" pin="2" pintype="passive"/>
+    </net>
+    <net code="9" name="/CIRCUIT/RX" class="Default">
+      <node ref="R5" pin="2" pintype="passive"/>
+      <node ref="U1" pin="7" pintype="open_collector"/>
+      <node ref="U3" pin="4" pinfunction="RXD" pintype="input"/>
+    </net>
+    <net code="10" name="/CIRCUIT/RX_LED" class="Default">
+      <node ref="D4" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="U3" pin="17" pinfunction="CBUS1" pintype="bidirectional"/>
+    </net>
+    <net code="11" name="/CIRCUIT/TX" class="Default">
+      <node ref="U1" pin="2" pinfunction="-" pintype="input"/>
+      <node ref="U3" pin="20" pinfunction="TXD" pintype="output"/>
+    </net>
+    <net code="12" name="/CIRCUIT/TX_LED" class="Default">
+      <node ref="D3" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="U3" pin="18" pinfunction="CBUS0" pintype="bidirectional"/>
+    </net>
+    <net code="13" name="/CIRCUIT/VBUS" class="Default">
+      <node ref="J1" pin="A4" pinfunction="VBUS" pintype="passive"/>
+      <node ref="J1" pin="A9" pinfunction="VBUS" pintype="passive"/>
+      <node ref="J1" pin="B4" pinfunction="VBUS" pintype="passive"/>
+      <node ref="J1" pin="B9" pinfunction="VBUS" pintype="passive"/>
+      <node ref="JP1" pin="1" pinfunction="A" pintype="passive"/>
+    </net>
+    <net code="14" name="/CIRCUIT/VCC" class="Default">
+      <node ref="C4" pin="2" pintype="passive"/>
+      <node ref="C5" pin="2" pintype="passive"/>
+      <node ref="C6" pin="1" pintype="passive"/>
+      <node ref="FB1" pin="1" pintype="passive"/>
+      <node ref="U3" pin="15" pinfunction="VCC" pintype="power_in"/>
+    </net>
+    <net code="15" name="GND" class="Default">
+      <node ref="C1" pin="1" pintype="passive"/>
+      <node ref="C2" pin="2" pintype="passive"/>
+      <node ref="C3" pin="1" pintype="passive"/>
+      <node ref="C4" pin="1" pintype="passive"/>
+      <node ref="C5" pin="1" pintype="passive"/>
+      <node ref="C6" pin="2" pintype="passive"/>
+      <node ref="D1" pin="2" pinfunction="A2" pintype="passive"/>
+      <node ref="D5" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="H1" pin="1" pinfunction="1" pintype="input"/>
+      <node ref="H2" pin="1" pinfunction="1" pintype="input"/>
+      <node ref="H3" pin="1" pinfunction="1" pintype="input"/>
+      <node ref="H4" pin="1" pinfunction="1" pintype="input"/>
+      <node ref="J1" pin="A1" pinfunction="GND" pintype="passive"/>
+      <node ref="J1" pin="A12" pinfunction="GND" pintype="passive"/>
+      <node ref="J1" pin="B1" pinfunction="GND" pintype="passive"/>
+      <node ref="J1" pin="B12" pinfunction="GND" pintype="passive"/>
+      <node ref="J1" pin="S1" pinfunction="SHIELD" pintype="passive"/>
+      <node ref="Q1" pin="2" pinfunction="E" pintype="passive"/>
+      <node ref="R3" pin="2" pintype="passive"/>
+      <node ref="R6" pin="1" pintype="passive"/>
+      <node ref="R7" pin="1" pintype="passive"/>
+      <node ref="TP1" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U1" pin="4" pinfunction="V-" pintype="power_in"/>
+      <node ref="U2" pin="2" pinfunction="GND" pintype="passive"/>
+      <node ref="U3" pin="16" pinfunction="GND" pintype="power_in"/>
+      <node ref="U3" pin="6" pinfunction="GND" pintype="power_in"/>
+    </net>
+    <net code="16" name="Net-(D2-A)" class="Default">
+      <node ref="D2" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="R4" pin="2" pintype="passive"/>
+    </net>
+    <net code="17" name="Net-(D2-K)" class="Default">
+      <node ref="D2" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="U1" pin="1" pintype="open_collector"/>
+    </net>
+    <net code="18" name="Net-(D3-A)" class="Default">
+      <node ref="D3" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="R10" pin="2" pintype="passive"/>
+    </net>
+    <net code="19" name="Net-(D4-A)" class="Default">
+      <node ref="D4" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="R11" pin="2" pintype="passive"/>
+    </net>
+    <net code="20" name="Net-(Q1-C)" class="Default">
+      <node ref="Q1" pin="1" pinfunction="C" pintype="passive"/>
+      <node ref="R1" pin="2" pintype="passive"/>
+      <node ref="U1" pin="5" pinfunction="+" pintype="input"/>
+    </net>
+    <net code="21" name="Net-(R8-Pad2)" class="Default">
+      <node ref="R8" pin="2" pintype="passive"/>
+      <node ref="U2" pin="6" pinfunction="I/O1" pintype="passive"/>
+    </net>
+    <net code="22" name="Net-(R9-Pad2)" class="Default">
+      <node ref="R9" pin="2" pintype="passive"/>
+      <node ref="U2" pin="4" pinfunction="I/O2" pintype="passive"/>
+    </net>
+    <net code="23" name="Net-(U1A-+)" class="Default">
+      <node ref="R2" pin="2" pintype="passive"/>
+      <node ref="R3" pin="1" pintype="passive"/>
+      <node ref="U1" pin="3" pinfunction="+" pintype="input"/>
+      <node ref="U1" pin="6" pinfunction="-" pintype="input"/>
+    </net>
+    <net code="24" name="VUSB" class="Default">
+      <node ref="C1" pin="2" pintype="passive"/>
+      <node ref="C2" pin="1" pintype="passive"/>
+      <node ref="D1" pin="1" pinfunction="A1" pintype="passive"/>
+      <node ref="FB1" pin="2" pintype="passive"/>
+      <node ref="JP1" pin="2" pinfunction="B" pintype="passive"/>
+      <node ref="R1" pin="1" pintype="passive"/>
+      <node ref="R12" pin="1" pintype="passive"/>
+      <node ref="R2" pin="1" pintype="passive"/>
+      <node ref="R4" pin="1" pintype="passive"/>
+      <node ref="R5" pin="1" pintype="passive"/>
+      <node ref="U1" pin="8" pinfunction="V+" pintype="power_in"/>
+      <node ref="U2" pin="5" pinfunction="VBUS" pintype="passive"/>
+    </net>
+    <net code="25" name="unconnected-(J1-SBU1-PadA8)" class="Default">
+      <node ref="J1" pin="A8" pinfunction="SBU1" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="26" name="unconnected-(J1-SBU2-PadB8)" class="Default">
+      <node ref="J1" pin="B8" pinfunction="SBU2" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="27" name="unconnected-(U3-CBUS2-Pad10)" class="Default">
+      <node ref="U3" pin="10" pinfunction="CBUS2" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="28" name="unconnected-(U3-CBUS3-Pad19)" class="Default">
+      <node ref="U3" pin="19" pinfunction="CBUS3" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="29" name="unconnected-(U3-~{CTS}-Pad9)" class="Default">
+      <node ref="U3" pin="9" pinfunction="~{CTS}" pintype="input+no_connect"/>
+    </net>
+    <net code="30" name="unconnected-(U3-~{DCD}-Pad8)" class="Default">
+      <node ref="U3" pin="8" pinfunction="~{DCD}" pintype="input+no_connect"/>
+    </net>
+    <net code="31" name="unconnected-(U3-~{DSR}-Pad7)" class="Default">
+      <node ref="U3" pin="7" pinfunction="~{DSR}" pintype="input+no_connect"/>
+    </net>
+    <net code="32" name="unconnected-(U3-~{DTR}-Pad1)" class="Default">
+      <node ref="U3" pin="1" pinfunction="~{DTR}" pintype="output+no_connect"/>
+    </net>
+    <net code="33" name="unconnected-(U3-~{RI}-Pad5)" class="Default">
+      <node ref="U3" pin="5" pinfunction="~{RI}" pintype="input+no_connect"/>
+    </net>
+    <net code="34" name="unconnected-(U3-~{RTS}-Pad2)" class="Default">
+      <node ref="U3" pin="2" pinfunction="~{RTS}" pintype="output+no_connect"/>
+    </net>
+  </nets>
+</export>

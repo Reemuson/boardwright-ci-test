@@ -5,7 +5,7 @@
 	(uuid "f9e05184-c88b-4a88-ae9c-ab2bdb32be7c")
 	(paper "A3")
 	(title_block
-		(date "2025-01-12")
+		(date "2026-04-24")
 		(rev "${REVISION}")
 		(company "${COMPANY}")
 	)
@@ -1083,7 +1083,7 @@
 		)
 		(uuid "c7960137-7711-4ffe-94cf-8be0bcb30b2c")
 	)
-	(text "COMMENT"
+	(text "USB IR Adapter compatible with Fluke 18x/28x series multimeters"
 		(exclude_from_sim no)
 		(at 222.25 177.8 0)
 		(effects
@@ -1612,51 +1612,6 @@
 		(uuid "dee96870-b977-4804-a805-318fe8afe5f2")
 	)
 	(sheet
-		(at 340.36 313.69)
-		(size 35.56 5.08)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(stroke
-			(width 0.1524)
-			(type solid)
-		)
-		(fill
-			(color 0 0 0 0.0000)
-		)
-		(uuid "5fb05893-0da3-4f58-a52b-cb6d6f4cb80b")
-		(property "Sheetname" "POWER SEQUENCE"
-			(at 340.36 312.6609 0)
-			(effects
-				(font
-					(face "Times New Roman")
-					(size 1.905 1.905)
-					(bold yes)
-					(color 0 0 0 1)
-				)
-				(justify left bottom)
-			)
-		)
-		(property "Sheetfile" "power-sequence.kicad_sch"
-			(at 341.63 314.96 0)
-			(effects
-				(font
-					(face "Arial")
-					(size 1.27 1.27)
-				)
-				(justify left top)
-			)
-		)
-		(instances
-			(project "boardwright"
-				(path "/f9e05184-c88b-4a88-ae9c-ab2bdb32be7c"
-					(page "6")
-				)
-			)
-		)
-	)
-	(sheet
 		(at 340.36 302.26)
 		(size 35.56 5.08)
 		(exclude_from_sim no)
@@ -1683,7 +1638,7 @@
 				(justify left bottom)
 			)
 		)
-		(property "Sheetfile" "revision-history.kicad_sch"
+		(property "Sheetfile" "Revision History.kicad_sch"
 			(at 340.995 303.53 0)
 			(effects
 				(font
@@ -1694,54 +1649,9 @@
 			)
 		)
 		(instances
-			(project "boardwright"
+			(project "FIC-100A"
 				(path "/f9e05184-c88b-4a88-ae9c-ab2bdb32be7c"
 					(page "7")
-				)
-			)
-		)
-	)
-	(sheet
-		(at 299.72 302.26)
-		(size 35.56 5.08)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(stroke
-			(width 0.1524)
-			(type solid)
-		)
-		(fill
-			(color 0 0 0 0.0000)
-		)
-		(uuid "82da9dbf-ba38-4d08-ba35-a220fa2963b1")
-		(property "Sheetname" "BLOCK DIAGRAM"
-			(at 299.72 301.2309 0)
-			(effects
-				(font
-					(face "Times New Roman")
-					(size 1.905 1.905)
-					(bold yes)
-					(color 0 0 0 1)
-				)
-				(justify left bottom)
-			)
-		)
-		(property "Sheetfile" "block-diagram.kicad_sch"
-			(at 300.99 303.53 0)
-			(effects
-				(font
-					(face "Arial")
-					(size 1.27 1.27)
-				)
-				(justify left top)
-			)
-		)
-		(instances
-			(project "boardwright"
-				(path "/f9e05184-c88b-4a88-ae9c-ab2bdb32be7c"
-					(page "2")
 				)
 			)
 		)
@@ -1761,7 +1671,7 @@
 			(color 0 0 0 0.0000)
 		)
 		(uuid "c5103ceb-5325-4a84-a025-9638a412984e")
-		(property "Sheetname" "PROJECT"
+		(property "Sheetname" "CIRCUIT"
 			(at 299.72 312.6609 0)
 			(effects
 				(font
@@ -1773,7 +1683,7 @@
 				(justify left bottom)
 			)
 		)
-		(property "Sheetfile" "project.kicad_sch"
+		(property "Sheetfile" "Project Architecture.kicad_sch"
 			(at 300.99 314.96 0)
 			(effects
 				(font
@@ -1784,7 +1694,7 @@
 			)
 		)
 		(instances
-			(project "boardwright"
+			(project "FIC-100A"
 				(path "/f9e05184-c88b-4a88-ae9c-ab2bdb32be7c"
 					(page "3")
 				)
