@@ -89,6 +89,10 @@ jobs:
           config: ${{ env.KIBOT_CONFIG }}
           cache3D: YES
 
+      - name: Normalize generated output ownership
+        shell: bash
+        run: sudo chown -R "$USER:$USER" Schematic Manufacturing assets HTML KiRI Testing Reports README.md 2>/dev/null || true
+
       - name: Clean generated outputs
         shell: bash
         run: python boardwright_resources/kibot/resources/scripts/clean_generated_outputs.py .
