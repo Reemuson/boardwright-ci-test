@@ -21,19 +21,6 @@ outputs:
     dnf_filter: _kibom_dnf_Config
     # dnf_filter: '_null'
     sheet_reference_layout: '@SHEET_WKS@'
-    include_table:
-      outputs:
-        - name: '@NAME_COMP_COUNT@'
-          text_alignment: 'left'
-          invert_columns_order: false
-          border_width: 0.4
-          header_rule_width: 0.2
-          horizontal_rule_width: 0
-          vertical_rule_width: 0
-          top_rule_width: 0
-          bottom_rule_width: 0
-          row_spacing: 3
-          column_spacing: 2
     pages:
       - scaling: @SCALING@
         layer_var: ''
@@ -65,8 +52,6 @@ outputs:
           - layer: F.Fab
             exclude_filter: '@FAB_EXCLUDE_FILTER@'
             color: '#744679'
-          - layer: '@LAYER_ASSEMBLY_TEXT_TOP@'
-            color: '#000000'
           - layer: '@LAYER_DNP_CROSS_TOP@'
             color: '#D63034'
 
@@ -93,8 +78,6 @@ outputs:
           - layer: B.Fab
             exclude_filter: '@FAB_EXCLUDE_FILTER@'
             color: '#400080'
-          - layer: '@LAYER_ASSEMBLY_TEXT_BOTTOM@'
-            color: '#000000'
           - layer: '@LAYER_DNP_CROSS_BOTTOM@'
             color: '#D63034'
 
@@ -108,8 +91,5 @@ definitions:
   SCALING: 1.0
   FAB_EXCLUDE_FILTER: exclude_testpoints
   LAYER_TITLE_PAGE: TitlePage
-  LAYER_ASSEMBLY_TEXT_TOP: F.AssemblyText
-  LAYER_ASSEMBLY_TEXT_BOTTOM: B.AssemblyText
   LAYER_DNP_CROSS_TOP: F.DNP
   LAYER_DNP_CROSS_BOTTOM: B.DNP
-  NAME_COMP_COUNT: csv_comp_count
