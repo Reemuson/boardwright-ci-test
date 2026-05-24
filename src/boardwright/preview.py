@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -434,7 +435,7 @@ def fetch_latest_preview_artifact(
     if not run_id:
         raise BoardwrightError("Latest preview workflow run did not include an id.")
 
-    destination.mkdir(parents=True, exist_ok=True)
+    _prepare_preview_destination(destination)
     download_command = [
         gh,
         "run",
@@ -529,6 +530,12 @@ def _short_sha(value: str) -> str:
 def _review_marker_path(config: BoardwrightConfig, output_dir: Path | None = None) -> Path:
     destination = output_dir or (config.root / "boardwright-preview")
     return destination / ".boardwright-preview-reviewed.json"
+
+
+def _prepare_preview_destination(destination: Path) -> None:
+    if destination.exists():
+        shutil.rmtree(destination)
+    destination.mkdir(parents=True, exist_ok=True)
 
 
 def _downloaded_files(destination: Path) -> tuple[Path, ...]:

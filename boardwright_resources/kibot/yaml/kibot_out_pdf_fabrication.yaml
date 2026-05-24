@@ -57,6 +57,8 @@ outputs:
           row_spacing: 3
           column_spacing: 2
           force_font_width: 1 # mm
+    hide:
+      - group_name: kibot_table_csv_impedance_table
     pages:
       - scaling: @SCALING@
         title: '@DOC_TITLE@'
@@ -108,6 +110,19 @@ outputs:
             plot_footprint_values: false
             color: '#818181'
           - layer: B.Dimensions
+            color: '#000000'
+
+      - scaling: @SCALING@
+        title: '@DOC_TITLE@'
+        sheet: 'DRILL MAP'
+        layer_var: 'DRILL MAP'
+        sheet_reference_color: '#000000'
+        colored_holes: true
+        holes_color: "#FFFFFF"
+        layers:
+          - layer: '@LAYER_DRILL_MAP@'
+            color: '#000000'
+          - layer: Edge.Cuts
             color: '#000000'
 
       - scaling: @SCALING@

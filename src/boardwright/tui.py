@@ -180,7 +180,7 @@ def _build_textual_app():
     from textual.app import App, ComposeResult
     from textual.containers import Grid, Horizontal, Vertical, VerticalScroll
     from textual.screen import ModalScreen
-    from textual.widgets import Button, Footer, Header, Input, Label, Select, Static
+    from textual.widgets import Button, Footer, Header, Input, Label, ProgressBar, Select, Static
 
     class ChangelogEntryScreen(ModalScreen[tuple[str, str] | None]):
         CSS = """
@@ -203,6 +203,21 @@ def _build_textual_app():
             margin: 0;
             border: solid $accent;
             background: $surface;
+        }
+
+        #review_status {
+            padding: 1;
+            border: solid $secondary;
+            background: $boost;
+        }
+
+        #review_message {
+            height: auto;
+            margin-bottom: 1;
+        }
+
+        .muted {
+            color: $text-muted;
         }
         """
 
@@ -231,29 +246,41 @@ def _build_textual_app():
 
         def __init__(
             self,
-            preview_text: str,
+            preview_status: str,
+            preview_message: str,
+            run_summary: str,
             runs_text: str,
             can_fetch: bool,
         ) -> None:
             super().__init__()
-            self.preview_text = preview_text
+            self.preview_status = preview_status
+            self.preview_message = preview_message
+            self.run_summary = run_summary
             self.runs_text = runs_text
             self.can_fetch = can_fetch
 
         def compose(self) -> ComposeResult:
             with Vertical(id="dialog"):
                 yield Label("Review Artifacts", classes="section-title")
-                yield Static(self.preview_text, id="preview_evidence")
-                yield Label("Recent CI", classes="section-title")
-                yield Static(self.runs_text, id="recent_runs")
+                with Vertical(id="review_status"):
+                    yield Static(self.preview_status, id="review_state")
+                    yield Static(self.preview_message, id="review_message", classes="muted")
+                    yield Static(self.run_summary, id="review_run")
+                yield ProgressBar(total=100, show_eta=False, id="fetch_progress")
+                yield Static(_ci_runs_brief(self.runs_text), id="recent_runs", classes="muted")
                 yield Button("Fetch Artifact", id="fetch_artifact")
                 yield Button("Close", id="close_review")
 
         def on_mount(self) -> None:
             self.query_one("#fetch_artifact", Button).disabled = not self.can_fetch
+            self.query_one("#fetch_progress", ProgressBar).display = False
 
         def on_button_pressed(self, event: Button.Pressed) -> None:
             if event.button.id == "fetch_artifact":
+                progress = self.query_one("#fetch_progress", ProgressBar)
+                progress.display = True
+                progress.update(progress=35)
+                self.query_one("#fetch_artifact", Button).disabled = True
                 self.dismiss("fetch")
                 return
             self.dismiss(None)
@@ -609,7 +636,7 @@ def _build_textual_app():
             runs_text = _format_ci_runs(runs)
             try:
                 preview_state = build_preview_state(config, variant)
-                preview_text = format_preview_state(preview_state)
+                preview_status, preview_message, run_summary = _review_artifact_blocks(preview_state)
                 self.ci_status = _format_review_artifacts(preview_state, runs_text)
                 self.state = collect_dashboard_state(preview_state=preview_state)
                 self.review_variant = variant
@@ -620,7 +647,13 @@ def _build_textual_app():
                 return
             self._render_state()
             self.push_screen(
-                ReviewArtifactsScreen(preview_text, runs_text, can_fetch=preview_state.ready),
+                ReviewArtifactsScreen(
+                    preview_status,
+                    preview_message,
+                    run_summary,
+                    runs_text,
+                    can_fetch=preview_state.ready,
+                ),
                 self._review_artifacts,
             )
 
@@ -942,29 +975,36 @@ def _format_inspector(state: DashboardState, ci_status: str = "CI not polled") -
 
 
 def _format_review_artifacts(preview_state: "PreviewState", runs_text: str) -> str:
+    status, message, run_summary = _review_artifact_blocks(preview_state)
+    return "\n".join([status, message, "", run_summary, "", "Recent CI:", runs_text])
+
+
+def _review_artifact_blocks(preview_state: "PreviewState") -> tuple[str, str, str]:
     run = preview_state.run
-    lines = [
-        f"{preview_state.state.upper()}: {preview_state.artifact_name}",
-        preview_state.message,
-    ]
+    status = f"{preview_state.state.upper()} | {preview_state.artifact_name}"
+    message = preview_state.message or "No preview message."
     if run is not None:
-        lines.extend(
-            [
-                "",
-                f"Run {run.database_id or 'unknown'} | {run.status}/{run.conclusion or 'unknown'}",
-                f"{run.branch or 'unknown'} @ {(run.head_sha or '')[:12] or 'unknown'}",
-                f"Created {run.created_at or 'unknown'}",
-                f"Reviewed: {'yes' if preview_state.reviewed else 'no'}",
-            ]
+        run_summary = (
+            f"Run {run.database_id or 'unknown'}  "
+            f"{run.status}/{run.conclusion or 'unknown'}\n"
+            f"{run.branch or 'unknown'} @ {(run.head_sha or '')[:12] or 'unknown'}\n"
+            f"Created {run.created_at or 'unknown'}  "
+            f"Reviewed {'yes' if preview_state.reviewed else 'no'}"
         )
-    lines.extend(["", "Recent CI:", runs_text])
-    return "\n".join(lines)
+    else:
+        run_summary = "No matching preview run."
+    return status, message, run_summary
+
+
+def _ci_runs_brief(runs_text: str) -> str:
+    lines = [line for line in runs_text.splitlines() if line.strip()]
+    return "\n".join(lines[:3]) if lines else "No recent CI runs."
 
 
 def _download_progress_text(variant: str) -> str:
     return (
         f"Downloading boardwright-preview-{variant}...\n"
-        "[##########] fetching artifact with GitHub CLI"
+        "[###.......] fetching artifact with GitHub CLI"
     )
 
 
