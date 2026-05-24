@@ -124,10 +124,14 @@ groups:
 
   - name: tables
     outputs:
+      - table_sources
+      - notes
+
+  - name: table_sources
+    outputs:
       - @CSV_COMP_COUNT_OUPUT@
       - @CSV_DRILL_TABLE_OUTPUT@
       - testpoints
-      - notes
 
   - name: testpoints
     outputs:
@@ -456,6 +460,8 @@ import:
       DIR: @FABRICATION_DIR@
       SHEET_WKS: @SHEET_WKS@
       SCALING: @FAB_SCALING@
+      PTH_NPTH: '@GROUP_PTH_NPTH@'
+      GROUP_ROUND_SLOTS: @GROUP_ROUND_SLOTS@
       FAB_EXCLUDE_FILTER: @FILT_TP_ONLY@
       LAYER_DRILL_MAP: @LAYER_DRILL_MAP@
       LAYER_TP_LIST_TOP: @LAYER_TP_LIST_TOP@
@@ -474,8 +480,11 @@ import:
       SCALING: @ASSEMBLY_SCALING@
       FAB_EXCLUDE_FILTER: @FILT_TP_EXCLUDE@
       LAYER_TITLE_PAGE: @LAYER_TITLE_PAGE@
+      LAYER_ASSEMBLY_TEXT_TOP: @LAYER_ASSEMBLY_TEXT_TOP@
+      LAYER_ASSEMBLY_TEXT_BOTTOM: @LAYER_ASSEMBLY_TEXT_BOTTOM@
       LAYER_DNP_CROSS_TOP: @LAYER_DNP_CROSS_TOP@
       LAYER_DNP_CROSS_BOTTOM: @LAYER_DNP_CROSS_BOTTOM@
+      NAME_COMP_COUNT: @CSV_COMP_COUNT_OUPUT@
 
   # Compress fabrication files into ZIP archive --------------------------------
   - file: kibot_out_compress_fab.yaml

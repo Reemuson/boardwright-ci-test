@@ -46,7 +46,7 @@ jobs:
 
           case "$variant" in
             DRAFT)
-              additional_args="--skip-pre draw_fancy_stackup,include_table,erc,drc --log $KIBOT_LOG draft_group"
+              additional_args="--skip-pre draw_fancy_stackup,erc,drc --log $KIBOT_LOG draft_group"
               ;;
             PRELIMINARY)
               additional_args="--skip-pre erc,drc --log $KIBOT_LOG all_group_k9"
@@ -80,6 +80,15 @@ jobs:
           variant: ${{ env.KIBOT_VARIANT }}
           config: ${{ env.KIBOT_CONFIG }}
           additional_args: --log kibot_preview_readme.log md_readme
+
+      - name: Generate table sources
+        if: env.KIBOT_VARIANT != 'DRAFT'
+        uses: INTI-CMNB/KiBot@v2_dk9
+        with:
+          additional_args: --skip-pre draw_fancy_stackup,erc,drc --log kibot_preview_tables.log table_sources
+          variant: ${{ env.KIBOT_VARIANT }}
+          config: ${{ env.KIBOT_CONFIG }}
+          cache3D: YES
 
       - name: Generate preview outputs
         uses: INTI-CMNB/KiBot@v2_dk9

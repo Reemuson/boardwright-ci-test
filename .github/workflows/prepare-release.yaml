@@ -79,7 +79,7 @@ jobs:
 
           case "$variant" in
             DRAFT)
-              additional_args="--skip-pre draw_fancy_stackup,include_table,erc,drc --log $KIBOT_LOG draft_group md_readme"
+              additional_args="--skip-pre draw_fancy_stackup,erc,drc --log $KIBOT_LOG draft_group md_readme"
               ;;
             PRELIMINARY)
               additional_args="--skip-pre erc,drc --log $KIBOT_LOG all_group_k9"
@@ -104,6 +104,15 @@ jobs:
         with:
           path: ~/cache_3d
           key: cache-3d-kicad-${{ env.KICAD_VERSION }}
+
+      - name: Generate table sources
+        if: env.KIBOT_VARIANT != 'DRAFT'
+        uses: INTI-CMNB/KiBot@v2_dk9
+        with:
+          additional_args: --skip-pre draw_fancy_stackup,erc,drc --log kibot_prepare_tables.log table_sources
+          variant: ${{ env.KIBOT_VARIANT }}
+          config: ${{ env.KIBOT_CONFIG }}
+          cache3D: YES
 
       - name: Generate accepted outputs
         uses: INTI-CMNB/KiBot@v2_dk9

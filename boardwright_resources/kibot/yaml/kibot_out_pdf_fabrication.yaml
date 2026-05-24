@@ -21,6 +21,9 @@ outputs:
     dnf_filter: _kibom_dnf_Config
     frame_plot_mechanism: 'internal' 
     sheet_reference_layout: '@SHEET_WKS@'
+    drill:
+      unify_pth_and_npth: '@PTH_NPTH@'
+      group_slots_and_round_holes: @GROUP_ROUND_SLOTS@
     include_table:
       outputs:
         - name: '@NAME_TP_TOP@'
@@ -57,8 +60,6 @@ outputs:
           row_spacing: 3
           column_spacing: 2
           force_font_width: 1 # mm
-    hide:
-      - group_name: kibot_table_csv_impedance_table
     pages:
       - scaling: @SCALING@
         title: '@DOC_TITLE@'
@@ -114,24 +115,17 @@ outputs:
 
       - scaling: @SCALING@
         title: '@DOC_TITLE@'
-        sheet: 'DRILL MAP'
-        layer_var: 'DRILL MAP'
+        sheet: 'DRILL DRAWING (%lp)'
+        layer_var: 'DRILL DRAWING %lp (SCALE @SCALING@:1)'
         sheet_reference_color: '#000000'
         colored_holes: true
         holes_color: "#FFFFFF"
+        repeat_for_layer: '@LAYER_DRILL_MAP@'
+        repeat_layers: 'drill_pairs'
         layers:
           - layer: '@LAYER_DRILL_MAP@'
             color: '#000000'
-          - layer: Edge.Cuts
-            color: '#000000'
-
-      - scaling: @SCALING@
-        title: '@DOC_TITLE@'
-        sheet: 'DRILL TABLE'
-        layer_var: 'DRILL TABLE'
-        sheet_reference_color: '#000000'
-        layers:
-          - layer: '@LAYER_DRILL_MAP@'
+          - layer: 'Edge.Cuts'
             color: '#000000'
 
       - scaling: @SCALING@
@@ -212,6 +206,8 @@ definitions:
   LAYER_DRILL_MAP: DrillMap
   LAYER_TP_LIST_TOP: F.TestPointList
   LAYER_TP_LIST_BOTTOM: B.TestPointList
+  PTH_NPTH: 'yes'
+  GROUP_ROUND_SLOTS: true
   NAME_TP_TOP: csv_testpoints_top
   NAME_TP_BOTTOM: csv_testpoints_bottom
   NAME_DRILL_TABLE: csv_drill_table
