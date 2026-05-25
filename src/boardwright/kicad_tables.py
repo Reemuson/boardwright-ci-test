@@ -12,9 +12,15 @@ from pathlib import Path
 
 COMPONENT_COUNT_TEXT_BOX_UUID = "511273fd-c939-4feb-bf05-ae1b43c3644e"
 COMPONENT_COUNT_RECT_UUID = "8cb5a7ba-335d-4917-9b0b-efa4a7d38e40"
-IMPEDANCE_TABLE_GROUP_NAME = "kibot_table_csv_impedance_table"
+IMPEDANCE_TABLE_TEXT_BOX_UUID = "9af73f77-a717-4896-ac91-e0684a71d0ea"
 IMPEDANCE_TABLE_TEMPLATE = Path(
     "boardwright_resources/kibot/resources/templates/impedance_table.txt"
+)
+FABRICATION_NOTES_TEMPLATE = Path(
+    "boardwright_resources/kibot/resources/templates/fabrication_notes.txt"
+)
+ASSEMBLY_NOTES_TEMPLATE = Path(
+    "boardwright_resources/kibot/resources/templates/assembly_notes.txt"
 )
 GENERATED_TABLE_NAMESPACE = uuid.UUID("23d77107-9438-4a74-a20c-c4df6c5126dd")
 
@@ -34,7 +40,8 @@ def prepare_pcb_tables(root: Path) -> ComponentCountResult:
 
     csv_path = _write_component_count_csv(root, rows, total)
     _fill_component_count_placeholder(root, rows, total)
-    _hide_empty_impedance_placeholder(root)
+    _fill_empty_impedance_placeholder(root)
+    _write_manufacturing_notes(root)
 
     return ComponentCountResult(csv_path=csv_path, total=total, rows=rows)
 
@@ -186,6 +193,8 @@ def _component_count_graphics(
     row_spacing = min(3.0, (y2 - y1 - margin * 2) / max(row_count - 1, 1))
 
     lines: list[str] = []
+    for index, x in enumerate(xs[1:], start=1):
+        lines.append(_gr_line(x, y1, x, y2, layer, f"v{index}"))
     lines.append(_gr_line(x1, y1 + row_spacing, x2, y1 + row_spacing, layer, "h1"))
 
     for row_index, row in enumerate(table_rows):
@@ -222,7 +231,7 @@ def _gr_text(value: str, x: float, y: float, layer: str, justify: str, key: str)
         "\t\t(effects\n"
         "\t\t\t(font\n"
         "\t\t\t\t(face \"Arial\")\n"
-        "\t\t\t\t(size 1 1)\n"
+        "\t\t\t\t(size 1.27 1.27)\n"
         "\t\t\t\t(thickness 0.15)\n"
         "\t\t\t)\n"
         f"\t\t\t(justify {justify})\n"
@@ -236,19 +245,24 @@ def _generated_uuid(key: str) -> uuid.UUID:
 
 
 def _remove_generated_component_table(text: str) -> str:
-    text = _remove_block_by_uuid(text, str(_generated_uuid("h1")))
+    for key in [*(f"v{i}" for i in range(1, 4)), "h1"]:
+        text = _remove_block_by_uuid(text, str(_generated_uuid(key)))
     for row in range(4):
         for col in range(4):
             text = _remove_block_by_uuid(text, str(_generated_uuid(f"r{row}c{col}")))
     return text
 
 
-def _hide_empty_impedance_placeholder(root: Path) -> None:
+def _fill_empty_impedance_placeholder(root: Path) -> None:
     if _impedance_table_has_rows(root):
         return
     pcb_path = _pcb_path(root)
     text = pcb_path.read_text(encoding="utf-8")
-    updated = _remove_group_and_members(text, IMPEDANCE_TABLE_GROUP_NAME)
+    updated = _replace_text_box_content(
+        text,
+        IMPEDANCE_TABLE_TEXT_BOX_UUID,
+        "NO IMPEDANCE CONTROLLED TRACES",
+    )
     if updated != text:
         pcb_path.write_text(updated, encoding="utf-8")
 
@@ -265,18 +279,185 @@ def _impedance_table_has_rows(root: Path) -> bool:
     return len(rows) > 1
 
 
-def _remove_group_and_members(text: str, group_name: str) -> str:
-    group_start = text.find(f'(group "{group_name}"')
-    if group_start == -1:
-        return text
-    group_end = _find_matching_paren(text, group_start)
-    group_block = text[group_start : group_end + 1]
-    members = re.findall(r'"([0-9a-fA-F-]{36})"', group_block)
+def _write_manufacturing_notes(root: Path) -> None:
+    values = _fabrication_note_values(root)
+    project_stem = _project_stem(root)
 
-    updated = text[:group_start] + text[group_end + 1 :]
-    for member_uuid in members:
-        updated = _remove_block_by_uuid(updated, member_uuid)
-    return updated
+    fabrication = _resource_text(root, FABRICATION_NOTES_TEMPLATE)
+    fabrication = _render_note_template(fabrication, values)
+    if not _impedance_table_has_rows(root):
+        fabrication = _strip_impedance_controlled_note(fabrication)
+    fabrication_dir = root / "Manufacturing" / "Fabrication"
+    fabrication_dir.mkdir(parents=True, exist_ok=True)
+    (fabrication_dir / f"{project_stem}-fabrication_notes.txt").write_text(
+        fabrication,
+        encoding="utf-8",
+    )
+
+    assembly = _resource_text(root, ASSEMBLY_NOTES_TEMPLATE)
+    assembly_dir = root / "Manufacturing" / "Assembly"
+    assembly_dir.mkdir(parents=True, exist_ok=True)
+    (assembly_dir / f"{project_stem}-assembly_notes.txt").write_text(
+        assembly,
+        encoding="utf-8",
+    )
+
+
+def _resource_text(root: Path, relative_path: Path) -> str:
+    project_path = root / relative_path
+    if project_path.is_file():
+        return project_path.read_text(encoding="utf-8")
+    repo_path = Path(__file__).resolve().parents[2] / relative_path
+    return repo_path.read_text(encoding="utf-8")
+
+
+def _fabrication_note_values(root: Path) -> dict[str, str]:
+    pcb = _pcb_path(root).read_text(encoding="utf-8")
+    width, height = _board_size_mm(pcb)
+    pth, npth = _min_drill_sizes(pcb)
+    return {
+        "pcb_finish_cap": _cap(_first_match(pcb, r'\(copper_finish\s+"([^"]+)"\)', "ENIG")),
+        "solder_mask_color_text_cap": _cap(
+            _stackup_layer_value(pcb, "F.Mask", "color", "GREEN")
+        ),
+        "silk_screen_color_text_cap": _cap(
+            _stackup_layer_value(pcb, "F.SilkS", "color", "YELLOW")
+        ),
+        "COMPANY_cap": _cap(
+            _first_match(pcb, r'\(property\s+"COMPANY"\s+"([^"]*)"\)', "COMPANY")
+        ),
+        "bb_w_mm": _mm(width),
+        "bb_h_mm": _mm(height),
+        "thickness_mm": _mm(float(_first_match(pcb, r"\(thickness\s+([-0-9.]+)\)", "0"))),
+        "track_mm": _mm(_min_track_width(pcb, 0.2)),
+        "clearance_mm": _mm(_min_positive_float(re.findall(r"\(clearance\s+([-0-9.]+)\)", pcb), 0.2)),
+        "drill_pth_real_mm": _mm(pth),
+        "drill_npth_real_mm": _mm(npth),
+        "oar_mm": _mm(_min_annular_ring(pcb, 0.15)),
+        "c2h_mm": _mm(0.254),
+        "c2e_mm": _mm(0.250),
+        "h2h_mm": _mm(0.254),
+    }
+
+
+def _render_note_template(template: str, values: dict[str, str]) -> str:
+    rendered = template
+    for key, value in values.items():
+        rendered = rendered.replace("${" + key + "}", value)
+    return rendered.replace("Ã—", "×")
+
+
+def _strip_impedance_controlled_note(text: str) -> str:
+    lines = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("#?stackup and impedance_controlled"):
+            continue
+        if "REFER TO IMPEDANCE TABLE" in line:
+            continue
+        if "CONFIRM SPACE WIDTHS AND SPACINGS" in line:
+            continue
+        lines.append(line)
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _board_size_mm(pcb: str) -> tuple[float, float]:
+    points: list[tuple[float, float]] = []
+    for block in _iter_sexpr_blocks(pcb, "gr_line"):
+        if '(layer "Edge.Cuts")' not in block:
+            continue
+        for match in re.finditer(r"\((?:start|end)\s+([-0-9.]+)\s+([-0-9.]+)\)", block):
+            points.append((float(match.group(1)), float(match.group(2))))
+    for block in _iter_sexpr_blocks(pcb, "gr_rect"):
+        if '(layer "Edge.Cuts")' not in block:
+            continue
+        for match in re.finditer(r"\((?:start|end)\s+([-0-9.]+)\s+([-0-9.]+)\)", block):
+            points.append((float(match.group(1)), float(match.group(2))))
+    if not points:
+        return 0.0, 0.0
+    xs = [point[0] for point in points]
+    ys = [point[1] for point in points]
+    return max(xs) - min(xs), max(ys) - min(ys)
+
+
+def _min_drill_sizes(pcb: str) -> tuple[float, float]:
+    pth: list[float] = []
+    npth: list[float] = []
+    for block in _iter_sexpr_blocks(pcb, "pad"):
+        drill = _pad_drill(block)
+        if drill is None:
+            continue
+        if "np_thru_hole" in block:
+            npth.append(drill)
+        elif "thru_hole" in block:
+            pth.append(drill)
+    return min(pth) if pth else 0.0, min(npth) if npth else 0.0
+
+
+def _pad_drill(block: str) -> float | None:
+    match = re.search(r"\(drill\s+(?:oval\s+)?([-0-9.]+)(?:\s+([-0-9.]+))?", block)
+    if not match:
+        return None
+    values = [float(value) for value in match.groups() if value is not None]
+    return min(values) if values else None
+
+
+def _min_annular_ring(pcb: str, default: float) -> float:
+    rings: list[float] = []
+    for block in _iter_sexpr_blocks(pcb, "pad"):
+        if "thru_hole" not in block or "np_thru_hole" in block:
+            continue
+        drill = _pad_drill(block)
+        size = re.search(r"\(size\s+([-0-9.]+)\s+([-0-9.]+)\)", block)
+        if drill is None or not size:
+            continue
+        rings.append((min(float(size.group(1)), float(size.group(2))) - drill) / 2)
+    positives = [ring for ring in rings if ring > 0]
+    return min(positives) if positives else default
+
+
+def _min_track_width(pcb: str, default: float) -> float:
+    widths: list[float] = []
+    for head in ("segment", "arc"):
+        for block in _iter_sexpr_blocks(pcb, head):
+            match = re.search(r"\(width\s+([-0-9.]+)\)", block)
+            if match:
+                widths.append(float(match.group(1)))
+    if widths:
+        return min(widths)
+    last_width = re.search(r"\(last_track_width\s+([-0-9.]+)\)", pcb)
+    return float(last_width.group(1)) if last_width else default
+
+
+def _stackup_layer_value(pcb: str, layer_name: str, field: str, default: str) -> str:
+    layer_index = pcb.find(f'(layer "{layer_name}"')
+    if layer_index == -1:
+        return default
+    block = pcb[layer_index : _find_matching_paren(pcb, layer_index)]
+    return _first_match(block, rf'\({field}\s+"?([^")]+)"?\)', default)
+
+
+def _first_match(text: str, pattern: str, default: str) -> str:
+    match = re.search(pattern, text)
+    return match.group(1) if match else default
+
+
+def _min_float(values: list[str], default: float) -> float:
+    numbers = [float(value) for value in values]
+    return min(numbers) if numbers else default
+
+
+def _min_positive_float(values: list[str], default: float) -> float:
+    numbers = [float(value) for value in values if float(value) > 0]
+    return min(numbers) if numbers else default
+
+
+def _mm(value: float) -> str:
+    return f"{value:.3f}"
+
+
+def _cap(value: str) -> str:
+    return value.upper()
 
 
 def _remove_block_by_uuid(text: str, target_uuid: str) -> str:
