@@ -116,8 +116,8 @@ outputs:
 
       - scaling: @SCALING@
         title: '@DOC_TITLE@'
-        sheet: 'DRILL MAP - %lpn (PTH/NPTH)'
-        layer_var: 'DRILL MAP - %lpn (PTH/NPTH, SCALE @SCALING@:1)'
+        sheet: 'DRILL DRAWING (%lp)'
+        layer_var: 'DRILL DRAWING %lp (SCALE @SCALING@:1)'
         sheet_reference_color: '#000000'
         colored_holes: true
         holes_color: "#FFFFFF"

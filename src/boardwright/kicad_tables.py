@@ -193,8 +193,6 @@ def _component_count_graphics(
     row_spacing = min(3.0, (y2 - y1 - margin * 2) / max(row_count - 1, 1))
 
     lines: list[str] = []
-    for index, x in enumerate(xs[1:], start=1):
-        lines.append(_gr_line(x, y1, x, y2, layer, f"v{index}"))
     lines.append(_gr_line(x1, y1 + row_spacing, x2, y1 + row_spacing, layer, "h1"))
 
     for row_index, row in enumerate(table_rows):
@@ -202,7 +200,19 @@ def _component_count_graphics(
         for col_index, value in enumerate(row):
             x = xs[col_index] + margin
             justify = "left"
-            lines.append(_gr_text(value, x, y, layer, justify, f"r{row_index}c{col_index}"))
+            next_x = xs[col_index + 1] if col_index + 1 < len(xs) else x2
+            lines.append(
+                _gr_text_box(
+                    value,
+                    x,
+                    y - 0.825,
+                    next_x,
+                    y + row_spacing - 0.825,
+                    layer,
+                    justify,
+                    f"r{row_index}c{col_index}",
+                )
+            )
 
     return "\n" + "\n".join(lines) + "\n"
 
@@ -222,19 +232,35 @@ def _gr_line(x1: float, y1: float, x2: float, y2: float, layer: str, key: str) -
     )
 
 
-def _gr_text(value: str, x: float, y: float, layer: str, justify: str, key: str) -> str:
+def _gr_text_box(
+    value: str,
+    x1: float,
+    y1: float,
+    x2: float,
+    y2: float,
+    layer: str,
+    justify: str,
+    key: str,
+) -> str:
     return (
-        f"\t(gr_text \"{_escape_kicad_string(value)}\"\n"
-        f"\t\t(at {_fmt(x)} {_fmt(y)} 0)\n"
+        f"\t(gr_text_box \"{_escape_kicad_string(value)}\"\n"
+        f"\t\t(start {_fmt(x1)} {_fmt(y1)})\n"
+        f"\t\t(end {_fmt(x2)} {_fmt(y2)})\n"
+        "\t\t(margins 0.825 0.825 0.825 0.825)\n"
         f"\t\t(layer \"{layer}\")\n"
         f"\t\t(uuid \"{_generated_uuid(key)}\")\n"
         "\t\t(effects\n"
         "\t\t\t(font\n"
         "\t\t\t\t(face \"Arial\")\n"
-        "\t\t\t\t(size 1.27 1.27)\n"
+        "\t\t\t\t(size 1 1)\n"
         "\t\t\t\t(thickness 0.15)\n"
         "\t\t\t)\n"
-        f"\t\t\t(justify {justify})\n"
+        f"\t\t\t(justify {justify} top)\n"
+        "\t\t)\n"
+        "\t\t(border no)\n"
+        "\t\t(stroke\n"
+        "\t\t\t(width 0.15)\n"
+        "\t\t\t(type solid)\n"
         "\t\t)\n"
         "\t)"
     )
@@ -263,6 +289,7 @@ def _fill_empty_impedance_placeholder(root: Path) -> None:
         IMPEDANCE_TABLE_TEXT_BOX_UUID,
         "NO IMPEDANCE CONTROLLED TRACES",
     )
+    updated = _set_text_box_font_size(updated, IMPEDANCE_TABLE_TEXT_BOX_UUID, 1.27)
     if updated != text:
         pcb_path.write_text(updated, encoding="utf-8")
 
@@ -542,6 +569,20 @@ def _replace_text_box_content(text: str, uuid: str, replacement: str) -> str:
         + _escape_kicad_string(replacement)
         + text[closing_quote:]
     )
+
+
+def _set_text_box_font_size(text: str, uuid: str, size: float) -> str:
+    block = _block_for_uuid(text, uuid)
+    updated_block = re.sub(
+        r"\(size\s+[-0-9.]+\s+[-0-9.]+\)",
+        f"(size {_fmt(size)} {_fmt(size)})",
+        block,
+        count=1,
+    )
+    if updated_block == block:
+        return text
+    start = text.find(block)
+    return text[:start] + updated_block + text[start + len(block) :]
 
 
 def _find_closing_quote(text: str, opening_quote: int) -> int:
