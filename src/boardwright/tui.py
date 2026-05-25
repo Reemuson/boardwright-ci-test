@@ -19,11 +19,11 @@ from .actions import (
 )
 from .changelog import SUPPORTED_SECTIONS, add_unreleased_entry
 from .commit_messages import suggest_commit_message
-from .config import load_config
+from .config import load_config, update_project_config
 from .errors import BoardwrightError
 from .git_ops import commit_all, dirty_files, push_branch
 from .preview import fetch_latest_preview_artifact
-from .preview import build_preview_state, format_preview_state
+from .preview import build_preview_plan, build_preview_state, dispatch_preview, format_preview_state
 from .release import build_release_plan, validate_release_plan
 from .revision_history import write_revision_variables
 from .status import ProjectStatus, collect_status
@@ -186,6 +186,8 @@ def _build_textual_app():
         CSS = """
         ChangelogEntryScreen,
         ReviewVariantScreen,
+        PreviewDispatchScreen,
+        ProjectInfoScreen,
         ReviewArtifactsScreen,
         AcceptMainScreen,
         CommitScreen,
@@ -211,6 +213,11 @@ def _build_textual_app():
             background: $boost;
         }
 
+        #project_info_scroll {
+            height: 28;
+            max-height: 65vh;
+        }
+
         #review_message {
             height: auto;
             margin-bottom: 1;
@@ -218,6 +225,11 @@ def _build_textual_app():
 
         .muted {
             color: $text-muted;
+        }
+
+        Input,
+        Select {
+            margin-bottom: 1;
         }
         """
 
@@ -306,6 +318,100 @@ def _build_textual_app():
                 return
             variant = self.query_one("#review_variant", Select).value
             self.dismiss(str(variant))
+
+    class PreviewDispatchScreen(ModalScreen[str | None]):
+        CSS = ChangelogEntryScreen.CSS
+
+        def compose(self) -> ComposeResult:
+            config = load_config()
+            with Vertical(id="dialog"):
+                yield Label("Generate Preview", classes="section-title")
+                yield Static(
+                    f"Dispatches {config.preview_workflow} from {config.dev_branch}.",
+                    classes="muted",
+                )
+                yield Select(
+                    [(variant, variant) for variant in ("DRAFT", "PRELIMINARY", "CHECKED", "RELEASED")],
+                    value=config.preview_variant,
+                    id="preview_variant",
+                )
+                yield Button("Generate Preview", id="dispatch_preview")
+                yield Button("Cancel", id="cancel_preview")
+
+        def on_button_pressed(self, event: Button.Pressed) -> None:
+            if event.button.id == "cancel_preview":
+                self.dismiss(None)
+                return
+            variant = self.query_one("#preview_variant", Select).value
+            self.dismiss(str(variant))
+
+    class ProjectInfoScreen(ModalScreen[dict[str, dict[str, str]] | None]):
+        CSS = ChangelogEntryScreen.CSS
+
+        def compose(self) -> ComposeResult:
+            config = load_config()
+            project = config.project.get("project", {})
+            assets = config.assets
+            with Vertical(id="dialog"):
+                yield Label("Project Info", classes="section-title")
+                with VerticalScroll(id="project_info_scroll"):
+                    yield Input(value=str(project.get("id", "")), placeholder="Project ID", id="project_id")
+                    yield Input(value=str(project.get("name", "")), placeholder="Project name", id="project_name")
+                    yield Input(value=config.board_name, placeholder="Board name", id="project_board_name")
+                    yield Input(value=str(project.get("company", "")), placeholder="Company", id="project_company")
+                    yield Input(value=str(project.get("designer", "")), placeholder="Designer", id="project_designer")
+                    yield Input(value=str(project.get("git_url", "")), placeholder="Git URL", id="project_git_url")
+                    yield Input(value=str(project.get("github_repo", "")), placeholder="owner/repo", id="project_github_repo")
+                    yield Label("Variant Defaults", classes="section-title")
+                    for key, label, value in (
+                        ("variant_dev", "Dev", config.default_variant),
+                        ("variant_preview", "Preview", config.preview_variant),
+                        ("variant_main", "Accepted main", config.main_variant),
+                        ("variant_release", "Release", config.release_variant),
+                    ):
+                        yield Static(label, classes="muted")
+                        yield Select(
+                            [(variant, variant) for variant in ("DRAFT", "PRELIMINARY", "CHECKED", "RELEASED")],
+                            value=value,
+                            id=key,
+                        )
+                    yield Label("Assets", classes="section-title")
+                    yield Input(value=str(assets.get("logo", "")), placeholder="Logo path", id="asset_logo")
+                    yield Input(
+                        value=str(assets.get("product_image", "")),
+                        placeholder="Product image path",
+                        id="asset_product_image",
+                    )
+                yield Button("Save Project Info", id="save_project_info")
+                yield Button("Cancel", id="cancel_project_info")
+
+        def on_button_pressed(self, event: Button.Pressed) -> None:
+            if event.button.id == "cancel_project_info":
+                self.dismiss(None)
+                return
+            self.dismiss(
+                {
+                    "project": {
+                        "id": self.query_one("#project_id", Input).value.strip(),
+                        "name": self.query_one("#project_name", Input).value.strip(),
+                        "board_name": self.query_one("#project_board_name", Input).value.strip(),
+                        "company": self.query_one("#project_company", Input).value.strip(),
+                        "designer": self.query_one("#project_designer", Input).value.strip(),
+                        "git_url": self.query_one("#project_git_url", Input).value.strip(),
+                        "github_repo": self.query_one("#project_github_repo", Input).value.strip(),
+                    },
+                    "variants": {
+                        "dev_default": str(self.query_one("#variant_dev", Select).value),
+                        "preview_default": str(self.query_one("#variant_preview", Select).value),
+                        "main_default": str(self.query_one("#variant_main", Select).value),
+                        "release_default": str(self.query_one("#variant_release", Select).value),
+                    },
+                    "assets": {
+                        "logo": self.query_one("#asset_logo", Input).value.strip(),
+                        "product_image": self.query_one("#asset_product_image", Input).value.strip(),
+                    },
+                }
+            )
 
     class AcceptMainScreen(ModalScreen[tuple[str, bool] | None]):
         CSS = ChangelogEntryScreen.CSS
@@ -542,9 +648,11 @@ def _build_textual_app():
             ("r", "refresh", "Refresh"),
             ("c", "record_change", "Record Change"),
             ("m", "commit_push", "Commit + Push"),
+            ("g", "generate_preview", "Generate Preview"),
             ("a", "review_artifacts", "Review Artifacts"),
             ("p", "accept_main", "Accept Main"),
             ("l", "release_ci", "Release"),
+            ("i", "project_info", "Project Info"),
         ]
 
         def __init__(self) -> None:
@@ -566,9 +674,11 @@ def _build_textual_app():
                         with Grid(classes="action-grid"):
                             yield Button("Record\nChanges", id="record_change", classes="primary-action")
                             yield Button("Commit\n+ Push", id="commit_push", classes="primary-action")
+                            yield Button("Generate\nPreview", id="generate_preview", classes="secondary-action")
                             yield Button("Review\nArtifacts", id="review_artifacts", classes="secondary-action")
                             yield Button("Accept\nto Main", id="accept_main", classes="secondary-action")
                             yield Button("Create\nRelease", id="release_ci", classes="danger-action")
+                            yield Button("Project\nInfo", id="project_info", classes="secondary-action")
                             yield Button("Refresh", id="refresh", classes="secondary-action")
                 with Vertical(id="details"):
                     with Horizontal(id="main_details"):
@@ -598,12 +708,16 @@ def _build_textual_app():
                 self.action_record_change()
             elif event.button.id == "commit_push":
                 self.action_commit_push()
+            elif event.button.id == "generate_preview":
+                self.action_generate_preview()
             elif event.button.id == "review_artifacts":
                 self.action_review_artifacts()
             elif event.button.id == "accept_main":
                 self.action_accept_main()
             elif event.button.id == "release_ci":
                 self.action_release_ci()
+            elif event.button.id == "project_info":
+                self.action_project_info()
 
         def action_refresh(self) -> None:
             accepted_state = None
@@ -621,6 +735,76 @@ def _build_textual_app():
 
         def action_review_artifacts(self) -> None:
             self.push_screen(ReviewVariantScreen(), self._review_artifact_variant)
+
+        def action_generate_preview(self) -> None:
+            self.push_screen(PreviewDispatchScreen(), self._generate_preview)
+
+        def _generate_preview(self, variant: str | None) -> None:
+            if variant is None:
+                return
+            try:
+                config = load_config()
+                if self.state.status.branch != config.dev_branch:
+                    self.notify(
+                        f"Cannot generate preview from {self.state.status.branch}; switch to {config.dev_branch}.",
+                        severity="error",
+                    )
+                    return
+                if self.state.status.dirty_count:
+                    self.notify("Commit and push local changes before generating preview.", severity="error")
+                    return
+                if self.state.status.ahead:
+                    self.notify("Push local commits before generating preview.", severity="error")
+                    return
+                plan = build_preview_plan(config, variant)
+            except BoardwrightError as exc:
+                self.notify(str(exc), severity="error")
+                return
+            self.ci_status = f"Dispatching preview {plan.variant} via {plan.workflow}..."
+            self._render_state()
+            Thread(target=self._dispatch_preview, args=(plan.variant,), daemon=True).start()
+
+        def _dispatch_preview(self, variant: str) -> None:
+            try:
+                config = load_config()
+                plan = build_preview_plan(config, variant)
+                dispatch_preview(plan, config.root)
+            except BoardwrightError as exc:
+                self.call_from_thread(self._finish_preview_dispatch, variant, str(exc))
+                return
+            self.call_from_thread(self._finish_preview_dispatch, variant, None)
+
+        def _finish_preview_dispatch(self, variant: str, error: str | None) -> None:
+            if error:
+                self.ci_status = error
+                self._render_state()
+                self.notify(error, severity="error")
+                return
+            self.state = collect_dashboard_state()
+            self.ci_status = f"Preview workflow dispatched for {variant}."
+            self._render_state()
+            self.notify(f"Preview workflow dispatched for {variant}.")
+
+        def action_project_info(self) -> None:
+            self.push_screen(ProjectInfoScreen(), self._save_project_info)
+
+        def _save_project_info(self, result: dict[str, dict[str, str]] | None) -> None:
+            if result is None:
+                return
+            try:
+                config = load_config()
+                path = update_project_config(
+                    config,
+                    project_fields=result["project"],
+                    variant_fields=result["variants"],
+                    asset_fields=result["assets"],
+                )
+                self.state = collect_dashboard_state()
+            except BoardwrightError as exc:
+                self.notify(str(exc), severity="error")
+                return
+            self._render_state()
+            self.notify(f"Updated {path.relative_to(load_config().root)}.")
 
         def _review_artifact_variant(self, variant: str | None) -> None:
             if variant is None:
@@ -845,6 +1029,8 @@ def _build_textual_app():
                 "\n".join(
                     [
                         f"Name: {status.project_name}",
+                        f"Variant: {status.variant}",
+                        f"Preview: {load_config().preview_variant}",
                         f"Unreleased: {'yes' if status.unreleased_changes else 'no'}",
                         f"Git: {dirty_summary}",
                         f"Remote: ahead {status.ahead}, behind {status.behind}",
@@ -866,9 +1052,11 @@ def _build_textual_app():
             for button_id, action_name in (
                 ("record_change", "Record Changes"),
                 ("commit_push", "Commit + Push"),
+                ("generate_preview", "Generate Preview"),
                 ("review_artifacts", "Review Artifacts"),
                 ("accept_main", "Accept to Main"),
                 ("release_ci", "Create Release"),
+                ("project_info", "Project Info"),
                 ("refresh", "Refresh"),
             ):
                 self.query_one(f"#{button_id}", Button).disabled = not action_state(
@@ -962,7 +1150,7 @@ def _format_inspector(state: DashboardState, ci_status: str = "CI not polled") -
             f"{state.workflow.next_action}: {state.workflow.reason}",
             f"Stage: {state.workflow.stage}",
             "",
-            "Preview runs from dev pushes.",
+            "Preview CI is dispatched manually when dev is pushed.",
             "Accepted main:",
             state.accepted_summary,
             "",

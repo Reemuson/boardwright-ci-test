@@ -9,6 +9,9 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
+from .config import load_config
+from .errors import BoardwrightError
+
 
 COMPONENT_COUNT_TEXT_BOX_UUID = "511273fd-c939-4feb-bf05-ae1b43c3644e"
 COMPONENT_COUNT_RECT_UUID = "8cb5a7ba-335d-4917-9b0b-efa4a7d38e40"
@@ -22,6 +25,7 @@ FABRICATION_NOTES_TEMPLATE = Path(
 ASSEMBLY_NOTES_TEMPLATE = Path(
     "boardwright_resources/kibot/resources/templates/assembly_notes.txt"
 )
+KIBOT_MAIN_YAML = Path("boardwright_resources/kibot/yaml/kibot_main.yaml")
 GENERATED_TABLE_NAMESPACE = uuid.UUID("23d77107-9438-4a74-a20c-c4df6c5126dd")
 
 
@@ -34,6 +38,7 @@ class ComponentCountResult:
 
 def prepare_pcb_tables(root: Path) -> ComponentCountResult:
     root = root.resolve()
+    _sync_kibot_project_metadata(root)
     counts = _collect_component_mount_counts(root)
     rows = _component_mount_rows(counts)
     total = rows[-1][-1] if rows else 0
@@ -44,6 +49,41 @@ def prepare_pcb_tables(root: Path) -> ComponentCountResult:
     _write_manufacturing_notes(root)
 
     return ComponentCountResult(csv_path=csv_path, total=total, rows=rows)
+
+
+def _sync_kibot_project_metadata(root: Path) -> None:
+    try:
+        config = load_config(root)
+    except BoardwrightError:
+        return
+
+    project = config.project.get("project", {})
+    git_url = str(project.get("git_url") or "").strip()
+    if not git_url and config.github_repo:
+        git_url = f"https://github.com/{config.github_repo}"
+
+    replacements = {
+        "PROJECT_NAME": config.project_name,
+        "BOARD_NAME": config.board_name,
+        "COMPANY": str(project.get("company") or ""),
+        "DESIGNER": str(project.get("designer") or ""),
+        "LOGO": str(config.assets.get("logo") or ""),
+        "GIT_URL": git_url,
+    }
+    path = root / KIBOT_MAIN_YAML
+    if not path.is_file():
+        return
+    text = path.read_text(encoding="utf-8")
+    updated = text
+    for key, value in replacements.items():
+        updated = re.sub(
+            rf"(?m)^  {re.escape(key)}:\s*.*$",
+            f"  {key}: {_yaml_quote(value)}",
+            updated,
+            count=1,
+        )
+    if updated != text:
+        path.write_text(updated, encoding="utf-8", newline="\n")
 
 
 def _collect_component_mount_counts(root: Path) -> Counter[tuple[str, str]]:
@@ -193,14 +233,18 @@ def _component_count_graphics(
     row_spacing = min(3.0, (y2 - y1 - margin * 2) / max(row_count - 1, 1))
 
     lines: list[str] = []
+    for index, x in enumerate(xs[1:], start=1):
+        lines.append(_gr_line(x, y1, x, y2, layer, f"v{index}"))
     lines.append(_gr_line(x1, y1 + row_spacing, x2, y1 + row_spacing, layer, "h1"))
 
     for row_index, row in enumerate(table_rows):
         y = y1 + margin + row_index * row_spacing
         for col_index, value in enumerate(row):
-            x = xs[col_index] + margin
-            justify = "left"
+            left = xs[col_index]
             next_x = xs[col_index + 1] if col_index + 1 < len(xs) else x2
+            is_number = col_index > 0 and row_index > 0
+            justify = "center" if is_number else "left"
+            x = left if is_number else left + margin
             lines.append(
                 _gr_text_box(
                     value,
@@ -211,6 +255,7 @@ def _component_count_graphics(
                     layer,
                     justify,
                     f"r{row_index}c{col_index}",
+                    bold=row_index == 0 or col_index == 0,
                 )
             )
 
@@ -241,7 +286,10 @@ def _gr_text_box(
     layer: str,
     justify: str,
     key: str,
+    *,
+    bold: bool = False,
 ) -> str:
+    thickness = "0.25" if bold else "0.15"
     return (
         f"\t(gr_text_box \"{_escape_kicad_string(value)}\"\n"
         f"\t\t(start {_fmt(x1)} {_fmt(y1)})\n"
@@ -253,7 +301,7 @@ def _gr_text_box(
         "\t\t\t(font\n"
         "\t\t\t\t(face \"Arial\")\n"
         "\t\t\t\t(size 1 1)\n"
-        "\t\t\t\t(thickness 0.15)\n"
+        f"\t\t\t\t(thickness {thickness})\n"
         "\t\t\t)\n"
         f"\t\t\t(justify {justify} top)\n"
         "\t\t)\n"
@@ -653,6 +701,10 @@ def _pcb_path(root: Path) -> Path:
 
 def _escape_kicad_string(value: str) -> str:
     return value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+
+
+def _yaml_quote(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
 
 
 def _unescape_kicad_string(value: str) -> str:

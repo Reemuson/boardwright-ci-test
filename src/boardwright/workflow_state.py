@@ -173,7 +173,7 @@ def _workflow_steps(
         WorkflowStep(
             "4 Preview CI",
             preview_step_state,
-            "Runs automatically when dev is pushed.",
+            "Dispatch preview when dev is pushed and ready to review.",
         ),
         WorkflowStep(
             "5 Review artifacts",
@@ -217,6 +217,13 @@ def _actions(
             _commit_action_reason(config, status, has_errors, wrong_dev_branch, dirty, needs_push),
         ),
         CockpitAction(
+            "Generate Preview",
+            clean_pushed and not wrong_dev_branch,
+            "Dispatch preview CI for a selected variant."
+            if clean_pushed and not wrong_dev_branch
+            else "Commit and push dev before generating preview.",
+        ),
+        CockpitAction(
             "Review Artifacts",
             clean_pushed,
             "Review or fetch preview artifacts." if clean_pushed else "Commit and push before reviewing artifacts.",
@@ -233,6 +240,7 @@ def _actions(
             if accepted_ready and _release_ready(release_summary)
             else _release_action_reason(accepted_state, release_summary),
         ),
+        CockpitAction("Project Info", True, "Edit project metadata and variant defaults."),
         CockpitAction("Refresh", True, "Refresh project state."),
     )
 

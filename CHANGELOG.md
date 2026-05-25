@@ -6,6 +6,10 @@
 
 - test
 - test
+
+### Fixed
+
+- test 2
 ## [0.1.0] - 2026-04-24
 
 ### Status

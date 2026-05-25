@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from .errors import BoardwrightError
+from .variants import normalize_variant
 from .workflows import install_workflows
 
 
@@ -83,6 +84,11 @@ class BoardwrightConfig:
     @property
     def project_name(self) -> str:
         return str(self.project.get("project", {}).get("name", "unknown"))
+
+    @property
+    def board_name(self) -> str:
+        project = self.project.get("project", {})
+        return str(project.get("board_name") or project.get("name", "unknown"))
 
     @property
     def github_repo(self) -> str:
@@ -202,6 +208,40 @@ def init_config(
     return written
 
 
+def update_project_config(
+    config: BoardwrightConfig,
+    *,
+    project_fields: dict[str, str] | None = None,
+    variant_fields: dict[str, str] | None = None,
+    asset_fields: dict[str, str] | None = None,
+) -> Path:
+    """Update editable project metadata in `.boardwright/project.yaml`."""
+
+    path = config.root / CONFIG_DIR / "project.yaml"
+    data = _read_yaml(path)
+
+    project = data.setdefault("project", {})
+    if not isinstance(project, dict):
+        raise BoardwrightError("project.yaml field `project` must be a mapping.")
+    for key, value in (project_fields or {}).items():
+        project[key] = value
+
+    variants = data.setdefault("variants", {})
+    if not isinstance(variants, dict):
+        raise BoardwrightError("project.yaml field `variants` must be a mapping.")
+    for key, value in (variant_fields or {}).items():
+        variants[key] = normalize_variant(value)
+
+    assets = data.setdefault("assets", {})
+    if not isinstance(assets, dict):
+        raise BoardwrightError("project.yaml field `assets` must be a mapping.")
+    for key, value in (asset_fields or {}).items():
+        assets[key] = value
+
+    _write_yaml(path, data)
+    return path
+
+
 def _read_yaml(path: Path) -> dict[str, Any]:
     if not path.exists():
         raise BoardwrightError(f"Missing config file: {path}")
@@ -218,6 +258,42 @@ def _read_yaml(path: Path) -> dict[str, Any]:
     if not isinstance(loaded, dict):
         raise BoardwrightError(f"Expected a mapping in {path}")
     return loaded
+
+
+def _write_yaml(path: Path, data: dict[str, Any]) -> None:
+    try:
+        import yaml
+    except ImportError:
+        path.write_text(_dump_simple_project_yaml(data), encoding="utf-8", newline="\n")
+        return
+
+    path.write_text(
+        yaml.safe_dump(data, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+        newline="\n",
+    )
+
+
+def _dump_simple_project_yaml(data: dict[str, Any]) -> str:
+    lines: list[str] = []
+    for section, values in data.items():
+        lines.append(f"{section}:")
+        if isinstance(values, dict):
+            for key, value in values.items():
+                lines.append(f"  {key}: {_quote_yaml_scalar(value)}")
+        lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _quote_yaml_scalar(value: Any) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    text = str(value)
+    if text == "":
+        return '""'
+    if any(char in text for char in ":#{}[]&,*?|-<>=!%@`\"'") or text.strip() != text:
+        return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    return text
 
 
 def _read_simple_yaml(text: str) -> dict[str, Any]:
