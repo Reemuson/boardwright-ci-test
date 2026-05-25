@@ -243,7 +243,7 @@ def _component_count_graphics(
             left = xs[col_index]
             next_x = xs[col_index + 1] if col_index + 1 < len(xs) else x2
             is_number = col_index > 0 and row_index > 0
-            justify = "center" if is_number else "left"
+            justify = "" if is_number else "left"
             x = left if is_number else left + margin
             lines.append(
                 _gr_text_box(
@@ -303,7 +303,7 @@ def _gr_text_box(
         "\t\t\t\t(size 1 1)\n"
         f"\t\t\t\t(thickness {thickness})\n"
         "\t\t\t)\n"
-        f"\t\t\t(justify {justify} top)\n"
+        f"\t\t\t(justify{(' ' + justify) if justify else ''} top)\n"
         "\t\t)\n"
         "\t\t(border no)\n"
         "\t\t(stroke\n"

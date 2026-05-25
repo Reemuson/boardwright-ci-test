@@ -231,6 +231,15 @@ def _build_textual_app():
         Select {
             margin-bottom: 1;
         }
+
+        Button {
+            width: 100%;
+            height: 3;
+            min-height: 3;
+            margin-top: 0;
+            content-align: center middle;
+            text-align: center;
+        }
         """
 
         def compose(self) -> ComposeResult:
@@ -443,10 +452,18 @@ def _build_textual_app():
     class CommitScreen(ModalScreen[str | None]):
         CSS = ChangelogEntryScreen.CSS
 
+        def __init__(self, suggested_message: str) -> None:
+            super().__init__()
+            self.suggested_message = suggested_message
+
         def compose(self) -> ComposeResult:
             with Vertical(id="dialog"):
                 yield Label("Commit + Push", classes="section-title")
-                yield Input(placeholder="feat: describe the board change", id="commit_message")
+                yield Input(
+                    value=self.suggested_message,
+                    placeholder="feat: describe the board change",
+                    id="commit_message",
+                )
                 yield Button("Commit + Push", id="commit_push")
                 yield Button("Cancel", id="cancel_commit")
 
@@ -519,11 +536,12 @@ def _build_textual_app():
         }
 
         #top_status {
-            height: 3;
+            height: 4;
             padding: 1 2 0 2;
             content-align: left middle;
             border-bottom: solid $accent;
             background: $surface;
+            overflow-x: auto;
         }
 
         #body {
@@ -545,7 +563,7 @@ def _build_textual_app():
         .action-grid {
             grid-size: 2;
             grid-columns: 1fr 1fr;
-            grid-gutter: 0 1;
+            grid-gutter: 1 1;
             height: auto;
         }
 
@@ -623,10 +641,12 @@ def _build_textual_app():
             text-align: center;
         }
 
-        Button {
+        Button.action-button {
             width: 100%;
-            height: 5;
+            height: 4;
+            min-height: 4;
             margin-top: 0;
+            content-align: center middle;
             text-align: center;
         }
 
@@ -672,14 +692,14 @@ def _build_textual_app():
                     with Vertical(id="actions"):
                         yield Label("Workflow", classes="section-title")
                         with Grid(classes="action-grid"):
-                            yield Button("Record\nChanges", id="record_change", classes="primary-action")
-                            yield Button("Commit\n+ Push", id="commit_push", classes="primary-action")
-                            yield Button("Generate\nPreview", id="generate_preview", classes="secondary-action")
-                            yield Button("Review\nArtifacts", id="review_artifacts", classes="secondary-action")
-                            yield Button("Accept\nto Main", id="accept_main", classes="secondary-action")
-                            yield Button("Create\nRelease", id="release_ci", classes="danger-action")
-                            yield Button("Project\nInfo", id="project_info", classes="secondary-action")
-                            yield Button("Refresh", id="refresh", classes="secondary-action")
+                            yield Button("Record\nChanges", id="record_change", classes="action-button primary-action")
+                            yield Button("Commit\n+ Push", id="commit_push", classes="action-button primary-action")
+                            yield Button("Generate\nPreview", id="generate_preview", classes="action-button secondary-action")
+                            yield Button("Review\nArtifacts", id="review_artifacts", classes="action-button secondary-action")
+                            yield Button("Accept\nto Main", id="accept_main", classes="action-button secondary-action")
+                            yield Button("Create\nRelease", id="release_ci", classes="action-button danger-action")
+                            yield Button("Project\nInfo", id="project_info", classes="action-button secondary-action")
+                            yield Button("Refresh", id="refresh", classes="action-button secondary-action")
                 with Vertical(id="details"):
                     with Horizontal(id="main_details"):
                         with Vertical(id="timeline_panel"):
@@ -873,7 +893,7 @@ def _build_textual_app():
             self.push_screen(ChangelogEntryScreen(), self._record_change)
 
         def action_commit_push(self) -> None:
-            self.push_screen(CommitScreen(), self._commit_push)
+            self.push_screen(CommitScreen(_suggested_commit_message()), self._commit_push)
 
         def action_accept_main(self) -> None:
             self.push_screen(AcceptMainScreen(), self._accept_main)
@@ -916,41 +936,61 @@ def _build_textual_app():
             if not message:
                 self.notify("Commit message cannot be empty.", severity="error")
                 return
+            self.ci_status = "Commit + push running..."
+            self._render_state()
+            self.notify("Committing and pushing dev...")
+            Thread(target=self._commit_push_worker, args=(message,), daemon=True).start()
+
+        def _commit_push_worker(self, message: str) -> None:
             try:
                 config = load_config()
-                if self.state.status.branch != config.dev_branch:
-                    self.notify(
-                        f"Cannot commit + push from {self.state.status.branch}; switch to {config.dev_branch}.",
-                        severity="error",
+                status = collect_status(config)
+                if status.branch != config.dev_branch:
+                    self.call_from_thread(
+                        self._finish_commit_push,
+                        "",
+                        f"Cannot commit + push from {status.branch}; switch to {config.dev_branch}.",
                     )
                     return
-                if self.state.status.dirty_count and not self.state.status.unreleased_changes:
-                    self.notify("Cannot commit: record a changelog entry first.", severity="error")
+                if status.dirty_count and not status.unreleased_changes:
+                    self.call_from_thread(
+                        self._finish_commit_push,
+                        "",
+                        "Cannot commit: record a changelog entry first.",
+                    )
                     return
                 issues = tuple(validate_project(config))
                 if any(issue.level == "error" for issue in issues):
-                    self.state = collect_dashboard_state()
-                    self._render_state()
-                    self.notify("Cannot commit: validation failed.", severity="error")
+                    self.call_from_thread(
+                        self._finish_commit_push,
+                        "",
+                        "Cannot commit: validation failed.",
+                    )
                     return
                 write_revision_variables(config)
                 output = commit_all(config.root, message, dry_run=False)
                 if "fatal:" in output.lower() or "error:" in output.lower():
-                    self.state = collect_dashboard_state()
-                    self._render_state()
-                    self.notify(output, severity="error")
+                    self.call_from_thread(self._finish_commit_push, "", output)
                     return
                 push_output = push_branch(config.root, config.dev_branch)
             except BoardwrightError as exc:
-                self.notify(str(exc), severity="error")
+                self.call_from_thread(self._finish_commit_push, "", str(exc))
                 return
+            result_message = f"{output or 'Committed changes.'}\n{push_output or 'Pushed dev.'}"
+            self.call_from_thread(
+                self._finish_commit_push,
+                result_message,
+                push_output if _command_failed(push_output) else None,
+            )
+
+        def _finish_commit_push(self, result: str, error: str | None) -> None:
             self.state = collect_dashboard_state()
+            self.ci_status = error or result or "Commit + push complete."
             self._render_state()
-            if _command_failed(push_output):
-                self.notify(push_output, severity="error")
+            if error:
+                self.notify(error, severity="error")
             else:
-                message = output or "Committed changes."
-                self.notify(f"{message}\n{push_output or 'Pushed dev.'}")
+                self.notify(result or "Commit + push complete.")
 
         def _accept_main(self, result: tuple[str, bool] | None) -> None:
             if result is None:
@@ -1090,7 +1130,8 @@ def _format_top_status(
     if status.ahead or status.behind:
         text.append(" | remote ")
         text.append(f"+{status.ahead}/-{status.behind}", style="bold yellow")
-    text.append(" | variant ")
+    text.append("\n")
+    text.append("variant ")
     text.append(status.variant, style="magenta")
     text.append(" | tag ")
     text.append(status.latest_tag or "none", style="cyan" if status.latest_tag else "dim")
@@ -1142,6 +1183,13 @@ def _workflow_state_style(state: str) -> str:
     if state == "external":
         return "bold cyan"
     return "bold"
+
+
+def _suggested_commit_message(seed: str = "") -> str:
+    try:
+        return suggest_commit_message(load_config().root, seed)
+    except BoardwrightError:
+        return ""
 
 
 def _format_inspector(state: DashboardState, ci_status: str = "CI not polled") -> str:
