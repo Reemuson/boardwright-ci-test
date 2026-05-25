@@ -126,6 +126,11 @@ jobs:
           config: ${{ env.KIBOT_CONFIG }}
           cache3D: YES
 
+      - name: Prune empty conditional PDF pages
+        if: env.KIBOT_VARIANT != 'DRAFT'
+        shell: bash
+        run: python boardwright_resources/kibot/resources/scripts/prune_pdf_pages.py .
+
       - name: Generate accepted outputs
         uses: INTI-CMNB/KiBot@v2_dk9
         with:

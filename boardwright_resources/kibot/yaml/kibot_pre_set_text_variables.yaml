@@ -87,13 +87,13 @@ preflight:
     # Fabrication notes
     - variable: 'FABRICATION_NOTES'
       expand_in_command: true
-      command: '[ -s "@FABRICATION_DIR@/%f-fabrication_notes%v.txt" ] && cat "@FABRICATION_DIR@/%f-fabrication_notes%v.txt" || printf "%s\n" "FABRICATION NOTES (UNLESS OTHERWISE SPECIFIED)" "" "1) FABRICATE PER IPC-6012A CLASS 2." "" "2) OUTLINE DEFINED IN SEPARATE GERBER FILE WITH" "    \"Edge_Cuts.GBR\" SUFFIX." "" "3) SEE SEPARATE DRILL FILES WITH \".DRL\" SUFFIX" "    FOR HOLE LOCATIONS." "" "4) SURFACE FINISH, SOLDERMASK, SILK SCREEN, AND STACKUP" "    REQUIREMENTS ARE DEFINED BY PROJECT SETTINGS."'
+      command: '[ -s "@FABRICATION_DIR@/%f-fabrication_notes%v.txt" ] && cat "@FABRICATION_DIR@/%f-fabrication_notes%v.txt" || cat "@REPORT_TEMPLATE_DIR@/fabrication_notes.txt"'
 
 
     # Fabrication notes
     - variable: 'ASSEMBLY_NOTES'
       expand_in_command: true
-      command: '[ -s "@ASSEMBLY_DIR@/%f-assembly_notes%v.txt" ] && cat "@ASSEMBLY_DIR@/%f-assembly_notes%v.txt" || printf "%s\n" "ASSEMBLY NOTES (UNLESS OTHERWISE SPECIFIED)" "" "1) DO NOT POPULATE PARTS ARE MARKED WITH A RED CROSS." "" "2) DO NOT POPULATE PARTS ARE NOT PRESENT IN THE BOM." "" "3) IF CONFLICTING INFORMATION IS FOUND BETWEEN THE ASSEMBLY" "    FILE AND BOM, BOM SHOULD BE USED AS THE MAIN SOURCE." "" "4) CONFORMAL COATING IS NOT REQUIRED." "" "5) DOT IDENTIFIES PIN #1 LOCATION AND DEVICE ORIENTATION" "    WHEN VIEWED FROM THE TOP."'
+      command: '[ -s "@ASSEMBLY_DIR@/%f-assembly_notes%v.txt" ] && cat "@ASSEMBLY_DIR@/%f-assembly_notes%v.txt" || cat "@REPORT_TEMPLATE_DIR@/assembly_notes.txt"'
 
     # Page titles for automatic ToC
     - variable: '@SHEET_NAME_VAR@1'
@@ -189,6 +189,7 @@ definitions:
   GIT_URL: ""
   SHEET_NAME_VAR: SHEET_NAME_
   SCRIPTS_DIR: boardwright_resources/kibot/resources/scripts
+  REPORT_TEMPLATE_DIR: boardwright_resources/kibot/resources/templates
   GET_SHEET_CMD: python3 @SCRIPTS_DIR@/get_sheet_title.py -f "${KIBOT_SCH_NAME}" --dots-number 32 -p
   GET_REVHIST_CMD: python3 @SCRIPTS_DIR@/get_revision_history_var.py
   FABRICATION_DIR: Manufacturing/Fabrication

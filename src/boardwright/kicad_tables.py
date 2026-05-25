@@ -183,11 +183,10 @@ def _component_count_graphics(
     lines: list[str] = []
     for index, x in enumerate(xs[1:-1], start=1):
         lines.append(_gr_line(x, y1, x, y2, layer, f"v{index}"))
-    for index, y in enumerate(ys[1:-1], start=1):
-        lines.append(_gr_line(x1, y, x2, y, layer, f"h{index}"))
+    lines.append(_gr_line(x1, ys[1], x2, ys[1], layer, "h1"))
 
     for row_index, row in enumerate(table_rows):
-        y = ys[row_index] + row_height * 0.62
+        y = ys[row_index] + row_height * 0.66
         for col_index, value in enumerate(row):
             x = xs[col_index] + 0.75
             justify = "left"
