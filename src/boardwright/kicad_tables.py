@@ -12,6 +12,10 @@ from pathlib import Path
 
 COMPONENT_COUNT_TEXT_BOX_UUID = "511273fd-c939-4feb-bf05-ae1b43c3644e"
 COMPONENT_COUNT_RECT_UUID = "8cb5a7ba-335d-4917-9b0b-efa4a7d38e40"
+IMPEDANCE_TABLE_GROUP_NAME = "kibot_table_csv_impedance_table"
+IMPEDANCE_TABLE_TEMPLATE = Path(
+    "boardwright_resources/kibot/resources/templates/impedance_table.txt"
+)
 GENERATED_TABLE_NAMESPACE = uuid.UUID("23d77107-9438-4a74-a20c-c4df6c5126dd")
 
 
@@ -30,6 +34,7 @@ def prepare_pcb_tables(root: Path) -> ComponentCountResult:
 
     csv_path = _write_component_count_csv(root, rows, total)
     _fill_component_count_placeholder(root, rows, total)
+    _hide_empty_impedance_placeholder(root)
 
     return ComponentCountResult(csv_path=csv_path, total=total, rows=rows)
 
@@ -175,24 +180,19 @@ def _component_count_graphics(
     table_rows = [("Type", "Front Side", "Back Side", "Total")]
     table_rows.extend(tuple(str(value) for value in row) for row in rows)
     row_count = len(table_rows)
-    columns = (0.0, 0.30, 0.58, 0.82, 1.0)
+    columns = (0.0, 0.30, 0.58, 0.80)
     xs = [x1 + (x2 - x1) * value for value in columns]
-    row_height = (y2 - y1) / row_count
-    ys = [y1 + row_height * index for index in range(row_count + 1)]
+    margin = 0.825
+    row_spacing = min(3.0, (y2 - y1 - margin * 2) / max(row_count - 1, 1))
 
     lines: list[str] = []
-    for index, x in enumerate(xs[1:-1], start=1):
-        lines.append(_gr_line(x, y1, x, y2, layer, f"v{index}"))
-    lines.append(_gr_line(x1, ys[1], x2, ys[1], layer, "h1"))
+    lines.append(_gr_line(x1, y1 + row_spacing, x2, y1 + row_spacing, layer, "h1"))
 
     for row_index, row in enumerate(table_rows):
-        y = ys[row_index] + row_height * 0.66
+        y = y1 + margin + row_index * row_spacing
         for col_index, value in enumerate(row):
-            x = xs[col_index] + 0.75
+            x = xs[col_index] + margin
             justify = "left"
-            if col_index > 0:
-                x = xs[col_index + 1] - 0.75
-                justify = "right"
             lines.append(_gr_text(value, x, y, layer, justify, f"r{row_index}c{col_index}"))
 
     return "\n" + "\n".join(lines) + "\n"
@@ -236,12 +236,47 @@ def _generated_uuid(key: str) -> uuid.UUID:
 
 
 def _remove_generated_component_table(text: str) -> str:
-    for key in [*(f"v{i}" for i in range(1, 4)), *(f"h{i}" for i in range(1, 4))]:
-        text = _remove_block_by_uuid(text, str(_generated_uuid(key)))
+    text = _remove_block_by_uuid(text, str(_generated_uuid("h1")))
     for row in range(4):
         for col in range(4):
             text = _remove_block_by_uuid(text, str(_generated_uuid(f"r{row}c{col}")))
     return text
+
+
+def _hide_empty_impedance_placeholder(root: Path) -> None:
+    if _impedance_table_has_rows(root):
+        return
+    pcb_path = _pcb_path(root)
+    text = pcb_path.read_text(encoding="utf-8")
+    updated = _remove_group_and_members(text, IMPEDANCE_TABLE_GROUP_NAME)
+    if updated != text:
+        pcb_path.write_text(updated, encoding="utf-8")
+
+
+def _impedance_table_has_rows(root: Path) -> bool:
+    template = root / IMPEDANCE_TABLE_TEMPLATE
+    if not template.is_file():
+        return False
+    rows = [
+        row
+        for row in csv.reader(template.read_text(encoding="utf-8", errors="ignore").splitlines())
+        if any(cell.strip() for cell in row)
+    ]
+    return len(rows) > 1
+
+
+def _remove_group_and_members(text: str, group_name: str) -> str:
+    group_start = text.find(f'(group "{group_name}"')
+    if group_start == -1:
+        return text
+    group_end = _find_matching_paren(text, group_start)
+    group_block = text[group_start : group_end + 1]
+    members = re.findall(r'"([0-9a-fA-F-]{36})"', group_block)
+
+    updated = text[:group_start] + text[group_end + 1 :]
+    for member_uuid in members:
+        updated = _remove_block_by_uuid(updated, member_uuid)
+    return updated
 
 
 def _remove_block_by_uuid(text: str, target_uuid: str) -> str:
@@ -249,15 +284,19 @@ def _remove_block_by_uuid(text: str, target_uuid: str) -> str:
     if uuid_index == -1:
         return text
     start_candidates = [
-        text.rfind("\n\t(gr_line", 0, uuid_index),
-        text.rfind("\n\t(gr_text", 0, uuid_index),
+        text.rfind("(gr_line", 0, uuid_index),
+        text.rfind("(gr_rect", 0, uuid_index),
+        text.rfind("(gr_text", 0, uuid_index),
+        text.rfind("(gr_text_box", 0, uuid_index),
     ]
     start = max(start_candidates)
     if start == -1:
         return text
-    block_start = start + 1
-    end = _find_matching_paren(text, block_start)
-    return text[:start] + text[end + 1 :]
+    line_start = text.rfind("\n", 0, start)
+    if line_start == -1:
+        line_start = start
+    end = _find_matching_paren(text, start)
+    return text[:line_start] + text[end + 1 :]
 
 
 def _rect_bounds(text: str, rect_uuid: str) -> tuple[float, float, float, float]:
