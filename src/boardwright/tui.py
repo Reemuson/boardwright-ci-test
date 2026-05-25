@@ -576,11 +576,13 @@ def _build_textual_app():
         }
 
         #main_details {
-            height: 2fr;
+            height: 13;
+            min-height: 11;
         }
 
         #timeline_panel {
-            width: 2fr;
+            width: 38;
+            min-width: 32;
             padding-right: 1;
         }
 
@@ -693,23 +695,28 @@ def _build_textual_app():
                     yield Label("Project", classes="section-title")
                     yield Static(id="project_status")
                     with Vertical(id="actions"):
-                        yield Label("Workflow", classes="section-title")
+                        yield Label("Work", classes="section-title")
                         with Grid(classes="action-grid"):
                             yield Button("Record\nChanges", id="record_change", classes="action-button primary-action")
                             yield Button("Commit\n+ Push", id="commit_push", classes="action-button primary-action")
+                        yield Label("Preview", classes="section-title")
+                        with Grid(classes="action-grid"):
                             yield Button("Generate\nPreview", id="generate_preview", classes="action-button secondary-action")
                             yield Button("Review\nArtifacts", id="review_artifacts", classes="action-button secondary-action")
-                            yield Button("Accept\nto Main", id="accept_main", classes="action-button secondary-action")
-                            yield Button("Create\nRelease", id="release_ci", classes="action-button danger-action")
+                        yield Button("Accept\nto Main", id="accept_main", classes="action-button secondary-action")
+                        yield Label("Release", classes="section-title")
+                        yield Button("Create\nRelease", id="release_ci", classes="action-button danger-action")
+                        yield Label("Setup", classes="section-title")
+                        with Grid(classes="action-grid"):
                             yield Button("Project\nInfo", id="project_info", classes="action-button secondary-action")
                             yield Button("Refresh", id="refresh", classes="action-button secondary-action")
                 with Vertical(id="details"):
                     with Horizontal(id="main_details"):
                         with Vertical(id="timeline_panel"):
-                            yield Label("Workflow Timeline", classes="panel-title")
+                            yield Label("Workflow", classes="panel-title")
                             yield Static(id="workflow_status")
                         with Vertical(id="inspector_panel"):
-                            yield Label("Next Action", classes="panel-title")
+                            yield Label("Now", classes="panel-title")
                             yield Static(id="inspector_status")
                     with Horizontal(id="lower_details"):
                         with Vertical(id="validation_panel"):
@@ -806,9 +813,13 @@ def _build_textual_app():
                 self.notify("Polled CI status.")
 
         def action_review_artifacts(self) -> None:
+            if not self._require_action("Review Artifacts"):
+                return
             self.push_screen(ReviewVariantScreen(), self._review_artifact_variant)
 
         def action_generate_preview(self) -> None:
+            if not self._require_action("Generate Preview"):
+                return
             self.push_screen(PreviewDispatchScreen(), self._generate_preview)
 
         def _generate_preview(self, variant: str | None) -> None:
@@ -858,6 +869,8 @@ def _build_textual_app():
             self.notify(f"Preview workflow dispatched for {variant}.")
 
         def action_project_info(self) -> None:
+            if not self._require_action("Project Info"):
+                return
             self.push_screen(ProjectInfoScreen(), self._save_project_info)
 
         def _save_project_info(self, result: dict[str, dict[str, str]] | None) -> None:
@@ -942,16 +955,31 @@ def _build_textual_app():
             self.notify(result or "Preview artifact fetched.")
 
         def action_record_change(self) -> None:
+            if not self._require_action("Record Changes"):
+                return
             self.push_screen(ChangelogEntryScreen(), self._record_change)
 
         def action_commit_push(self) -> None:
+            if not self._require_action("Commit + Push"):
+                return
             self.push_screen(CommitScreen(_suggested_commit_message()), self._commit_push)
 
         def action_accept_main(self) -> None:
+            if not self._require_action("Accept to Main"):
+                return
             self.push_screen(AcceptMainScreen(), self._accept_main)
 
         def action_release_ci(self) -> None:
+            if not self._require_action("Create Release"):
+                return
             self.push_screen(ReleaseScreen(), self._release_ci)
+
+        def _require_action(self, name: str) -> bool:
+            action = action_state(self.state.workflow, name)
+            if action.enabled:
+                return True
+            self.notify(action.reason, severity="warning")
+            return False
 
         def _record_change(self, result: tuple[str, str] | None) -> None:
             if result is None:
@@ -1224,16 +1252,30 @@ def _workflow_steps(state: DashboardState) -> tuple[WorkflowStep, ...]:
 def _format_timeline(steps: tuple[WorkflowStep, ...]) -> Text:
     text = Text()
     for step in steps:
-        text.append(f"{step.label:<20}", style="bold")
-        text.append(f" {step.state}\n", style=_workflow_state_style(step.state))
-        text.append(f"  {step.detail}\n\n", style="dim")
+        text.append(f"{_workflow_marker(step.state)} ", style=_workflow_state_style(step.state))
+        text.append(f"{step.label:<18}", style="bold")
+        text.append(" ")
+        text.append(step.state, style=_workflow_state_style(step.state))
+        text.append("\n")
     return text
+
+
+def _workflow_marker(state: str) -> str:
+    if state in {"done", "passed"}:
+        return "[x]"
+    if state in {"ready", "needed"}:
+        return "[>]"
+    if state == "running":
+        return "[~]"
+    if state in {"blocked", "failed", "locked"}:
+        return "[!]"
+    return "[ ]"
 
 
 def _workflow_state_style(state: str) -> str:
     if state in {"done", "ready", "passed"}:
         return "bold green"
-    if state in {"needed", "needs action", "waiting", "running"}:
+    if state in {"needed", "needs action", "waiting", "running", "missing", "stale"}:
         return "bold yellow"
     if state in {"blocked", "locked", "failed"}:
         return "bold red"
@@ -1249,22 +1291,93 @@ def _suggested_commit_message(seed: str = "") -> str:
         return ""
 
 
-def _format_inspector(state: DashboardState, ci_status: str = "CI not polled") -> str:
-    return "\n".join(
-        [
-            f"{state.workflow.next_action}: {state.workflow.reason}",
-            f"Stage: {state.workflow.stage}",
-            "",
-            "Preview CI is dispatched manually when dev is pushed.",
-            "Accepted main:",
-            state.accepted_summary,
-            "",
-            f"Release: {state.ci_release_summary}",
-            "",
-            "Latest CI:",
-            ci_status,
-        ]
+def _format_inspector(state: DashboardState, ci_status: str = "CI not polled") -> Text:
+    text = Text()
+    _append_inspector_heading(text, "NOW")
+    text.append(state.workflow.next_action, style="bold")
+    text.append("\n")
+    text.append(state.workflow.reason, style="dim")
+    text.append("\n")
+    text.append(f"Stage: {state.workflow.stage}", style="dim")
+    text.append("\n\n")
+
+    _append_inspector_heading(text, "EVIDENCE")
+    text.append("Preview: ", style="bold")
+    text.append(_ci_status_short(ci_status), style=_ci_status_style(ci_status))
+    text.append("\n")
+    text.append("Accepted main: ", style="bold")
+    text.append(_accepted_summary_short(state.accepted_summary), style=_accepted_summary_style(state.accepted_summary))
+    text.append("\n")
+    text.append("Preview CI is dispatched manually from clean dev.", style="dim")
+    text.append("\n\n")
+
+    _append_inspector_heading(text, "RELEASE")
+    text.append(_release_summary_short(state), style=_release_summary_style(state.release_summary))
+    text.append("\n")
+    text.append(state.ci_release_summary, style="dim")
+    return text
+
+
+def _append_inspector_heading(text: Text, label: str) -> None:
+    text.append(label, style="bold cyan")
+    text.append("\n")
+
+
+def _accepted_summary_short(summary: str) -> str:
+    lines = [line.strip() for line in summary.splitlines() if line.strip()]
+    state = _line_value(lines, "State")
+    run = _line_value(lines, "Run")
+    status = _line_value(lines, "Status")
+    message = _last_non_metadata_line(lines)
+
+    if state:
+        result = state
+        if status:
+            result += f" ({status})"
+        if run:
+            result += f" run {run}"
+        if message and not message.startswith(("State:", "Status:", "Run:")):
+            result += f" - {message}"
+        return result
+    return lines[0] if lines else "not checked"
+
+
+def _accepted_summary_style(summary: str) -> str:
+    state = _line_value([line.strip() for line in summary.splitlines()], "State")
+    if state == "ready":
+        return "bold green"
+    if state in {"failed", "stale"}:
+        return "bold red"
+    if state in {"missing", "running"}:
+        return "bold yellow"
+    return "dim"
+
+
+def _last_non_metadata_line(lines: list[str]) -> str:
+    metadata_prefixes = (
+        "Workflow:",
+        "State:",
+        "Expected source SHA:",
+        "Run:",
+        "Branch:",
+        "Run SHA:",
+        "Created:",
+        "Status:",
     )
+    for line in reversed(lines):
+        if not line.startswith(metadata_prefixes):
+            return line
+    return ""
+
+
+def _release_summary_short(state: DashboardState) -> str:
+    if state.release_summary == "ready for dry-run":
+        return "Release inputs look valid."
+    return state.release_summary
+
+
+def _release_summary_style(summary: str) -> str:
+    return "bold green" if summary == "ready for dry-run" else "bold yellow"
 
 
 def _format_review_artifacts(preview_state: "PreviewState", runs_text: str) -> str:
@@ -1412,18 +1525,25 @@ def build_release_checklist(
 
 def _format_release_checklist(checklist: ReleaseChecklist) -> str:
     lines = [
-        f"Version: {checklist.version or '(blank)'}",
-        f"Variant: {checklist.variant}",
-        f"Kind: {checklist.kind}",
+        f"Release {checklist.version or '(blank)'} | {checklist.variant} | {checklist.kind}",
         "",
-        "Accepted main:",
-        checklist.accepted_summary,
-        "",
-        "Checklist:",
+        "Readiness:",
     ]
+    blockers: list[str] = []
     for item in checklist.items:
         marker = "[x]" if item.passed else "[ ]"
-        lines.append(f"{marker} {item.label}: {item.detail}")
+        lines.append(f"{marker} {item.label}")
+        if not item.passed:
+            blockers.append(f"- {item.label}: {item.detail}")
+    lines.extend(
+        [
+            "",
+            "Accepted main:",
+            _accepted_summary_short(checklist.accepted_summary),
+        ]
+    )
+    if blockers:
+        lines.extend(["", "Blockers:", *blockers])
     lines.extend(
         [
             "",

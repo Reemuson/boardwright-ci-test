@@ -168,7 +168,8 @@ jobs:
           variant="${{ inputs.variant }}"
 
           git rm -r --ignore-unmatch HTML KiRI Manufacturing Reports Schematic Testing
-          git add CHANGELOG.md .boardwright/revision_history_variables.env .boardwright/release.env
+          git add CHANGELOG.md
+          git add -f .boardwright/revision_history_variables.env .boardwright/release.env
           git add README.md assets/renders/*.png || true
 
           if git diff --cached --quiet; then
