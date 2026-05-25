@@ -1,4 +1,5 @@
 name: Boardwright Prepare Release Tag
+run-name: Prepare ${{ inputs.version }} (${{ inputs.variant }}, ${{ inputs.release_kind }})
 
 on:
   workflow_dispatch:
@@ -31,6 +32,10 @@ permissions:
   contents: write
   actions: write
 
+concurrency:
+  group: boardwright-main
+  cancel-in-progress: false
+
 env:
   KIBOT_CONFIG: boardwright_resources/kibot/yaml/kibot_main.yaml
   KIBOT_LOG: kibot_prepare_release.log
@@ -38,6 +43,7 @@ env:
 
 jobs:
   prepare:
+    name: Prepare ${{ inputs.version }} release state
     runs-on: ubuntu-latest
     if: github.ref_type == 'branch' && github.ref_name == 'main'
     steps:
@@ -71,6 +77,15 @@ jobs:
           RELEASE_VARIANT=$variant
           RELEASE_KIND=$release_kind
           EOF
+
+          {
+            echo "## Boardwright Prepare Release"
+            echo
+            echo "- Version: \`${version}\`"
+            echo "- Variant: \`${variant}\`"
+            echo "- Release kind: \`${release_kind}\`"
+            echo "- Target branch: \`main\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Choose KiBot variant and output set
         shell: bash

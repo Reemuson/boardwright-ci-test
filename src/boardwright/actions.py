@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .config import BoardwrightConfig
 from .errors import BoardwrightError
-from .git_ops import current_branch, remote_branch_sha
+from .git_ops import branch_sha, current_branch, remote_branch_sha
 from .release import _validate_version
 from .variants import normalize_variant
 
@@ -68,11 +68,15 @@ def build_preview_action(
     variant: str | None = None,
 ) -> WorkflowAction:
     selected_variant = normalize_variant(variant or config.preview_variant)
+    selected_ref = current_branch(config.root)
     return WorkflowAction(
         name="preview",
         workflow=config.preview_workflow,
-        ref=current_branch(config.root),
-        fields=(("variant", selected_variant),),
+        ref=selected_ref,
+        fields=(
+            ("variant", selected_variant),
+            ("source_label", build_source_label(config.root, selected_ref)),
+        ),
         gh_available=_gh_command() is not None,
         repo=config.github_repo,
         gh_command=_gh_command() or "gh",
@@ -89,6 +93,7 @@ def build_promote_action(
     selected_variant = normalize_variant(variant)
     selected_source_ref = (source_ref or config.dev_branch).strip()
     selected_source_sha = (source_sha or remote_branch_sha(config.root, "origin", selected_source_ref)).strip()
+    selected_source_label = build_source_label(config.root, selected_source_ref, selected_source_sha)
     return WorkflowAction(
         name="promote",
         workflow=config.main_workflow,
@@ -98,6 +103,7 @@ def build_promote_action(
             ("commit_outputs", str(commit_outputs).lower()),
             ("source_ref", selected_source_ref),
             ("source_sha", selected_source_sha),
+            ("source_label", selected_source_label),
             ("target_branch", config.release_branch),
         ),
         gh_available=_gh_command() is not None,
@@ -132,6 +138,15 @@ def build_prepare_release_action(
         repo=config.github_repo,
         gh_command=_gh_command() or "gh",
     )
+
+
+def build_source_label(root: Path, ref: str, sha: str = "") -> str:
+    clean_ref = (ref or "").strip()
+    clean_sha = (sha or branch_sha(root, "HEAD")).strip()
+    short_sha = clean_sha[:12]
+    if clean_ref and short_sha:
+        return f"{clean_ref}@{short_sha}"
+    return clean_ref or short_sha
 
 
 def dispatch_workflow_action(config: BoardwrightConfig, action: WorkflowAction) -> None:

@@ -716,7 +716,7 @@ def _build_textual_app():
                             yield Label("Workflow", classes="panel-title")
                             yield Static(id="workflow_status")
                         with Vertical(id="inspector_panel"):
-                            yield Label("Now", classes="panel-title")
+                            yield Label("Inspector", classes="panel-title")
                             yield Static(id="inspector_status")
                     with Horizontal(id="lower_details"):
                         with Vertical(id="validation_panel"):
@@ -1305,11 +1305,26 @@ def _format_inspector(state: DashboardState, ci_status: str = "CI not polled") -
     text.append("Preview: ", style="bold")
     text.append(_ci_status_short(ci_status), style=_ci_status_style(ci_status))
     text.append("\n")
+    review_hint = _review_hint(state)
+    if review_hint:
+        text.append("Review: ", style="bold")
+        text.append(review_hint, style="bold yellow")
+        text.append("\n")
     text.append("Accepted main: ", style="bold")
     text.append(_accepted_summary_short(state.accepted_summary), style=_accepted_summary_style(state.accepted_summary))
     text.append("\n")
     text.append("Preview CI is dispatched manually from clean dev.", style="dim")
-    text.append("\n\n")
+    lock_lines = _locked_action_lines(state.workflow)
+    if lock_lines:
+        text.append("\n\n")
+        _append_inspector_heading(text, "LOCKED")
+        for name, reason in lock_lines:
+            text.append(f"{name}: ", style="bold")
+            text.append(reason, style="dim")
+            text.append("\n")
+    else:
+        text.append("\n")
+    text.append("\n")
 
     _append_inspector_heading(text, "RELEASE")
     text.append(_release_summary_short(state), style=_release_summary_style(state.release_summary))
@@ -1321,6 +1336,21 @@ def _format_inspector(state: DashboardState, ci_status: str = "CI not polled") -
 def _append_inspector_heading(text: Text, label: str) -> None:
     text.append(label, style="bold cyan")
     text.append("\n")
+
+
+def _review_hint(state: DashboardState) -> str:
+    if state.workflow.next_action == "Review Artifacts":
+        return "fetch/review the preview artifact to unlock Accept to Main."
+    return ""
+
+
+def _locked_action_lines(workflow: WorkflowState) -> list[tuple[str, str]]:
+    names = {"Generate Preview", "Review Artifacts", "Accept to Main", "Create Release"}
+    return [
+        (action.name, action.reason)
+        for action in workflow.actions
+        if action.name in names and not action.enabled
+    ][:3]
 
 
 def _accepted_summary_short(summary: str) -> str:

@@ -1,4 +1,5 @@
-name: Boardwright Preview Artifacts
+name: Boardwright Dev Preview
+run-name: Preview ${{ inputs.variant || 'DRAFT' }} from ${{ inputs.source_label || github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -12,6 +13,11 @@ on:
           - DRAFT
           - PRELIMINARY
           - CHECKED
+      source_label:
+        description: Short source label for the run title, such as dev@abc123
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: write
@@ -25,6 +31,7 @@ env:
 
 jobs:
   build-preview-artifacts:
+    name: Preview ${{ inputs.variant || 'DRAFT' }} outputs
     runs-on: ubuntu-latest
     if: github.ref_type == 'branch'
     steps:
@@ -59,6 +66,25 @@ jobs:
 
           echo "KIBOT_VARIANT=$variant" >> "$GITHUB_ENV"
           echo "KIBOT_ADDITIONAL_ARGS=$additional_args" >> "$GITHUB_ENV"
+
+      - name: Summarize preview request
+        shell: bash
+        run: |
+          short_sha="$(git rev-parse --short=12 HEAD)"
+          commit_url="https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
+          source_label="${{ inputs.source_label }}"
+          if [[ -z "$source_label" ]]; then
+            source_label="${GITHUB_REF_NAME}@${short_sha}"
+          fi
+
+          {
+            echo "## Boardwright Preview"
+            echo
+            echo "- Variant: \`${KIBOT_VARIANT}\`"
+            echo "- Source: [\`${source_label}\`](${commit_url})"
+            echo "- Artifact: \`boardwright-preview-${KIBOT_VARIANT}\`"
+            echo "- Preview branch: \`preview\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Ensure 3D cache directory
         run: mkdir -p ~/cache_3d
