@@ -13,6 +13,7 @@ outputs:
   options:
     colored_pads: false
     colored_vias: false
+    color_theme: '@COLOR_THEME@'
     output: '%f-fabrication%I%v.%x'
     format: 'PDF'
     title: '@DOC_TITLE@ DOCUMENT'
@@ -200,6 +201,7 @@ definitions:
   COMMENT: Fabrication document in PDF format
   DIR: Manufacturing/Fabrication
   DOC_TITLE: FABRICATION
+  COLOR_THEME: KiCad_Theme
   SHEET_WKS: ${KIPRJMOD}/Templates/KDT_Template_PCB_GIT_A4.kicad_wks
   SCALING: 1.0
   FAB_EXCLUDE_FILTER: only_testpoints

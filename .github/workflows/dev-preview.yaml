@@ -69,6 +69,13 @@ jobs:
           path: ~/cache_3d
           key: cache-3d-kicad-${{ env.KICAD_VERSION }}
 
+      - name: Install bundled KiCad/PDF fonts
+        shell: bash
+        run: |
+          mkdir -p ~/.local/share/fonts
+          cp boardwright_resources/kibot/resources/fonts/*.ttf ~/.local/share/fonts/
+          fc-cache -f ~/.local/share/fonts || true
+
       - name: Generate draft README
         if: env.KIBOT_VARIANT == 'DRAFT'
         uses: INTI-CMNB/KiBot@v2_dk9

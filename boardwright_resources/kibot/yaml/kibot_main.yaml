@@ -155,6 +155,7 @@ import:
   - file: kibot_globals.yaml
     definitions:
       OUTPUT_DIR: @OUTPUT_DIR@
+      RESOURCES_DIR: @RESOURCES_DIR@
       LAYER_DNP_TOP: @LAYER_DNP_TOP@
       LAYER_DNP_BOTTOM: @LAYER_DNP_BOTTOM@
 
@@ -448,6 +449,7 @@ import:
       NAME: @PDF_FABRICATION_OUTPUT@
       COMMENT: Fabrication document in PDF format
       DIR: @FABRICATION_DIR@
+      COLOR_THEME: @COLOR_THEME@
       SHEET_WKS: @SHEET_WKS@
       SCALING: @FAB_SCALING@
       PTH_NPTH: '@GROUP_PTH_NPTH@'
@@ -466,6 +468,7 @@ import:
       NAME: @PDF_ASSEMBLY_OUTPUT@
       COMMENT: Assembly document in PDF format
       DIR: @ASSEMBLY_DIR@
+      COLOR_THEME: @COLOR_THEME@
       SHEET_WKS: @SHEET_WKS@
       SCALING: @ASSEMBLY_SCALING@
       FAB_EXCLUDE_FILTER: @FILT_TP_EXCLUDE@
@@ -557,6 +560,7 @@ definitions:
 
   # Schematic parameters =======================================================
 
+  COLOR_THEME: KiCad_Theme
   SHEET_WKS: ${KIPRJMOD}/Templates/KDT_Template_PCB_GIT_A4.kicad_wks
   FAB_SCALING: 1
   ASSEMBLY_SCALING: 1

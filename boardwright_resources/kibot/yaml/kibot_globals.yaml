@@ -6,6 +6,7 @@ kibot:
 
 global:
   out_dir: '@OUTPUT_DIR@'
+  resources_dir: '@RESOURCES_DIR@'
   dnp_cross_top_layer: '@LAYER_DNP_TOP@'
   dnp_cross_bottom_layer: '@LAYER_DNP_BOTTOM@'
   disable_kicad_cross_on_fab: true
@@ -39,5 +40,6 @@ global:
 ...
 definitions:
   OUTPUT_DIR: ./
+  RESOURCES_DIR: boardwright_resources/kibot/resources
   LAYER_DNP_TOP: F.DNP
   LAYER_DNP_BOTTOM: B.DNP

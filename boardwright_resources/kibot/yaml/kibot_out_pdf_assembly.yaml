@@ -13,6 +13,7 @@ outputs:
   options:
     colored_vias: false
     colored_pads: false
+    color_theme: '@COLOR_THEME@'
     output: '%f-assembly%I%v.%x'
     format: 'PDF'
     title: '@DOC_TITLE@ DOCUMENT'
@@ -91,6 +92,7 @@ definitions:
   COMMENT: Assembly document in PDF format
   DIR: Manufacturing/Assembly
   DOC_TITLE: ASSEMBLY
+  COLOR_THEME: KiCad_Theme
   SHEET_WKS: ${KIPRJMOD}/Templates/KDT_Template_PCB_GIT_A4.kicad_wks
   SCALING: 1.0
   FAB_EXCLUDE_FILTER: exclude_testpoints
