@@ -33,7 +33,7 @@
 | Parameter | Value | 
 | --- | --- |
 | Revision |  |
-| Variant | CHECKED |
+| Variant | RELEASED |
 | Dimensions | 40.0 x 25.0 mm |
 
 ***
