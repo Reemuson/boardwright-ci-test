@@ -464,10 +464,11 @@ def _build_textual_app():
                     placeholder="feat: describe the board change",
                     id="commit_message",
                 )
-                yield Button("Commit + Push", id="commit_push")
+                yield Button("Commit + Push", id="confirm_commit_push")
                 yield Button("Cancel", id="cancel_commit")
 
         def on_button_pressed(self, event: Button.Pressed) -> None:
+            event.stop()
             if event.button.id == "cancel_commit":
                 self.dismiss(None)
                 return
@@ -536,7 +537,8 @@ def _build_textual_app():
         }
 
         #top_status {
-            height: 4;
+            width: 100%;
+            height: 3;
             padding: 1 2 0 2;
             content-align: left middle;
             border-bottom: solid $accent;
@@ -680,6 +682,7 @@ def _build_textual_app():
             self.state = collect_dashboard_state()
             self.ci_status = "CI not polled"
             self.review_variant = ""
+            self._ci_polling = False
 
         def compose(self) -> ComposeResult:
             yield Header(show_clock=True)
@@ -720,6 +723,8 @@ def _build_textual_app():
 
         def on_mount(self) -> None:
             self._render_state()
+            self._poll_ci_status()
+            self.set_interval(60, self._poll_ci_status)
 
         def on_button_pressed(self, event: Button.Pressed) -> None:
             if event.button.id == "refresh":
@@ -740,18 +745,65 @@ def _build_textual_app():
                 self.action_project_info()
 
         def action_refresh(self) -> None:
-            accepted_state = None
-            accepted_error = ""
-            try:
-                accepted_state = build_accepted_main_state(load_config())
-            except BoardwrightError as exc:
-                accepted_error = str(exc)
-            self.state = collect_dashboard_state(
-                accepted_state=accepted_state,
-                accepted_error=accepted_error,
-            )
+            self.state = collect_dashboard_state()
+            self.ci_status = "Polling CI..."
             self._render_state()
             self.notify("Refreshed project state.")
+            self._poll_ci_status(notify=True)
+
+        def _poll_ci_status(self, notify: bool = False) -> None:
+            if self._ci_polling:
+                return
+            self._ci_polling = True
+            if self.ci_status in {"CI not polled", "Polling CI..."}:
+                self.ci_status = "Polling CI..."
+                self._render_state()
+            Thread(target=self._poll_ci_status_worker, args=(notify,), daemon=True).start()
+
+        def _poll_ci_status_worker(self, notify: bool) -> None:
+            preview_state = None
+            accepted_state = None
+            preview_error = ""
+            accepted_error = ""
+            try:
+                config = load_config()
+                try:
+                    preview_state = build_preview_state(config, config.preview_variant)
+                except BoardwrightError as exc:
+                    preview_error = str(exc)
+                try:
+                    accepted_state = build_accepted_main_state(config)
+                except BoardwrightError as exc:
+                    accepted_error = str(exc)
+                state = collect_dashboard_state(
+                    preview_state=preview_state,
+                    accepted_state=accepted_state,
+                    accepted_error=accepted_error,
+                )
+                ci_status = _format_polled_ci_status(
+                    preview_state,
+                    accepted_state,
+                    preview_error,
+                    accepted_error,
+                )
+            except BoardwrightError as exc:
+                self.call_from_thread(self._finish_ci_poll, None, str(exc), notify)
+                return
+            self.call_from_thread(self._finish_ci_poll, state, ci_status, notify)
+
+        def _finish_ci_poll(
+            self,
+            state: DashboardState | None,
+            ci_status: str,
+            notify: bool,
+        ) -> None:
+            self._ci_polling = False
+            if state is not None:
+                self.state = state
+            self.ci_status = ci_status
+            self._render_state()
+            if notify:
+                self.notify("Polled CI status.")
 
         def action_review_artifacts(self) -> None:
             self.push_screen(ReviewVariantScreen(), self._review_artifact_variant)
@@ -1015,7 +1067,13 @@ def _build_textual_app():
                         severity="error",
                     )
                     return
-                action = build_promote_action(config, variant, commit_outputs)
+                action = build_promote_action(
+                    config,
+                    variant,
+                    commit_outputs,
+                    source_ref=config.dev_branch,
+                    source_sha=preview_state.expected_sha,
+                )
                 dispatch_workflow_action(config, action)
             except BoardwrightError as exc:
                 self.notify(str(exc), severity="error")
@@ -1130,8 +1188,7 @@ def _format_top_status(
     if status.ahead or status.behind:
         text.append(" | remote ")
         text.append(f"+{status.ahead}/-{status.behind}", style="bold yellow")
-    text.append("\n")
-    text.append("variant ")
+    text.append(" | variant ")
     text.append(status.variant, style="magenta")
     text.append(" | tag ")
     text.append(status.latest_tag or "none", style="cyan" if status.latest_tag else "dim")
@@ -1213,6 +1270,31 @@ def _format_inspector(state: DashboardState, ci_status: str = "CI not polled") -
 def _format_review_artifacts(preview_state: "PreviewState", runs_text: str) -> str:
     status, message, run_summary = _review_artifact_blocks(preview_state)
     return "\n".join([status, message, "", run_summary, "", "Recent CI:", runs_text])
+
+
+def _format_polled_ci_status(
+    preview_state: "PreviewState | None",
+    accepted_state: "AcceptedMainState | None",
+    preview_error: str = "",
+    accepted_error: str = "",
+) -> str:
+    lines: list[str] = []
+    if preview_state is not None:
+        lines.append(format_preview_state(preview_state))
+    elif preview_error:
+        lines.append(f"Preview: {preview_error}")
+    else:
+        lines.append("Preview: not checked")
+
+    lines.append("")
+    lines.append("Accepted main:")
+    if accepted_state is not None:
+        lines.append(format_accepted_state(accepted_state))
+    elif accepted_error:
+        lines.append(accepted_error)
+    else:
+        lines.append("Accepted main evidence not checked.")
+    return "\n".join(lines)
 
 
 def _review_artifact_blocks(preview_state: "PreviewState") -> tuple[str, str, str]:
@@ -1376,18 +1458,63 @@ def _format_ci_runs(runs: tuple[object, ...]) -> str:
 
 def _ci_status_short(ci_status: str) -> str:
     first_line = ci_status.splitlines()[0] if ci_status else "CI not polled"
+    lines = ci_status.splitlines()
+
+    if first_line.startswith("Artifact: boardwright-preview-"):
+        variant = first_line.removeprefix("Artifact: boardwright-preview-").strip()
+        state = _line_value(lines, "State") or "unknown"
+        return f"preview {variant} {state}"
+
+    if " | boardwright-preview-" in first_line:
+        state, artifact = first_line.split(" | ", 1)
+        variant = artifact.removeprefix("boardwright-preview-").strip()
+        return f"preview {variant} {state.lower()}"
+
+    if first_line.startswith("Fetched boardwright-preview-"):
+        variant = first_line.removeprefix("Fetched boardwright-preview-").split()[0]
+        return f"preview {variant} fetched"
+
+    if first_line.startswith("Downloading boardwright-preview-"):
+        variant = first_line.removeprefix("Downloading boardwright-preview-").split("...", 1)[0]
+        return f"preview {variant} downloading"
+
+    if first_line.startswith("Preview workflow dispatched for "):
+        variant = first_line.removeprefix("Preview workflow dispatched for ").rstrip(".")
+        return f"preview {variant} dispatched"
+
+    if first_line.startswith("Dispatching preview "):
+        words = first_line.split()
+        variant = words[2] if len(words) > 2 else ""
+        return f"preview {variant} dispatching".strip()
+
     if len(first_line) > 36:
         return first_line[:33] + "..."
     return first_line
+
+
+def _line_value(lines: list[str], key: str) -> str:
+    prefix = f"{key}:"
+    for line in lines:
+        if line.startswith(prefix):
+            return line.removeprefix(prefix).strip()
+    return ""
 
 
 def _ci_status_style(ci_status: str) -> str:
     lowered = ci_status.lower()
     if "failure" in lowered or "failed" in lowered or "error" in lowered:
         return "bold red"
-    if "success" in lowered or "completed" in lowered:
+    if "success" in lowered or "completed" in lowered or "ready" in lowered or "fetched" in lowered:
         return "bold green"
-    if "in_progress" in lowered or "queued" in lowered or "pending" in lowered:
+    if (
+        "in_progress" in lowered
+        or "queued" in lowered
+        or "pending" in lowered
+        or "running" in lowered
+        or "polling" in lowered
+        or "dispatching" in lowered
+        or "downloading" in lowered
+    ):
         return "bold yellow"
     return "dim"
 

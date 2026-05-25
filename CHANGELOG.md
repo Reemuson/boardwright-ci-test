@@ -7,6 +7,7 @@
 - test
 - test
 - docs
+- ci/cd
 
 ### Fixed
 

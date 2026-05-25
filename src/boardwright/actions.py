@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .config import BoardwrightConfig
 from .errors import BoardwrightError
-from .git_ops import current_branch
+from .git_ops import current_branch, remote_branch_sha
 from .release import _validate_version
 from .variants import normalize_variant
 
@@ -83,15 +83,22 @@ def build_promote_action(
     config: BoardwrightConfig,
     variant: str,
     commit_outputs: bool = True,
+    source_ref: str | None = None,
+    source_sha: str | None = None,
 ) -> WorkflowAction:
     selected_variant = normalize_variant(variant)
+    selected_source_ref = (source_ref or config.dev_branch).strip()
+    selected_source_sha = (source_sha or remote_branch_sha(config.root, "origin", selected_source_ref)).strip()
     return WorkflowAction(
         name="promote",
         workflow=config.main_workflow,
-        ref=config.release_branch,
+        ref=selected_source_ref,
         fields=(
             ("variant", selected_variant),
             ("commit_outputs", str(commit_outputs).lower()),
+            ("source_ref", selected_source_ref),
+            ("source_sha", selected_source_sha),
+            ("target_branch", config.release_branch),
         ),
         gh_available=_gh_command() is not None,
         repo=config.github_repo,

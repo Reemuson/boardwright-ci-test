@@ -102,10 +102,10 @@ def _component_mount_rows(
     counts: Counter[tuple[str, str]]
 ) -> tuple[tuple[str, int, int, int], ...]:
     rows: list[tuple[str, int, int, int]] = []
-    for mount in ("THT", "SMD"):
+    for mount, label in (("THT", "THT"), ("SMD", "SMT")):
         front = counts[(mount, "Frontside")]
         back = counts[(mount, "Backside")]
-        rows.append((mount, front, back, front + back))
+        rows.append((label, front, back, front + back))
 
     total_front = sum(row[1] for row in rows)
     total_back = sum(row[2] for row in rows)
@@ -211,6 +211,7 @@ def _insert_component_count_graphics(
     rect = _rect_bounds(text, COMPONENT_COUNT_RECT_UUID)
     layer = _block_layer(text, COMPONENT_COUNT_RECT_UUID)
     graphics = _component_count_graphics(rect, layer, rows)
+    text = _set_rect_bounds(text, COMPONENT_COUNT_RECT_UUID, _component_table_bounds(rect, len(rows) + 1))
     group_index = text.find("\n\t(group ")
     insert_at = group_index if group_index != -1 else text.rfind("\n)")
     if insert_at == -1:
@@ -227,31 +228,31 @@ def _component_count_graphics(
     table_rows = [("Type", "Front Side", "Back Side", "Total")]
     table_rows.extend(tuple(str(value) for value in row) for row in rows)
     row_count = len(table_rows)
-    columns = (0.0, 0.30, 0.58, 0.80)
+    x1, y1, x2, y2 = _component_table_bounds(rect, row_count)
+    columns = (0.0, 0.32, 0.58, 0.80, 1.0)
     xs = [x1 + (x2 - x1) * value for value in columns]
-    margin = 0.825
-    row_spacing = min(3.0, (y2 - y1 - margin * 2) / max(row_count - 1, 1))
+    row_spacing = (y2 - y1) / max(row_count, 1)
+    cell_padding = min(2.0, max(0.8, (x2 - x1) * 0.03))
 
     lines: list[str] = []
-    for index, x in enumerate(xs[1:], start=1):
+    for index, x in enumerate(xs[1:-1], start=1):
         lines.append(_gr_line(x, y1, x, y2, layer, f"v{index}"))
     lines.append(_gr_line(x1, y1 + row_spacing, x2, y1 + row_spacing, layer, "h1"))
 
     for row_index, row in enumerate(table_rows):
-        y = y1 + margin + row_index * row_spacing
+        y = y1 + (row_index + 0.5) * row_spacing
         for col_index, value in enumerate(row):
             left = xs[col_index]
             next_x = xs[col_index + 1] if col_index + 1 < len(xs) else x2
             is_number = col_index > 0 and row_index > 0
-            justify = "" if is_number else "left"
-            x = left if is_number else left + margin
+            centered = col_index > 0
+            justify = "" if centered else "left"
+            x = (left + next_x) / 2 if centered else left + cell_padding
             lines.append(
-                _gr_text_box(
+                _gr_text(
                     value,
                     x,
-                    y - 0.825,
-                    next_x,
-                    y + row_spacing - 0.825,
+                    y,
                     layer,
                     justify,
                     f"r{row_index}c{col_index}",
@@ -260,6 +261,14 @@ def _component_count_graphics(
             )
 
     return "\n" + "\n".join(lines) + "\n"
+
+
+def _component_table_bounds(
+    rect: tuple[float, float, float, float], row_count: int
+) -> tuple[float, float, float, float]:
+    x1, y1, x2, y2 = rect
+    table_height = min(y2 - y1, max(row_count, 1) * 3.0)
+    return (x1, y1, x2, y1 + table_height)
 
 
 def _gr_line(x1: float, y1: float, x2: float, y2: float, layer: str, key: str) -> str:
@@ -277,38 +286,31 @@ def _gr_line(x1: float, y1: float, x2: float, y2: float, layer: str, key: str) -
     )
 
 
-def _gr_text_box(
+def _gr_text(
     value: str,
-    x1: float,
-    y1: float,
-    x2: float,
-    y2: float,
+    x: float,
+    y: float,
     layer: str,
     justify: str,
     key: str,
     *,
     bold: bool = False,
 ) -> str:
-    thickness = "0.25" if bold else "0.15"
+    bold_line = "\t\t\t\t(bold yes)\n" if bold else ""
+    justify_line = f"\t\t\t(justify {justify})\n" if justify else ""
     return (
-        f"\t(gr_text_box \"{_escape_kicad_string(value)}\"\n"
-        f"\t\t(start {_fmt(x1)} {_fmt(y1)})\n"
-        f"\t\t(end {_fmt(x2)} {_fmt(y2)})\n"
-        "\t\t(margins 0.825 0.825 0.825 0.825)\n"
+        f"\t(gr_text \"{_escape_kicad_string(value)}\"\n"
+        f"\t\t(at {_fmt(x)} {_fmt(y)} 0)\n"
         f"\t\t(layer \"{layer}\")\n"
         f"\t\t(uuid \"{_generated_uuid(key)}\")\n"
         "\t\t(effects\n"
         "\t\t\t(font\n"
         "\t\t\t\t(face \"Arial\")\n"
         "\t\t\t\t(size 1 1)\n"
-        f"\t\t\t\t(thickness {thickness})\n"
+        "\t\t\t\t(thickness 0.15)\n"
+        f"{bold_line}"
         "\t\t\t)\n"
-        f"\t\t\t(justify{(' ' + justify) if justify else ''} top)\n"
-        "\t\t)\n"
-        "\t\t(border no)\n"
-        "\t\t(stroke\n"
-        "\t\t\t(width 0.15)\n"
-        "\t\t\t(type solid)\n"
+        f"{justify_line}"
         "\t\t)\n"
         "\t)"
     )
@@ -567,6 +569,31 @@ def _rect_bounds(text: str, rect_uuid: str) -> tuple[float, float, float, float]
         float(end.group(1)),
         float(end.group(2)),
     )
+
+
+def _set_rect_bounds(
+    text: str,
+    rect_uuid: str,
+    bounds: tuple[float, float, float, float],
+) -> str:
+    block = _block_for_uuid(text, rect_uuid)
+    x1, y1, x2, y2 = bounds
+    updated_block = re.sub(
+        r"\(start\s+[-0-9.]+\s+[-0-9.]+\)",
+        f"(start {_fmt(x1)} {_fmt(y1)})",
+        block,
+        count=1,
+    )
+    updated_block = re.sub(
+        r"\(end\s+[-0-9.]+\s+[-0-9.]+\)",
+        f"(end {_fmt(x2)} {_fmt(y2)})",
+        updated_block,
+        count=1,
+    )
+    if updated_block == block:
+        return text
+    start = text.find(block)
+    return text[:start] + updated_block + text[start + len(block) :]
 
 
 def _block_layer(text: str, target_uuid: str) -> str:

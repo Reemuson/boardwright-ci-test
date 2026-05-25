@@ -1,4 +1,5 @@
 name: Boardwright Accepted Outputs
+run-name: Accept ${{ inputs.variant || 'CHECKED' }} from ${{ inputs.source_sha || inputs.source_ref || github.ref_name }} to ${{ inputs.target_branch || 'main' }}
 
 on:
   workflow_dispatch:
@@ -18,6 +19,21 @@ on:
         required: false
         default: false
         type: boolean
+      source_ref:
+        description: Source branch/ref to generate from
+        required: false
+        default: dev
+        type: string
+      source_sha:
+        description: Exact reviewed source commit SHA
+        required: false
+        default: ""
+        type: string
+      target_branch:
+        description: Branch to receive accepted source and snapshot
+        required: false
+        default: main
+        type: string
 
 permissions:
   contents: write
@@ -36,7 +52,19 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.source_sha || inputs.source_ref || github.ref_name }}
           fetch-depth: 0
+
+      - name: Verify reviewed source SHA
+        if: inputs.source_sha != ''
+        shell: bash
+        run: |
+          actual="$(git rev-parse HEAD)"
+          expected="${{ inputs.source_sha }}"
+          if [[ "$actual" != "$expected" ]]; then
+            echo "Checked out $actual, expected reviewed source $expected." >&2
+            exit 1
+          fi
 
       - name: Choose KiBot variant and output set
         shell: bash
@@ -160,4 +188,4 @@ jobs:
           fi
 
           git commit -m "chore(outputs): update README snapshot"
-          git push origin HEAD:${{ github.ref_name }}
+          git push origin HEAD:${{ inputs.target_branch || 'main' }}

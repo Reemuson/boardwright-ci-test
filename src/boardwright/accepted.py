@@ -38,6 +38,10 @@ def latest_pushed_main_sha(config: BoardwrightConfig) -> str:
     return remote_branch_sha(config.root, "origin", config.release_branch)
 
 
+def latest_pushed_source_sha(config: BoardwrightConfig) -> str:
+    return remote_branch_sha(config.root, "origin", config.dev_branch)
+
+
 def list_accepted_runs(
     config: BoardwrightConfig,
     limit: int = 10,
@@ -52,7 +56,7 @@ def list_accepted_runs(
                     "Manual fallback:",
                     f"Open GitHub Actions -> {config.main_workflow}",
                     f"Branch: {config.release_branch}",
-                    "Confirm the latest successful run matches the latest pushed main commit.",
+                    "Confirm the latest successful run matches the latest reviewed source commit.",
                 ]
             )
         )
@@ -64,7 +68,7 @@ def list_accepted_runs(
         "--workflow",
         config.main_workflow,
         "--branch",
-        config.release_branch,
+        config.dev_branch,
         "--limit",
         str(limit),
         "--json",
@@ -89,8 +93,8 @@ def list_accepted_runs(
                     "",
                     "Manual fallback:",
                     f"Open GitHub Actions -> {config.main_workflow}",
-                    f"Branch: {config.release_branch}",
-                    "Confirm the latest successful run matches the latest pushed main commit.",
+                    f"Branch: {config.dev_branch}",
+                    "Confirm the latest successful run matches the latest reviewed source commit.",
                 ]
             )
         )
@@ -130,7 +134,7 @@ def evaluate_accepted_state(
             state="missing",
             workflow=workflow,
             expected_sha="",
-            message="Could not resolve origin/main. Accept outputs to main first.",
+            message="Could not resolve the expected source SHA. Push dev and accept outputs to main first.",
         )
     if not runs:
         return AcceptedMainState(
@@ -165,7 +169,7 @@ def evaluate_accepted_state(
             run=latest,
             message=(
                 f"Latest accepted-output run {latest.database_id} was built from "
-                f"{_short_sha(latest.head_sha)}, expected {_short_sha(expected_sha)}."
+                f"{_short_sha(latest.head_sha)}, expected source {_short_sha(expected_sha)}."
             ),
         )
     return AcceptedMainState(
@@ -180,7 +184,7 @@ def evaluate_accepted_state(
 def build_accepted_main_state(config: BoardwrightConfig) -> AcceptedMainState:
     return evaluate_accepted_state(
         list_accepted_runs(config),
-        latest_pushed_main_sha(config),
+        latest_pushed_source_sha(config),
         config.main_workflow,
     )
 
@@ -191,7 +195,7 @@ def format_accepted_state(state: AcceptedMainState) -> str:
         f"State: {state.state}",
     ]
     if state.expected_sha:
-        lines.append(f"Expected main SHA: {_short_sha(state.expected_sha)}")
+        lines.append(f"Expected source SHA: {_short_sha(state.expected_sha)}")
     if state.run is not None:
         lines.extend(
             [

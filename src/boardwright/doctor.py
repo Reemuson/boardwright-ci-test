@@ -145,7 +145,12 @@ def _check_config(config: BoardwrightConfig, checks: list[DoctorCheck]) -> None:
 
 def _check_workflows(config: BoardwrightConfig, checks: list[DoctorCheck]) -> None:
     _check_workflow_inputs(config, config.preview_workflow, ("variant",), checks)
-    _check_workflow_inputs(config, config.main_workflow, ("variant", "commit_outputs"), checks)
+    _check_workflow_inputs(
+        config,
+        config.main_workflow,
+        ("variant", "commit_outputs", "source_ref", "source_sha", "target_branch"),
+        checks,
+    )
     _check_workflow_inputs(
         config,
         config.prepare_release_workflow,
