@@ -1,13 +1,13 @@
 project:
-  id: BOARDWRIGHT-TEMPLATE
-  name: Boardwright KiCad/KiBot Template
+  id: BOARD/103
+  name: FLUKE IR
   company: RYAN DYNAMICS
   designer: R. HICKS
   git_url: ''
   github_repo: ''
   product_family: BOARDWRIGHT
   product_generation: TEMPLATE
-  board_name: Boardwright KiCad/KiBot Template
+  board_name: FIC-100A
 variants:
   dev_default: DRAFT
   preview_default: PRELIMINARY

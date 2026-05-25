@@ -6,6 +6,7 @@
 
 - test
 - test
+- docs
 
 ### Fixed
 
