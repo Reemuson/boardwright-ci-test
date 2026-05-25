@@ -6,7 +6,7 @@ import subprocess
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-from .actions import _gh_command
+from .actions import _gh_command, build_source_label
 from .config import BoardwrightConfig
 from .errors import BoardwrightError
 from .git_ops import current_branch, remote_branch_sha
@@ -20,6 +20,7 @@ class PreviewPlan:
     branch: str
     preview_branch: str
     variant: str
+    source_label: str
     output_paths: tuple[Path, ...]
     gh_available: bool
     gh_command: str = "gh"
@@ -59,12 +60,14 @@ class PreviewState:
 
 def build_preview_plan(config: BoardwrightConfig, variant: str | None = None) -> PreviewPlan:
     selected_variant = normalize_variant(variant or config.preview_variant)
+    selected_branch = current_branch(config.root)
     return PreviewPlan(
         engine=config.preview_engine,
         workflow=config.preview_workflow,
-        branch=current_branch(config.root),
+        branch=selected_branch,
         preview_branch=config.preview_branch,
         variant=selected_variant,
+        source_label=build_source_label(config.root, selected_branch),
         output_paths=expected_output_paths(config.root),
         gh_available=_gh_command() is not None,
         gh_command=_gh_command() or "gh",
@@ -107,6 +110,8 @@ def dispatch_preview(plan: PreviewPlan, root: Path) -> None:
             plan.branch,
             "-f",
             f"variant={plan.variant}",
+            "-f",
+            f"source_label={plan.source_label}",
         ],
         cwd=root,
         text=True,
@@ -130,9 +135,13 @@ def preview_manual_fallback(plan: PreviewPlan) -> str:
             f"Ref: {plan.branch}",
             "Inputs:",
             f"- variant: {plan.variant}",
+            f"- source_label: {plan.source_label}",
             "",
             "Equivalent gh command:",
-            f"{plan.gh_command} workflow run {plan.workflow} --ref {plan.branch} -f variant={plan.variant}",
+            (
+                f"{plan.gh_command} workflow run {plan.workflow} --ref {plan.branch} "
+                f"-f variant={plan.variant} -f source_label={plan.source_label}"
+            ),
         ]
     )
 

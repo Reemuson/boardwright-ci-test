@@ -207,8 +207,6 @@ def _actions(
     needs_push = status.ahead > 0
     clean_pushed = not has_errors and not dirty and not needs_push
     preview_reviewed = bool(preview_state and preview_state.ready and preview_state.reviewed)
-    accepted_ready = bool(accepted_state and accepted_state.ready)
-
     return (
         CockpitAction("Record Changes", not has_errors, "Record a changelog entry."),
         CockpitAction(
@@ -235,10 +233,10 @@ def _actions(
         ),
         CockpitAction(
             "Create Release",
-            clean_pushed and accepted_ready and _release_ready(release_summary),
-            "Accepted main outputs are ready for release."
-            if accepted_ready and _release_ready(release_summary)
-            else _release_action_reason(accepted_state, release_summary),
+            clean_pushed,
+            "Open the release checklist."
+            if clean_pushed
+            else "Commit and push before checking release readiness.",
         ),
         CockpitAction("Project Info", True, "Edit project metadata and variant defaults."),
         CockpitAction("Refresh", True, "Refresh project state."),

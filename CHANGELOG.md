@@ -8,11 +8,13 @@
 - test
 - docs
 - ci/cd
+- release ci fix
 
 ### Fixed
 
 - test 2
 - fix
+- ci on release
 ## [0.1.0] - 2026-04-24
 
 ### Status

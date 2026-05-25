@@ -1,4 +1,5 @@
 name: Boardwright Publish Release
+run-name: Publish ${{ github.ref_name }} release package
 
 on:
   push:
@@ -20,6 +21,7 @@ env:
 
 jobs:
   release:
+    name: Publish ${{ github.ref_name }}
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag'
     steps:
@@ -78,6 +80,15 @@ jobs:
 
           echo "KIBOT_VARIANT=$variant" >> "$GITHUB_ENV"
           echo "KIBOT_ADDITIONAL_ARGS=$additional_args" >> "$GITHUB_ENV"
+
+          {
+            echo "## Boardwright Publish Release"
+            echo
+            echo "- Tag: \`${GITHUB_REF_NAME}\`"
+            echo "- Variant: \`${variant}\`"
+            echo "- Release kind: \`${RELEASE_KIND:-release}\`"
+            echo "- Package artifact: \`boardwright-release-${GITHUB_REF_NAME}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Prepare Boardwright PDF table placeholders
         if: env.KIBOT_VARIANT != 'DRAFT'
