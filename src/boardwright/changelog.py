@@ -62,10 +62,17 @@ def has_release(text: str, version: str) -> bool:
     return any(release.name == version for release in parse_releases(text))
 
 
-def promote_unreleased(text: str, version: str, release_date: date | None = None) -> str:
+def promote_unreleased(
+    text: str,
+    version: str,
+    release_date: date | None = None,
+    *,
+    allow_empty: bool = False,
+) -> str:
     if has_release(text, version):
         raise BoardwrightError(f"CHANGELOG.md already contains release {version}.")
-    if not unreleased_has_content(text):
+    has_content = unreleased_has_content(text)
+    if not has_content and not allow_empty:
         raise BoardwrightError("CHANGELOG.md has no unreleased entries to release.")
 
     release_date = release_date or date.today()
@@ -73,16 +80,38 @@ def promote_unreleased(text: str, version: str, release_date: date | None = None
     if unreleased_match is None:
         raise BoardwrightError("CHANGELOG.md must contain a '## [Unreleased]' section.")
 
-    insert_at = unreleased_match.end()
+    next_release_match = re.search(r"^## \[", text[unreleased_match.end() :], re.MULTILINE)
+    unreleased_end = (
+        unreleased_match.end() + next_release_match.start()
+        if next_release_match
+        else len(text)
+    )
+    unreleased_body = text[unreleased_match.end() : unreleased_end]
+    if not has_content:
+        unreleased_body = "\n\n### Notes\n\n- No changelog entries recorded for this release.\n"
+
+    before = text[: unreleased_match.end()].rstrip()
+    after = text[unreleased_end:]
     heading = f"\n\n## [{version}] - {release_date.isoformat()}"
-    promoted = text[:insert_at].rstrip() + heading + text[insert_at:]
+    promoted = before + heading + unreleased_body + after
     return re.sub(r"(?<!\n)\n(?=## \[)", "\n\n", promoted)
 
 
-def promote_unreleased_file(root: Path, version: str, release_date: date | None = None) -> None:
+def promote_unreleased_file(
+    root: Path,
+    version: str,
+    release_date: date | None = None,
+    *,
+    allow_empty: bool = False,
+) -> None:
     path = changelog_path(root)
     path.write_text(
-        promote_unreleased(read_changelog(root), version, release_date),
+        promote_unreleased(
+            read_changelog(root),
+            version,
+            release_date,
+            allow_empty=allow_empty,
+        ),
         encoding="utf-8",
         newline="\n",
     )

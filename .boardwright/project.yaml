@@ -8,6 +8,7 @@ project:
   product_family: BOARDWRIGHT
   product_generation: TEMPLATE
   board_name: FIC-100A
+  board_revision: A
 variants:
   dev_default: DRAFT
   preview_default: PRELIMINARY
