@@ -176,9 +176,10 @@ jobs:
         shell: bash
         run: python boardwright_resources/kibot/resources/scripts/clean_generated_outputs.py .
 
-      - name: Discard KiCad source side effects
+      - name: Discard generated source side effects
         shell: bash
         run: |
+          git checkout HEAD -- boardwright_resources/kibot/yaml/kibot_main.yaml 2>/dev/null || true
           git checkout HEAD -- '*.kicad_pcb' '*.kicad_pro' '*.kicad_dru' '*.kicad_prl' '*.kicad_sch' || true
           git clean -f '*.kicad_pcb' '*.kicad_pro' '*.kicad_dru' '*.kicad_prl' '*.kicad_sch' || true
 
@@ -224,6 +225,7 @@ jobs:
           fi
 
           git checkout HEAD -- README.md assets/renders 2>/dev/null || true
+          git checkout HEAD -- boardwright_resources/kibot/yaml/kibot_main.yaml 2>/dev/null || true
           git clean -fd -- HTML KiRI Manufacturing Reports Schematic Testing assets/renders 2>/dev/null || true
           rm -rf HTML KiRI Manufacturing Reports Schematic Testing assets/renders
 

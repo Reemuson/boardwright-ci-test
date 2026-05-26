@@ -17,6 +17,7 @@
 - fix
 - ci on release
 - ci cache
+- commit to main discard dirty files
 ## [0.1.0] - 2026-04-24
 
 ### Status

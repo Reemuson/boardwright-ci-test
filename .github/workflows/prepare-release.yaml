@@ -180,9 +180,10 @@ jobs:
             exit 1
           fi
 
-      - name: Discard KiCad source side effects
+      - name: Discard generated source side effects
         shell: bash
         run: |
+          git checkout HEAD -- boardwright_resources/kibot/yaml/kibot_main.yaml 2>/dev/null || true
           git checkout HEAD -- '*.kicad_pcb' '*.kicad_pro' '*.kicad_dru' '*.kicad_prl' '*.kicad_sch' || true
           git clean -f '*.kicad_pcb' '*.kicad_pro' '*.kicad_dru' '*.kicad_prl' '*.kicad_sch' || true
 
