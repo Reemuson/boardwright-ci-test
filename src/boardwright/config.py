@@ -14,6 +14,7 @@ DEFAULT_CONFIG_FILES = {
     "project.yaml": """project:
   id: BOARDWRIGHT-TEMPLATE
   name: Boardwright KiCad/KiBot Template
+  board_revision: A
   company: RYAN DYNAMICS
   designer: R. HICKS
   git_url: ""
@@ -89,6 +90,10 @@ class BoardwrightConfig:
     def board_name(self) -> str:
         project = self.project.get("project", {})
         return str(project.get("board_name") or project.get("name", "unknown"))
+
+    @property
+    def board_revision(self) -> str:
+        return str(self.project.get("project", {}).get("board_revision", "A"))
 
     @property
     def github_repo(self) -> str:

@@ -59,6 +59,14 @@ jobs:
           git config user.name "boardwright[bot]"
           git config user.email "boardwright[bot]@users.noreply.github.com"
 
+      - name: Cache Python packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install Boardwright
         shell: bash
         run: python -m pip install -e .
@@ -115,10 +123,12 @@ jobs:
         run: mkdir -p ~/cache_3d
 
       - name: Cache 3D models
-        uses: set-soft/cache@main
+        uses: actions/cache@v4
         with:
           path: ~/cache_3d
-          key: cache-3d-kicad-${{ env.KICAD_VERSION }}
+          key: ${{ runner.os }}-kicad-${{ env.KICAD_VERSION }}-3d-${{ hashFiles('**/*.kicad_pcb', '**/*.kicad_sch') }}
+          restore-keys: |
+            ${{ runner.os }}-kicad-${{ env.KICAD_VERSION }}-3d-
 
       - name: Install bundled KiCad/PDF fonts
         shell: bash

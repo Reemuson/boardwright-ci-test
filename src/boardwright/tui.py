@@ -159,7 +159,7 @@ def _run_console_fallback() -> None:
     print()
     print(f"Project: {status.project_id} - {status.project_name}")
     print(f"Branch: {status.branch}")
-    print(f"Variant: {status.variant}")
+    print(f"Dev default variant: {status.variant}")
     print(f"Working tree: {'dirty' if status.dirty_count else 'clean'}")
     print(f"Unreleased changes: {'yes' if status.unreleased_changes else 'no'}")
     print(f"Preview: {state.preview_summary}")
@@ -367,6 +367,7 @@ def _build_textual_app():
                     yield Input(value=str(project.get("id", "")), placeholder="Project ID", id="project_id")
                     yield Input(value=str(project.get("name", "")), placeholder="Project name", id="project_name")
                     yield Input(value=config.board_name, placeholder="Board name", id="project_board_name")
+                    yield Input(value=config.board_revision, placeholder="Board revision", id="project_board_revision")
                     yield Input(value=str(project.get("company", "")), placeholder="Company", id="project_company")
                     yield Input(value=str(project.get("designer", "")), placeholder="Designer", id="project_designer")
                     yield Input(value=str(project.get("git_url", "")), placeholder="Git URL", id="project_git_url")
@@ -404,6 +405,7 @@ def _build_textual_app():
                         "id": self.query_one("#project_id", Input).value.strip(),
                         "name": self.query_one("#project_name", Input).value.strip(),
                         "board_name": self.query_one("#project_board_name", Input).value.strip(),
+                        "board_revision": self.query_one("#project_board_revision", Input).value.strip(),
                         "company": self.query_one("#project_company", Input).value.strip(),
                         "designer": self.query_one("#project_designer", Input).value.strip(),
                         "git_url": self.query_one("#project_git_url", Input).value.strip(),
@@ -937,22 +939,51 @@ def _build_textual_app():
 
         def _fetch_review_artifact(self, variant: str) -> None:
             try:
-                result = fetch_latest_preview_artifact(load_config(), variant)
+                config = load_config()
+                result = fetch_latest_preview_artifact(config, variant)
+                preview_state = build_preview_state(config, variant)
+                try:
+                    accepted_state = build_accepted_main_state(config)
+                    accepted_error = ""
+                except BoardwrightError as exc:
+                    accepted_state = None
+                    accepted_error = str(exc)
             except BoardwrightError as exc:
-                self.call_from_thread(self._finish_review_fetch, None, str(exc))
+                self.call_from_thread(self._finish_review_fetch, variant, str(exc), None, None, str(exc))
                 return
-            self.call_from_thread(self._finish_review_fetch, result, None)
+            self.call_from_thread(
+                self._finish_review_fetch,
+                variant,
+                result,
+                preview_state,
+                accepted_state,
+                accepted_error,
+            )
 
-        def _finish_review_fetch(self, result: str | None, error: str | None) -> None:
-            if error:
-                self.ci_status = error
+        def _finish_review_fetch(
+            self,
+            variant: str,
+            result: str | None,
+            preview_state: "PreviewState | None",
+            accepted_state: "AcceptedMainState | None",
+            accepted_error: str,
+        ) -> None:
+            if preview_state is None:
+                self.ci_status = result or "Preview artifact fetch failed."
                 self._render_state()
-                self.notify(error, severity="error")
+                self.notify(self.ci_status, severity="error")
                 return
-            self.state = collect_dashboard_state()
-            self.ci_status = result
+            self.state = collect_dashboard_state(
+                preview_state=preview_state,
+                accepted_state=accepted_state,
+                accepted_error=accepted_error,
+            )
+            self.ci_status = format_preview_state(preview_state)
             self._render_state()
-            self.notify(result or "Preview artifact fetched.")
+            if preview_state.reviewed:
+                self.notify(f"Reviewed boardwright-preview-{variant}; Accept to Main is unlocked.")
+            else:
+                self.notify(result or "Preview artifact fetched.")
 
         def action_record_change(self) -> None:
             if not self._require_action("Record Changes"):
@@ -1155,8 +1186,8 @@ def _build_textual_app():
                 "\n".join(
                     [
                         f"Name: {status.project_name}",
-                        f"Variant: {status.variant}",
-                        f"Preview: {load_config().preview_variant}",
+                        f"Dev default: {status.variant}",
+                        f"Preview default: {load_config().preview_variant}",
                         f"Unreleased: {'yes' if status.unreleased_changes else 'no'}",
                         f"Git: {dirty_summary}",
                         f"Remote: ahead {status.ahead}, behind {status.behind}",
@@ -1216,7 +1247,7 @@ def _format_top_status(
     if status.ahead or status.behind:
         text.append(" | remote ")
         text.append(f"+{status.ahead}/-{status.behind}", style="bold yellow")
-    text.append(" | variant ")
+    text.append(" | dev ")
     text.append(status.variant, style="magenta")
     text.append(" | tag ")
     text.append(status.latest_tag or "none", style="cyan" if status.latest_tag else "dim")
@@ -1267,7 +1298,7 @@ def _workflow_marker(state: str) -> str:
         return "[>]"
     if state == "running":
         return "[~]"
-    if state in {"blocked", "failed", "locked"}:
+    if state in {"blocked", "failed"}:
         return "[!]"
     return "[ ]"
 
@@ -1275,9 +1306,9 @@ def _workflow_marker(state: str) -> str:
 def _workflow_state_style(state: str) -> str:
     if state in {"done", "ready", "passed"}:
         return "bold green"
-    if state in {"needed", "needs action", "waiting", "running", "missing", "stale"}:
+    if state in {"needed", "needs action", "waiting", "running", "missing", "stale", "locked"}:
         return "bold yellow"
-    if state in {"blocked", "locked", "failed"}:
+    if state in {"blocked", "failed"}:
         return "bold red"
     if state == "external":
         return "bold cyan"
@@ -1341,6 +1372,8 @@ def _append_inspector_heading(text: Text, label: str) -> None:
 def _review_hint(state: DashboardState) -> str:
     if state.workflow.next_action == "Review Artifacts":
         return "fetch/review the preview artifact to unlock Accept to Main."
+    if state.workflow.next_action == "Accept to Main":
+        return "preview artifact is reviewed; Accept to Main is ready."
     return ""
 
 
@@ -1376,9 +1409,9 @@ def _accepted_summary_style(summary: str) -> str:
     state = _line_value([line.strip() for line in summary.splitlines()], "State")
     if state == "ready":
         return "bold green"
-    if state in {"failed", "stale"}:
+    if state == "failed":
         return "bold red"
-    if state in {"missing", "running"}:
+    if state in {"missing", "running", "stale"}:
         return "bold yellow"
     return "dim"
 
@@ -1613,11 +1646,16 @@ def _ci_status_short(ci_status: str) -> str:
     if first_line.startswith("Artifact: boardwright-preview-"):
         variant = first_line.removeprefix("Artifact: boardwright-preview-").strip()
         state = _line_value(lines, "State") or "unknown"
+        reviewed = _line_value(lines, "Reviewed")
+        if state == "ready" and reviewed == "no":
+            return f"preview {variant} review needed"
         return f"preview {variant} {state}"
 
     if " | boardwright-preview-" in first_line:
         state, artifact = first_line.split(" | ", 1)
         variant = artifact.removeprefix("boardwright-preview-").strip()
+        if state.upper() == "READY" and "Reviewed no" in ci_status:
+            return f"preview {variant} review needed"
         return f"preview {variant} {state.lower()}"
 
     if first_line.startswith("Fetched boardwright-preview-"):
@@ -1664,6 +1702,8 @@ def _ci_status_style(ci_status: str) -> str:
         or "polling" in lowered
         or "dispatching" in lowered
         or "downloading" in lowered
+        or "review needed" in lowered
+        or "reviewed no" in lowered
     ):
         return "bold yellow"
     return "dim"

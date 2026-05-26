@@ -9,6 +9,7 @@
 - docs
 - ci/cd
 - release ci fix
+- readme fix, ci changes
 
 ### Fixed
 

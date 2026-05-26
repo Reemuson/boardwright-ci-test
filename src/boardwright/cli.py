@@ -301,7 +301,7 @@ def _status() -> int:
     )
     print(f"Project: {status.project_id} - {status.project_name}")
     print(f"Branch: {status.branch}")
-    print(f"Variant: {status.variant}")
+    print(f"Dev default variant: {status.variant}")
     print(f"Working tree: {'dirty' if status.dirty_count else 'clean'}")
     print(f"Changed files: {status.dirty_count}")
     print(f"Latest tag: {status.latest_tag or 'none'}")
