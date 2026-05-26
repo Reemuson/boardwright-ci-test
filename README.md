@@ -16,10 +16,10 @@
 
 | Parameter | Value | 
 | --- | --- |
-| Revision |  |
+| Revision | 0.1.3 |
 | Board revision | A |
-| Release version |  |
-| Variant | CHECKED |
+| Release version | 0.1.3 |
+| Variant | RELEASED |
 | Dimensions | 40.0 x 25.0 mm |
 
 ***
