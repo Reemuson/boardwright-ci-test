@@ -11,6 +11,7 @@
 - ci/cd
 - release ci fix
 - readme fix, ci changes
+- changelog error and ci fix
 
 ### Fixed
 

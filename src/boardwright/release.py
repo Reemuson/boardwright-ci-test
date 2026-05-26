@@ -56,8 +56,6 @@ def validate_release_plan(plan: ReleasePlan, allow_dirty: bool = False) -> list[
         problems.append(f"Local tag already exists: {plan.version}")
     if plan.remote_tag_exists:
         problems.append(f"Remote tag already exists: {plan.version}")
-    if not plan.has_unreleased_changes:
-        problems.append("CHANGELOG.md has no unreleased changes.")
     return problems
 
 
@@ -73,7 +71,7 @@ def prepare_release(
         raise BoardwrightError("; ".join(problems))
 
     if not dry_run:
-        promote_unreleased_file(config.root, version, date.today())
+        promote_unreleased_file(config.root, version, date.today(), allow_empty=True)
         write_revision_variables(config)
 
     return plan

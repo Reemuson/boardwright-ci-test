@@ -1550,11 +1550,11 @@ def build_release_checklist(
         ),
         ReleaseChecklistItem(
             "Unreleased changelog",
-            bool(release_plan and release_plan.has_unreleased_changes),
+            release_plan is not None,
             (
                 "CHANGELOG.md has content ready to promote."
                 if release_plan and release_plan.has_unreleased_changes
-                else "CHANGELOG.md has no unreleased changes."
+                else "No unreleased entries; release notes will include a generated no-change note."
             ),
         ),
         ReleaseChecklistItem(
