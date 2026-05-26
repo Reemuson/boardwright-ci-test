@@ -65,6 +65,7 @@ def _sync_kibot_project_metadata(root: Path) -> None:
     replacements = {
         "PROJECT_NAME": config.project_name,
         "BOARD_NAME": config.board_name,
+        "BOARD_REVISION": config.board_revision,
         "COMPANY": str(project.get("company") or ""),
         "DESIGNER": str(project.get("designer") or ""),
         "LOGO": str(config.assets.get("logo") or ""),

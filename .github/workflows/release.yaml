@@ -35,10 +35,12 @@ jobs:
         run: mkdir -p ~/cache_3d
 
       - name: Cache 3D models
-        uses: set-soft/cache@main
+        uses: actions/cache@v4
         with:
           path: ~/cache_3d
-          key: cache-3d-kicad-${{ env.KICAD_VERSION }}
+          key: ${{ runner.os }}-kicad-${{ env.KICAD_VERSION }}-3d
+          restore-keys: |
+            ${{ runner.os }}-kicad-${{ env.KICAD_VERSION }}-3d-
 
       - name: Install bundled KiCad/PDF fonts
         shell: bash
@@ -148,8 +150,6 @@ jobs:
           fi
 
           {
-            echo "# ${tag}"
-            echo
             echo "Generated \`${RELEASE_VARIANT}\` package for \`${repo}\`."
             echo
             if [[ -n "$top_image" || -n "$bottom_image" ]]; then
