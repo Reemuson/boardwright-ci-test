@@ -16,6 +16,7 @@
 - test 2
 - fix
 - ci on release
+- ci cache
 ## [0.1.0] - 2026-04-24
 
 ### Status

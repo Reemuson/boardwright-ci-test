@@ -130,7 +130,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/cache_3d
-          key: ${{ runner.os }}-kicad-${{ env.KICAD_VERSION }}-3d-${{ hashFiles('**/*.kicad_pcb', '**/*.kicad_sch') }}
+          key: ${{ runner.os }}-kicad-${{ env.KICAD_VERSION }}-3d
           restore-keys: |
             ${{ runner.os }}-kicad-${{ env.KICAD_VERSION }}-3d-
 
