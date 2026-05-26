@@ -1,0 +1,22 @@
+ERC report (2026-05-26T01:48:56+0000, Encoding UTF8)
+
+***** Sheet /
+[footprint_link_issues]: The current configuration does not include the footprint library 'RD-Testpoints'.
+    ; warning
+    @(0.4445 mm, 2.3749 mm): Symbol TP1 [TestPoint]
+
+[footprint_link_issues]: The current configuration does not include the footprint library 'RD-Testpoints'.
+    ; warning
+    @(2.4511 mm, 0.9271 mm): Symbol TP2 [TestPoint]
+
+[footprint_link_issues]: The current configuration does not include the footprint library 'RD-Symbols-Silkscreen'.
+    ; warning
+    @(0.5715 mm, 2.5908 mm): Symbol ID1 [BOARD_STACKUP_MARKER]
+
+[lib_symbol_issues]: The current configuration does not include the symbol library 'Ryan-Dynamics'
+    ; warning
+    @(0.5715 mm, 2.5908 mm): Symbol ID1 [BOARD_STACKUP_MARKER]
+
+***** Sheet /CIRCUIT/
+***** Sheet /REVISION HISTORY/
+ ** ERC messages: 4  Errors 0  Warnings 4
