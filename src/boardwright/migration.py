@@ -135,6 +135,10 @@ def build_migration_plan(root: Path, project: Path | None = None) -> dict[str, A
         "reference_rewrites": {
             "${REVISION}": "${DRAWING_REVISION}",
         },
+        "deprecated_references": [
+            {"location": f"{ref.path}:{ref.line}", "variable": ref.variable, "recommendation": ref.recommendation}
+            for ref in _deprecated_design_references(project_root)
+        ],
         "removals": [
             path.relative_to(project_root).as_posix()
             for path in sorted(legacy_paths)
@@ -203,6 +207,10 @@ def apply_migration_plan(plan_path: Path) -> list[Path]:
             )
         )
         written.extend(_rewrite_pcb_title_revision(root))
+        # Unambiguous deprecated variables are rewritten; ambiguous ones (for
+        # example ${BOARD_NAME}: PCB or PCBA?) stay and are reported for review.
+        rewritten, _manual = _rewrite_deprecated_design_references(root)
+        written.extend(rewritten)
         _ensure_unreleased_changelog(root / "CHANGELOG.md")
         _sync_kibot_project_metadata(root, load_config(root))
 
@@ -231,6 +239,12 @@ def migration_summary(plan: dict[str, Any]) -> str:
     ]
     if unresolved:
         lines.append("Review resolutions: " + ", ".join(unresolved))
+    references = plan.get("deprecated_references", [])
+    manual = [ref for ref in references if not ref["recommendation"].startswith("replace with")]
+    if len(references) > len(manual):
+        lines.append(f"Deprecated text variables rewritten automatically: {len(references) - len(manual)}")
+    for ref in manual:
+        lines.append(f"Manual review: {ref['location']} ${{{ref['variable']}}} - {ref['recommendation']}")
     return "\n".join(lines)
 
 
@@ -446,6 +460,24 @@ def _rewrite_schematic_text_variables(
         path.write_text(updated, encoding="utf-8", newline="\n")
         written.append(path)
     return written
+
+
+def _design_files(root: Path) -> list[Path]:
+    # Worksheets are replaced by Boardwright worksheets during migration, so
+    # only schematics and PCBs are scanned and rewritten here.
+    return sorted(root.glob("*.kicad_sch")) + sorted(root.glob("*.kicad_pcb"))
+
+
+def _deprecated_design_references(root: Path):
+    from .deprecated_variables import find_deprecated_references
+
+    return find_deprecated_references(root, _design_files(root))
+
+
+def _rewrite_deprecated_design_references(root: Path):
+    from .deprecated_variables import rewrite_unambiguous
+
+    return rewrite_unambiguous(root, _design_files(root))
 
 
 PCB_TITLE_REVISION_REWRITES = {

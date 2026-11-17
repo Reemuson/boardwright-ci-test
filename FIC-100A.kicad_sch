@@ -822,7 +822,7 @@
 		)
 		(uuid "8b821864-881a-4cb0-856b-2d9a97f6404e")
 	)
-	(text "${BOARD_NAME}"
+	(text "${PCBA_NAME}"
 		(exclude_from_sim no)
 		(at 25.4 40.64 0)
 		(effects

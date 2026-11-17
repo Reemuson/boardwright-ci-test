@@ -39,7 +39,7 @@ def validate_project(config: BoardwrightConfig) -> list[ValidationIssue]:
     _validate_repository_metadata(config, issues)
     _validate_readme_template(root, issues)
     _validate_known_local_branding(root, issues)
-    _validate_deprecated_schematic_variables(root, issues)
+    _validate_deprecated_schematic_variables(root, issues, config.project)
 
     return issues
 
@@ -274,35 +274,28 @@ def _validate_known_local_branding(root: Path, issues: list[ValidationIssue]) ->
 def _validate_deprecated_schematic_variables(
     root: Path,
     issues: list[ValidationIssue],
+    project: dict | None = None,
 ) -> None:
-    for path in sorted(root.glob("*.kicad_sch")):
-        try:
-            text = path.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            continue
-        count = text.count("${REVISION}")
-        if not count:
-            continue
-        issues.append(
-            ValidationIssue(
-                "error",
-                f"Deprecated text variable '${{REVISION}}' found {count} time(s) in "
-                f"{path.name}; use '${{DRAWING_REVISION}}' instead.",
-            )
-        )
-    for path in sorted(root.glob("*.kicad_pcb")):
-        try:
-            text = path.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            continue
-        if '(rev "${REVISION}")' not in text:
-            continue
+    """Report deprecated text-variable references with location and replacement.
+
+    Schematics and active worksheets: error (Boardwright's sync removes these
+    variables, so they render as literal ``${NAME}``; in schematics ERC fails
+    with ``unresolved_variable``). PCB files: warning, because a board may still
+    define the name through a board-level ``(property ...)``.
+    """
+    from .deprecated_variables import find_deprecated_references
+
+    for reference in find_deprecated_references(root):
+        level = "warning" if reference.kind == "pcb" else "error"
+        issues.append(ValidationIssue(level, f"Deprecated text variable {reference}."))
+    legacy = (project or {}).get("project", {}) if isinstance(project, dict) else {}
+    if isinstance(legacy, dict) and legacy.get("board_name") not in (None, ""):
         issues.append(
             ValidationIssue(
                 "warning",
-                f"{path.name} title block revision uses the removed '${{REVISION}}' "
-                "variable; use '${PCB_REVISION}' so the board title block shows the "
-                "physical PCB revision.",
+                f"project.board_name ({legacy['board_name']!r}) is deprecated and ignored. Set "
+                "project.pcba_name (assembled board identifier) and/or project.pcb_name (bare PCB "
+                "identifier) explicitly; until then PCBA_NAME falls back to project.name.",
             )
         )
 
