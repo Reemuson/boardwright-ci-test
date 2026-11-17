@@ -9,8 +9,8 @@ workflow regenerates outputs from the tag and verifies the controlled outputs
 against that manifest.
 
 Controlled outputs are machine-readable manufacturing data: Gerber, Excellon,
-Gerber job and IPC-D-356 files (loose, and inside the fabrication zip), plus
-assembly CSV/position files. Each file records a raw SHA-256 (byte identity)
+Gerber job and IPC-D-356 files (loose, and inside the fabrication zip), the
+rendered fabrication/assembly notes, plus assembly CSV/position files. Each file records a raw SHA-256 (byte identity)
 and a normalised SHA-256 with only timestamp/generator attributes and the
 title-block revision field of ``TF.ProjectId`` removed (content identity).
 Byte-identical and normalised-equivalent are reported separately.
@@ -99,9 +99,16 @@ def category_for(relative: str) -> str:
             return "fabrication" if Path(member).suffix in FAB_TEXT_SUFFIXES else "informational"
         return "informational"
     suffix = Path(lowered).suffix
+    name = Path(lowered).name
     if lowered.startswith("manufacturing/fabrication/gerbers/") and suffix in FAB_TEXT_SUFFIXES:
         return "fabrication"
-    if lowered.startswith("manufacturing/assembly/") and suffix in ASSEMBLY_TEXT_SUFFIXES:
+    # Rendered requirement notes are controlled text: the template lives in
+    # Boardwright tooling, so only the rendered result shows a real change.
+    if lowered.startswith("manufacturing/fabrication/") and "fabrication_notes" in name and suffix == ".txt":
+        return "fabrication"
+    if lowered.startswith("manufacturing/assembly/") and (
+        suffix in ASSEMBLY_TEXT_SUFFIXES or ("assembly_notes" in name and suffix == ".txt")
+    ):
         return "assembly"
     return "informational"
 
@@ -233,14 +240,16 @@ def compare_manifests(
     current: dict[str, Any],
     categories: tuple[str, ...] = CONTROLLED_CATEGORIES,
 ) -> list[Difference]:
-    def pick(manifest: dict[str, Any]) -> dict[str, dict[str, str]]:
-        return {
-            path: entry
-            for path, entry in manifest["files"].items()
-            if entry.get("category") in categories
-        }
-
-    old, new = pick(accepted), pick(current)
+    # A path is controlled if either manifest classifies it as controlled, so
+    # re-classifying a file between Boardwright versions cannot hide it.
+    controlled = {
+        path
+        for manifest in (accepted, current)
+        for path, entry in manifest["files"].items()
+        if entry.get("category") in categories
+    }
+    old = {path: entry for path, entry in accepted["files"].items() if path in controlled}
+    new = {path: entry for path, entry in current["files"].items() if path in controlled}
     same_normaliser = accepted.get("normaliser", 1) == current.get("normaliser", 1)
     differences: list[Difference] = []
     for path in sorted(set(old) | set(new)):

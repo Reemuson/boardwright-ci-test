@@ -201,6 +201,7 @@ def assess_release_impact(
         base.fingerprint.pcb_format != current.pcb_format
         or base.fingerprint.schematic_format != current.schematic_format
     )
+    tooling_changed = bool(base.fingerprint.tooling) and base.fingerprint.tooling != current.tooling
 
     if not declared:
         problems.append(
@@ -345,6 +346,17 @@ def assess_release_impact(
         reviews.append(
             "Sources were saved by a different KiCad version. Equivalence is established on normalised "
             "sources; regenerated outputs are not guaranteed byte-identical to the approved package."
+        )
+    if tooling_changed:
+        if "tooling" not in declared:
+            problems.append(
+                "Boardwright KiBot output configuration or notes templates changed since the baseline; "
+                "declare the `tooling` change class."
+            )
+        reviews.append(
+            "Output tooling changed: rendered fabrication/assembly notes and output options may differ. "
+            "The prepare workflow compares controlled outputs (including rendered notes) with the "
+            "previous release where a manifest exists."
         )
     if base.legacy:
         reviews.append(

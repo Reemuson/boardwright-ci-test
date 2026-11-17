@@ -18,17 +18,21 @@ domain answers one engineering question:
     and Gerber X2 attributes, so a rename changes fabrication *data* but not
     copper.
 ``fabrication_spec``
-    Do the fabrication requirements differ (``project.yaml`` manufacturing
-    settings and the fabrication notes template)?
+    Do the fabrication requirements in ``project.yaml`` differ?
 ``assembly``
     Do populated parts, values, footprints, placement, DNP/BOM flags, BOM
-    fields, assembly notes or the assembly notes template differ?
+    fields or assembly notes differ?
 ``pcb_drawings``
     Does content on PCB documentation layers (``*.Fab``, ``Dwgs.User``,
     ``Cmts.User``, ``User.*``) used by the fabrication and assembly drawings
     differ? This is drawing content, not the bare board.
 ``schematic``
     Does the schematic content differ (title blocks excluded)?
+
+``tooling`` hashes Boardwright's KiBot output configuration and notes
+templates (line endings normalised). It is not a design domain: a change
+requires the ``tooling`` class, and its effect on the rendered outputs is
+checked by :mod:`boardwright.output_manifest`.
 
 ``fab_volatile_variables`` lists release-dependent variables (for example
 ``${RELEASE_VERSION}``) used in text on fabrication layers; such boards get
@@ -64,8 +68,15 @@ RELEASE_VOLATILE_VARIABLES = {
     "VARIANT",
 }
 TEXT_HEADS = {"gr_text", "fp_text", "gr_text_box", "fp_text_box", "property", "text"}
-FAB_NOTES_TEMPLATE = "boardwright_resources/kibot/resources/templates/fabrication_notes.txt"
-ASSEMBLY_NOTES_TEMPLATE = "boardwright_resources/kibot/resources/templates/assembly_notes.txt"
+# Boardwright-managed output tooling. A change here is a `tooling` change; its
+# effect on rendered outputs (fab/assembly notes, Gerber options) is verified
+# by the output manifest, not by the design fingerprint.
+TOOLING_PREFIXES = (
+    "boardwright_resources/kibot/resources/templates/",
+    "boardwright_resources/kibot/yaml/kibot_out_",
+    "boardwright_resources/kibot/yaml/kibot_filt_",
+    "boardwright_resources/kibot/yaml/kibot_globals",
+)
 # Documentation layers whose content appears on the fab/assembly drawings.
 DRAWING_LAYER_NAMES = {"Dwgs.User", "Cmts.User"}
 DRAWING_LAYER_SUFFIXES = (".Fab",)
@@ -116,6 +127,8 @@ class SourceReader(Protocol):
 
     def list_files(self) -> list[str]: ...
 
+    def list_tree(self, prefix: str) -> list[str]: ...
+
     def read_text(self, path: str) -> str | None: ...
 
 
@@ -126,6 +139,12 @@ class WorkingTreeReader:
 
     def list_files(self) -> list[str]:
         return sorted(path.name for path in self.root.iterdir() if path.is_file())
+
+    def list_tree(self, prefix: str) -> list[str]:
+        base = self.root / prefix
+        if not base.is_dir():
+            return []
+        return sorted(path.relative_to(self.root).as_posix() for path in base.rglob("*") if path.is_file())
 
     def read_text(self, path: str) -> str | None:
         target = self.root / path
@@ -146,6 +165,10 @@ class GitRefReader:
 
     def list_files(self) -> list[str]:
         completed = _git(self.root, "ls-tree", "--name-only", self.ref)
+        return sorted(line for line in completed.splitlines() if line)
+
+    def list_tree(self, prefix: str) -> list[str]:
+        completed = _git(self.root, "ls-tree", "-r", "--name-only", self.ref, "--", prefix.rstrip("/"))
         return sorted(line for line in completed.splitlines() if line)
 
     def read_text(self, path: str) -> str | None:
@@ -170,6 +193,7 @@ class DesignFingerprint:
     schematic_files: tuple[str, ...] = field(default_factory=tuple)
     pcb_drawings: str = ""
     fab_volatile_variables: tuple[str, ...] = field(default_factory=tuple)
+    tooling: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -198,6 +222,7 @@ class DesignFingerprint:
                 fab_volatile_variables=tuple(
                     str(item) for item in data.get("fab_volatile_variables", []) or []
                 ),
+                tooling=str(data.get("tooling", "")),
             )
         except KeyError as exc:
             raise BoardwrightError(f"Fingerprint record is missing `{exc.args[0]}`.") from exc
@@ -227,12 +252,9 @@ def compute_fingerprint(reader: SourceReader) -> DesignFingerprint:
         "pin_functions": _pad_pin_functions(pcb),
     }
     fab_spec = {
-        "settings": {
-            key: value
-            for key, value in sorted(manufacturing.items())
-            if key not in FABRICATION_EXCLUDED_MANUFACTURING_KEYS
-        },
-        "notes_template": reader.read_text(FAB_NOTES_TEMPLATE) or "",
+        key: value
+        for key, value in sorted(manufacturing.items())
+        if key not in FABRICATION_EXCLUDED_MANUFACTURING_KEYS
     }
     assembly = {
         "footprints": _pcb_assembly_rows(pcb),
@@ -240,7 +262,6 @@ def compute_fingerprint(reader: SourceReader) -> DesignFingerprint:
         "notes": {
             key: manufacturing.get(key, "") for key in sorted(ASSEMBLY_EXCLUDED_MANUFACTURING_KEYS)
         },
-        "notes_template": reader.read_text(ASSEMBLY_NOTES_TEMPLATE) or "",
     }
     schematic_canonical = [
         (name, canonical(_strip(tree, SCH_DROP_HEADS))) for name, tree in schematics
@@ -260,6 +281,7 @@ def compute_fingerprint(reader: SourceReader) -> DesignFingerprint:
         schematic_files=tuple(schematic_names),
         pcb_drawings=_hash(json.dumps(_drawing_items(pcb, resolver))),
         fab_volatile_variables=tuple(sorted(resolver.volatile_used)),
+        tooling=_tooling_hash(reader),
     )
 
 
@@ -562,6 +584,20 @@ def _drawing_items(pcb: SList, resolver: "_TextResolver") -> list[str]:
         elif only_drawing(item):
             items.append(canonical(_strip(item, PCB_DROP_HEADS)))
     return sorted(items)
+
+
+def _tooling_hash(reader: SourceReader) -> str:
+    entries: list[tuple[str, str]] = []
+    list_tree = getattr(reader, "list_tree", None)
+    if list_tree is None:
+        return ""
+    for path in sorted(set(list_tree("boardwright_resources/kibot"))):
+        if not path.startswith(TOOLING_PREFIXES):
+            continue
+        text = reader.read_text(path) or ""
+        # Line endings differ between Windows checkouts and Git objects.
+        entries.append((path, text.replace("\r\n", "\n")))
+    return _hash(json.dumps(entries))
 
 
 def _pad_pin_functions(pcb: SList) -> list[str]:
