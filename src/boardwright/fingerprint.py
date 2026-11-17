@@ -120,6 +120,21 @@ SCH_DROP_HEADS = {"uuid", "generator", "generator_version", "title_block", "vers
 
 ASSEMBLY_EXCLUDED_MANUFACTURING_KEYS = {"assembly_notes", "testpoint_policy"}
 FABRICATION_EXCLUDED_MANUFACTURING_KEYS = ASSEMBLY_EXCLUDED_MANUFACTURING_KEYS
+# Project-owned approved fabrication-note wording: part of the fabrication spec.
+PROJECT_NOTES_TEMPLATE = ".boardwright/templates/fabrication_notes.txt"
+NOTES_TEMPLATE_SPEC_KEY = "(project fabrication notes template)"
+
+
+def fabrication_spec_items(project_yaml: str | None, notes_template: str | None) -> dict[str, Any]:
+    """The fabrication requirements a release states, as a comparable mapping."""
+    spec: dict[str, Any] = {
+        key: value
+        for key, value in sorted(_manufacturing_settings(project_yaml).items())
+        if key not in FABRICATION_EXCLUDED_MANUFACTURING_KEYS
+    }
+    if notes_template is not None:
+        spec[NOTES_TEMPLATE_SPEC_KEY] = "\n".join(notes_template.splitlines())
+    return spec
 
 
 class SourceReader(Protocol):
@@ -251,11 +266,7 @@ def compute_fingerprint(reader: SourceReader) -> DesignFingerprint:
         "nets": sorted((label, name) for name, label in net_labels.items() if name),
         "pin_functions": _pad_pin_functions(pcb),
     }
-    fab_spec = {
-        key: value
-        for key, value in sorted(manufacturing.items())
-        if key not in FABRICATION_EXCLUDED_MANUFACTURING_KEYS
-    }
+    fab_spec = fabrication_spec_items(project_yaml, reader.read_text(PROJECT_NOTES_TEMPLATE))
     assembly = {
         "footprints": _pcb_assembly_rows(pcb),
         "symbols": sorted(row for _, tree in schematics for row in _schematic_bom_rows(tree)),
