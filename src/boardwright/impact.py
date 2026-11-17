@@ -358,6 +358,20 @@ def assess_release_impact(
             "The prepare workflow compares controlled outputs (including rendered notes) with the "
             "previous release where a manifest exists."
         )
+    unrecorded = [
+        label
+        for label, value in (
+            ("schematic", previous.schematic_revision),
+            ("assembly drawing", previous.assembly_revision),
+            ("fabrication drawing", previous.fabrication_revision),
+        )
+        if not value
+    ]
+    if unrecorded:
+        reviews.append(
+            f"Baseline {base.version} has no recorded {', '.join(unrecorded)} revision, so revision "
+            "changes cannot be enforced against it. Confirm the proposed revisions explicitly."
+        )
     if base.legacy:
         reviews.append(
             f"Baseline {base.version} predates the release ledger and was reconstructed from its tag."
