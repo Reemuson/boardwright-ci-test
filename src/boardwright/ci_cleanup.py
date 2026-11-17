@@ -43,13 +43,36 @@ def modified_tracked(root: Path) -> list[str]:
     return sorted(item for item in output.split("\0") if item)
 
 
+def describe(root: Path, paths: list[str]) -> str:
+    """Evidence for a set of modified paths: what changed and how."""
+    if not paths:
+        return ""
+    parts = [
+        _git(root, "diff", "--stat", "--summary", "HEAD", "--", *paths),
+        _git(root, "ls-files", "--eol", "--", *paths),
+    ]
+    for path in paths:
+        target = root / path
+        if target.exists():
+            info = target.stat()
+            parts.append(f"{path}: mode {oct(info.st_mode & 0o7777)} uid {getattr(info, 'st_uid', '?')} size {info.st_size}\n")
+    return "".join(parts)
+
+
 def discard_side_effects(root: Path, keep: tuple[str, ...]) -> tuple[list[str], list[str]]:
     """Return (restored paths, paths still modified outside keep)."""
     keep = tuple(keep) + OUTPUT_DIRS
     restore = [path for path in modified_tracked(root) if not _kept(path, keep)]
     if restore:
-        # One path per argument list entry; every path is known to be tracked.
-        subprocess.run(["git", "checkout", "HEAD", "--", *restore], cwd=root, check=True)
+        print("Build side effects before restore:")
+        print(describe(root, restore), end="")
+        # Attribute files first: they control how the remaining files are
+        # converted when written back.
+        attributes = [path for path in restore if Path(path).name == ".gitattributes"]
+        others = [path for path in restore if path not in attributes]
+        for batch in (attributes, others):
+            if batch:
+                subprocess.run(["git", "checkout", "HEAD", "--", *batch], cwd=root, check=True)
     for pattern in GENERATED_UNTRACKED:
         for path in root.glob(pattern):
             if not _git(root, "ls-files", "--", path.relative_to(root).as_posix()).strip():
@@ -69,6 +92,8 @@ def main(argv: list[str] | None = None) -> int:
     if remaining:
         for path in remaining:
             print(f"ERROR still modified: {path}", file=sys.stderr)
+        print("State of files still modified after restore:", file=sys.stderr)
+        print(describe(Path(args.root), remaining), end="", file=sys.stderr)
         return 1
     print(f"Source side effects discarded ({len(restored)} file(s) restored).")
     return 0
