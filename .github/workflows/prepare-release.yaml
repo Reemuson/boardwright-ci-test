@@ -403,10 +403,9 @@ jobs:
       - name: Discard generated source side effects
         shell: bash
         run: |
-          git checkout HEAD -- boardwright_resources/kibot/yaml/kibot_main.yaml 2>/dev/null || true
-          git clean -f boardwright_resources/kibot/yaml/kibot_document_*.generated.yaml 2>/dev/null || true
-          git checkout HEAD -- '*.kicad_pcb' '*.kicad_pro' '*.kicad_dru' '*.kicad_prl' '*.kicad_sch' || true
-          git clean -f '*.kicad_pcb' '*.kicad_pro' '*.kicad_dru' '*.kicad_prl' '*.kicad_sch' || true
+          # Restores every tracked file the build rewrote and fails if any
+          # modification outside the kept paths remains.
+          python -m boardwright.ci_cleanup --keep README.md assets/renders CHANGELOG.md .boardwright
 
       - name: Commit accepted release state
         if: ${{ !inputs.review_hold }}
