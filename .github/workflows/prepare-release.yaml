@@ -53,6 +53,16 @@ on:
         required: false
         default: ""
         type: string
+      review_hold:
+        description: Build and upload the release candidate for review, then stop before any push or tag
+        required: false
+        default: false
+        type: boolean
+      approved_review_run:
+        description: Run ID of a successful review_hold run; the release must match that reviewed candidate
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: write
@@ -77,6 +87,8 @@ env:
   IN_CHANGE_CLASSES: ${{ inputs.change_classes }}
   IN_JUSTIFICATION: ${{ inputs.justification }}
   IN_SOURCE_SHA: ${{ inputs.source_sha }}
+  IN_REVIEW_HOLD: ${{ inputs.review_hold }}
+  IN_APPROVED_REVIEW_RUN: ${{ inputs.approved_review_run }}
 
 jobs:
   prepare:
@@ -104,6 +116,14 @@ jobs:
             exit 1
           fi
           echo "BOARDWRIGHT_SOURCE_SHA=$head_sha" >> "$GITHUB_ENV"
+          if [[ "$IN_REVIEW_HOLD" == "true" && -n "$IN_APPROVED_REVIEW_RUN" ]]; then
+            echo "review_hold and approved_review_run are mutually exclusive." >&2
+            exit 1
+          fi
+          if [[ -n "$IN_APPROVED_REVIEW_RUN" && ! "$IN_APPROVED_REVIEW_RUN" =~ ^[0-9]+$ ]]; then
+            echo "approved_review_run must be a numeric run ID." >&2
+            exit 1
+          fi
           if git rev-parse --verify --quiet "refs/tags/$IN_VERSION" >/dev/null; then
             echo "Tag already exists: $IN_VERSION" >&2
             exit 1
@@ -313,6 +333,73 @@ jobs:
           set -o pipefail
           python -m boardwright.output_manifest check-baseline | tee -a "$GITHUB_STEP_SUMMARY"
 
+      - name: Record release candidate identity
+        shell: bash
+        run: python -m boardwright.review_gate write
+
+      - name: Upload release candidate for review
+        if: inputs.review_hold
+        uses: actions/upload-artifact@v4
+        with:
+          name: boardwright-release-candidate-${{ inputs.version }}
+          if-no-files-found: error
+          include-hidden-files: true
+          path: |
+            .boardwright/review_candidate.json
+            .boardwright/accepted_manifest.json
+            .boardwright/releases.yaml
+            .boardwright/release.env
+            .boardwright/revision_history_variables.env
+            .boardwright/document_revisions.yaml
+            .boardwright/project.yaml
+            CHANGELOG.md
+            README.md
+            Manufacturing
+            Schematic
+            Reports
+
+      - name: Stop for review
+        if: inputs.review_hold
+        shell: bash
+        run: |
+          {
+            echo "## Release candidate held for review"
+            echo
+            echo "Nothing was committed, pushed or tagged."
+            echo "Inspect artifact \`boardwright-release-candidate-${IN_VERSION}\`, then dispatch again with"
+            echo "\`approved_review_run=${GITHUB_RUN_ID}\` and identical inputs."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check approved review run
+        if: ${{ !inputs.review_hold && inputs.approved_review_run != '' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          info="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$IN_APPROVED_REVIEW_RUN" --jq '[.path, .conclusion, .event, .head_branch, .head_sha] | @tsv')"
+          IFS=$'\t' read -r path conclusion event branch sha <<< "$info"
+          [[ "$path" == ".github/workflows/prepare-release.yaml" ]] || { echo "Run $IN_APPROVED_REVIEW_RUN is not a prepare-release run ($path)." >&2; exit 1; }
+          [[ "$conclusion" == "success" ]] || { echo "Reviewed run concluded '$conclusion'." >&2; exit 1; }
+          [[ "$event" == "workflow_dispatch" && "$branch" == "main" ]] || { echo "Reviewed run was $event on $branch." >&2; exit 1; }
+          [[ "$sha" == "$BOARDWRIGHT_SOURCE_SHA" ]] || { echo "Reviewed run built $sha; main is $BOARDWRIGHT_SOURCE_SHA." >&2; exit 1; }
+
+      - name: Download reviewed candidate
+        if: ${{ !inputs.review_hold && inputs.approved_review_run != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: boardwright-release-candidate-${{ inputs.version }}
+          run-id: ${{ inputs.approved_review_run }}
+          github-token: ${{ github.token }}
+          path: reviewed-candidate
+
+      - name: Verify release matches the reviewed candidate
+        if: ${{ !inputs.review_hold && inputs.approved_review_run != '' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m boardwright.review_gate verify --candidate reviewed-candidate | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Discard generated source side effects
         shell: bash
         run: |
@@ -322,6 +409,7 @@ jobs:
           git clean -f '*.kicad_pcb' '*.kicad_pro' '*.kicad_dru' '*.kicad_prl' '*.kicad_sch' || true
 
       - name: Commit accepted release state
+        if: ${{ !inputs.review_hold }}
         shell: bash
         run: |
           set -euo pipefail
@@ -331,7 +419,7 @@ jobs:
           git rm -r --ignore-unmatch HTML KiRI Manufacturing Reports Schematic Testing
           git add CHANGELOG.md .boardwright/project.yaml .boardwright/document_revisions.yaml
           git add -f .boardwright/revision_history_variables.env .boardwright/release.env
-          git add -f .boardwright/releases.yaml .boardwright/accepted_manifest.json
+          git add -f .boardwright/releases.yaml .boardwright/accepted_manifest.json .boardwright/review_candidate.json
           git add README.md assets/renders/*.png || true
 
           if git diff --cached --quiet; then
@@ -344,6 +432,7 @@ jobs:
           git push origin HEAD:main
 
       - name: Create and push tag
+        if: ${{ !inputs.review_hold }}
         shell: bash
         run: |
           set -euo pipefail
@@ -355,6 +444,7 @@ jobs:
           fi
 
       - name: Dispatch tag release workflow
+        if: ${{ !inputs.review_hold }}
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
