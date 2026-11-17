@@ -48,14 +48,27 @@ def describe(root: Path, paths: list[str]) -> str:
     if not paths:
         return ""
     parts = [
+        _git(root, "status", "--porcelain=v2", "--untracked-files=no", "--", *paths),
         _git(root, "diff", "--stat", "--summary", "HEAD", "--", *paths),
         _git(root, "ls-files", "--eol", "--", *paths),
+        _git(root, "check-attr", "-a", "--", *paths),
     ]
     for path in paths:
         target = root / path
         if target.exists():
             info = target.stat()
             parts.append(f"{path}: mode {oct(info.st_mode & 0o7777)} uid {getattr(info, 'st_uid', '?')} size {info.st_size}\n")
+            # HEAD blob vs working file hashed with and without Git's
+            # normalisation filters: distinguishes eol/attribute effects from
+            # real content changes.
+            head_blob = _git(root, "rev-parse", f"HEAD:{path}").strip()
+            filtered = _git(root, "hash-object", "--", path).strip()
+            raw = _git(root, "hash-object", "--no-filters", "--", path).strip()
+            parts.append(f"{path}: HEAD {head_blob} worktree(filtered) {filtered} worktree(raw) {raw}\n")
+            if Path(path).suffix in {".net", ".xml", ".gitattributes"} or Path(path).name == ".gitattributes":
+                diff = _git(root, "diff", "--no-color", "-U1", "HEAD", "--", path)
+                lines = diff.splitlines()
+                parts.append("\n".join(lines[:40]) + (f"\n... ({len(lines) - 40} more diff lines)\n" if len(lines) > 40 else "\n"))
     return "".join(parts)
 
 
