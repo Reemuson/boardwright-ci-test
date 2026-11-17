@@ -6,7 +6,7 @@
 	(paper "A3")
 	(title_block
 		(date "2026-04-24")
-		(rev "${REVISION}")
+		(rev "${DRAWING_REVISION}")
 		(company "${COMPANY}")
 	)
 	(lib_symbols)
@@ -586,7 +586,7 @@
 		)
 		(uuid "6b8d090b-e89a-4677-84e9-b64a5fead89e")
 	)
-	(text "REV ${REVISION}"
+	(text "REV ${DRAWING_REVISION}"
 		(exclude_from_sim no)
 		(at 402.59 58.42 0)
 		(effects
