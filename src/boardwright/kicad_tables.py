@@ -511,9 +511,11 @@ def _write_manufacturing_notes(root: Path, config=None) -> None:
     assembly = _resource_text(root, ASSEMBLY_NOTES_TEMPLATE)
     assembly_dir = root / "Manufacturing" / "Assembly"
     assembly_dir.mkdir(parents=True, exist_ok=True)
+    # Controlled output: LF on every host so local and CI builds are identical.
     (assembly_dir / f"{project_stem}-assembly_notes.txt").write_text(
         assembly,
         encoding="utf-8",
+        newline="\n",
     )
 
 
