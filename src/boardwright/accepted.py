@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LicenseRef-Boardwright-Source-Available
+# Copyright (c) Ryan Hicks
+
 from __future__ import annotations
 
 import json
@@ -54,7 +57,7 @@ def list_accepted_runs(
                     "GitHub CLI is not installed, so Boardwright cannot inspect accepted main outputs.",
                     "",
                     "Manual fallback:",
-                    f"Open GitHub Actions -> {config.main_workflow}",
+                    f"GitHub Actions: {config.main_workflow}",
                     f"Branch: {config.release_branch}",
                     "Confirm the latest successful run matches the latest reviewed source commit.",
                 ]
@@ -92,7 +95,7 @@ def list_accepted_runs(
                     f"Could not list accepted main workflow runs: {message}",
                     "",
                     "Manual fallback:",
-                    f"Open GitHub Actions -> {config.main_workflow}",
+                    f"GitHub Actions: {config.main_workflow}",
                     f"Branch: {config.dev_branch}",
                     "Confirm the latest successful run matches the latest reviewed source commit.",
                 ]

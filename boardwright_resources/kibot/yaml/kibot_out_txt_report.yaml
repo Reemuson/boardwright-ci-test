@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: MIT
+# Original template material copyright Nguyen Vincent.
+# Modified for Boardwright by Ryan Hicks.
+
 # KiBot output for TXT Report (e.g. Fabrication/Assembly notes)
 # https://kibot.readthedocs.io/en/latest/configuration/outputs/report.html
 

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LicenseRef-Boardwright-Source-Available
+# Copyright (c) Ryan Hicks
+
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
@@ -10,9 +13,14 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
   "PyYAML>=6.0",
+  "pypdf>=4.0",
 ]
 
 [project.optional-dependencies]
+dev = [
+  "Jinja2>=3.1",
+  "textual>=0.80",
+]
 tui = [
   "textual>=0.80",
 ]
@@ -28,3 +36,31 @@ boardwright = "boardwright.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.data-files]
+"share/boardwright" = [
+  "pyproject.toml",
+  "THIRD_PARTY_NOTICES.md",
+]
+"share/boardwright/.github/workflows" = [".github/workflows/*.yaml"]
+"share/boardwright/Templates" = ["Templates/Boardwright_*.kicad_wks"]
+"share/boardwright/LICENSES" = ["LICENSES/Nguyen-MIT.txt"]
+"share/boardwright/scripts" = [
+  "scripts/install_boardwright.ps1",
+  "scripts/kibot_launch.sh",
+]
+"share/boardwright/boardwright_resources" = ["boardwright_resources/*.py"]
+"share/boardwright/boardwright_resources/kibot" = ["boardwright_resources/kibot/*.py"]
+"share/boardwright/boardwright_resources/kibot/yaml" = [
+  "boardwright_resources/kibot/yaml/*.yaml",
+  "boardwright_resources/kibot/yaml/.gitignore",
+]
+"share/boardwright/boardwright_resources/kibot/resources" = ["boardwright_resources/kibot/resources/*.py"]
+"share/boardwright/boardwright_resources/kibot/resources/colors" = ["boardwright_resources/kibot/resources/colors/*.json"]
+"share/boardwright/boardwright_resources/kibot/resources/fonts" = ["boardwright_resources/kibot/resources/fonts/*.ttf"]
+"share/boardwright/boardwright_resources/kibot/resources/scripts" = [
+  "boardwright_resources/kibot/resources/scripts/*.py",
+  "boardwright_resources/kibot/resources/scripts/*.sh",
+  "boardwright_resources/kibot/resources/scripts/*.bat",
+]
+"share/boardwright/boardwright_resources/kibot/resources/templates" = ["boardwright_resources/kibot/resources/templates/*.txt"]

@@ -1,4 +1,9 @@
 #!/bin/bash
+# SPDX-License-Identifier: MIT
+# Original template material copyright Nguyen Vincent.
+# Modified for Boardwright by Ryan Hicks.
+
+set -uo pipefail
 
 # ANSI color codes
 GREEN='\033[0;32m'
@@ -8,8 +13,8 @@ NC='\033[0m' # No Color
 # Default options
 variant="CHECKED"
 output_dir="."
-kibot_base="kibot"
-kibot_config="-c 'boardwright_resources/kibot/yaml/kibot_main.yaml'"
+kibot_config="boardwright_resources/kibot/yaml/kibot_main.yaml"
+kicad_major_override=""
 revision=""
 costs_flag=false
 server_flag=false
@@ -26,6 +31,7 @@ function display_help() {
     echo -e "                              RELEASED, DRAFT, PRELIMINARY, CHECKED, or others."
     echo -e "  --version VERSION           Specify a version to use in the command."
     echo -e "  --costs                     Replace draft_group or all_group with xlsx_bom, and enforce specific skip-pre options."
+    echo -e "  --kicad MAJOR               Force the KiCad major version (9 or 10) instead of detecting it."
     echo -e "  --server [PORT]             Start an HTTP server on the specified port (default: 8000)."
     echo -e "  --stop-server               Stop the running HTTP server."
     echo -e "  -h, --help                  Display this help message."
@@ -54,7 +60,7 @@ function display_help() {
 while [[ $# -gt 0 ]]; do
     case $1 in
         --variant|-v)
-            if [[ -n $2 && $2 != -* ]]; then
+            if [[ -n ${2:-} && $2 != -* ]]; then
                 variant="$2"
                 shift
             else
@@ -63,11 +69,20 @@ while [[ $# -gt 0 ]]; do
             fi
             ;;
         --version)
-            if [[ -n $2 && $2 != -* ]]; then
+            if [[ -n ${2:-} && $2 != -* ]]; then
                 revision="$2"
                 shift
             else
                 echo -e "${YELLOW}Warning: --version requires a value.${NC}"
+                exit 1
+            fi
+            ;;
+        --kicad)
+            if [[ -n ${2:-} && $2 != -* ]]; then
+                kicad_major_override="$2"
+                shift
+            else
+                echo -e "${YELLOW}Warning: --kicad requires a value.${NC}"
                 exit 1
             fi
             ;;
@@ -76,7 +91,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --server)
             server_flag=true
-            if [[ -n $2 && $2 != -* ]]; then
+            if [[ -n ${2:-} && $2 != -* ]]; then
                 server_port="$2"
                 shift
             fi
@@ -121,22 +136,40 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+# Validate user-supplied values: they are passed to KiBot as arguments, never
+# evaluated by the shell.
+if [[ ! "$variant" =~ ^[A-Za-z0-9_.-]+$ ]]; then
+    echo -e "${YELLOW}Error: invalid variant name '$variant'.${NC}" >&2
+    exit 2
+fi
+
 # Get version if not specified
 if [[ -z "$revision" ]]; then
-    revision=$(python3 boardwright_resources/kibot/resources/scripts/get_changelog_version.py -f CHANGELOG.md)
-    if [[ $? -ne 0 ]]; then
+    if ! revision=$(python3 boardwright_resources/kibot/resources/scripts/get_changelog_version.py -f CHANGELOG.md); then
         echo -e "${YELLOW}Warning: Unable to determine version from CHANGELOG.md. Defaulting to empty revision.${NC}"
         revision=""
     fi
 fi
 
-# Check KiCad version and set group command accordingly
-kicad_version=$(kicad-cli --version)
-if [[ "$kicad_version" =~ ^9\.[0-9]+\.[0-9]+$ ]]; then
-    all_group="all_group_k9"
+# Select the KiBot output group for the installed KiCad major version.
+# Unknown versions are an error rather than a silent fallback.
+if [[ -n "$kicad_major_override" ]]; then
+    kicad_major="$kicad_major_override"
 else
-    all_group="all_group"
+    if ! kicad_version=$(kicad-cli --version 2>/dev/null); then
+        echo -e "${YELLOW}Error: kicad-cli not found; install KiCad or pass --kicad MAJOR.${NC}" >&2
+        exit 2
+    fi
+    kicad_major="${kicad_version%%.*}"
 fi
+case "$kicad_major" in
+    9) all_group="all_group_k9" ;;
+    10) all_group="all_group_k10" ;;
+    *)
+        echo -e "${YELLOW}Error: unsupported KiCad major version '$kicad_major' (supported: 9, 10).${NC}" >&2
+        exit 2
+        ;;
+esac
 
 # Handle server flag
 if [[ "$server_flag" == true ]]; then
@@ -158,30 +191,34 @@ case "$variant" in
         ;;
 esac
 
-# Determine command based on variant
+common=(-c "$kibot_config" -d "$output_dir" -g "variant=$variant" -E "REVISION=$revision")
+
+run_kibot() {
+    echo -e "${GREEN}Running: kibot $*${NC}"
+    kibot "$@"
+    local status=$?
+    if [[ $status -ne 0 ]]; then
+        echo -e "${YELLOW}KiBot failed with exit code $status.${NC}" >&2
+        exit "$status"
+    fi
+}
+
 if [[ "$costs_flag" == true ]]; then
-    kibot_command1="$kibot_base --skip-pre erc,drc,draw_fancy_stackup $kibot_config -d '$output_dir' -g variant=$variant -E REVISION='$revision' -E KICOST_CONFIG='boardwright_resources/kibot/yaml/kicost_config_local.yaml' xlsx_bom"
-else
-    case "$variant" in
-        DRAFT)
-            kibot_command1="$kibot_base --skip-pre set_text_variables,draw_fancy_stackup,erc,drc $kibot_config -d '$output_dir' -g variant=$variant -E REVISION='$revision' md_readme"
-            kibot_command2="$kibot_base --skip-pre draw_fancy_stackup,erc,drc $kibot_config -d '$output_dir' -g variant=$variant -E REVISION='$revision' draft_group"
-            ;;
-        PRELIMINARY)
-            kibot_command1="$kibot_base --skip-pre erc,drc $kibot_config -d '$output_dir' -g variant=$variant -E REVISION='$revision' notes"
-            kibot_command2="$kibot_base --skip-pre erc,drc $kibot_config -d '$output_dir' -g variant=$variant -E REVISION='$revision' $all_group"
-            ;;
-        CHECKED|RELEASED|*)
-            kibot_command1="$kibot_base --skip-pre set_text_variables,draw_fancy_stackup,erc,drc $kibot_config -d '$output_dir' -g variant=$variant -E REVISION='$revision' notes"
-            kibot_command2="$kibot_base $kibot_config -d '$output_dir' -g variant=$variant -E REVISION='$revision' $all_group"
-            ;;
-    esac
+    run_kibot --skip-pre erc,drc,draw_fancy_stackup "${common[@]}"         -E KICOST_CONFIG=boardwright_resources/kibot/yaml/kicost_config_local.yaml xlsx_bom
+    exit 0
 fi
 
-# Execute the commands
-echo -e "${GREEN}Running: $kibot_command1${NC}"
-eval $kibot_command1
-if [[ "$costs_flag" == false ]]; then
-    echo -e "${GREEN}Running: $kibot_command2${NC}"
-    eval $kibot_command2
-fi
+case "$variant" in
+    DRAFT)
+        run_kibot --skip-pre set_text_variables,draw_fancy_stackup,erc,drc "${common[@]}" md_readme
+        run_kibot --skip-pre draw_fancy_stackup,erc,drc "${common[@]}" draft_group
+        ;;
+    PRELIMINARY)
+        run_kibot --skip-pre erc,drc "${common[@]}" notes
+        run_kibot --skip-pre erc,drc "${common[@]}" "$all_group"
+        ;;
+    *)
+        run_kibot --skip-pre set_text_variables,draw_fancy_stackup,erc,drc "${common[@]}" notes
+        run_kibot "${common[@]}" "$all_group"
+        ;;
+esac

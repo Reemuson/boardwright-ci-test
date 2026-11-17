@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: MIT
+# Original template material copyright Nguyen Vincent.
+# Modified for Boardwright by Ryan Hicks.
+
 # KiBot preflight for generating DRC reports
 # https://kibot.readthedocs.io/en/latest/configuration/preflights/drc.html
 

@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-License-Identifier: MIT
+# Original template material copyright Nguyen Vincent.
+
 
 # Default image version
 IMAGE="ghcr.io/inti-cmnb/kicad8_auto_full:dev"
@@ -9,13 +12,16 @@ while getopts "v:" opt; do
         v)
             if [ "$OPTARG" = "9" ]; then
                 IMAGE="ghcr.io/inti-cmnb/kicad9_auto_full:dev"
+            elif [ "$OPTARG" = "10" ]; then
+                # Pinned stable KiBot 1.9.1 image with KiCad 10.0.5 (verified 2026-11-17).
+                IMAGE="ghcr.io/inti-cmnb/kicad10_auto_full:1.9.1-1_k10.0.5_d13.2_b4.2.4LTS"
             else
                 echo "Unsupported version: $OPTARG" >&2
                 exit 1
             fi
             ;;
         *)
-            echo "Usage: $0 [-v 9]" >&2
+            echo "Usage: $0 [-v 9|10]" >&2
             exit 1
             ;;
     esac

@@ -1,7 +1,11 @@
+# SPDX-License-Identifier: LicenseRef-Boardwright-Source-Available
+# Copyright (c) Ryan Hicks
+
 from __future__ import annotations
 
 import csv
 import re
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -22,10 +26,11 @@ class GeneratedOutputCleanup:
     root: Path
     removed_pdf_pages: tuple[Path, ...]
     removed_empty_tables: tuple[Path, ...]
+    removed_combined_sources: tuple[Path, ...]
 
     @property
     def removed_paths(self) -> tuple[Path, ...]:
-        return self.removed_pdf_pages + self.removed_empty_tables
+        return self.removed_pdf_pages + self.removed_empty_tables + self.removed_combined_sources
 
 
 def clean_generated_outputs(root: Path | str = ".") -> GeneratedOutputCleanup:
@@ -33,10 +38,12 @@ def clean_generated_outputs(root: Path | str = ".") -> GeneratedOutputCleanup:
     resolved_root = Path(root).resolve()
     removed_pdf_pages = _remove_numbered_pdf_pages(resolved_root)
     removed_empty_tables = _remove_empty_tables(resolved_root)
+    removed_combined_sources = _remove_combined_sources(resolved_root)
     return GeneratedOutputCleanup(
         root=resolved_root,
         removed_pdf_pages=tuple(removed_pdf_pages),
         removed_empty_tables=tuple(removed_empty_tables),
+        removed_combined_sources=tuple(removed_combined_sources),
     )
 
 
@@ -72,6 +79,14 @@ def _remove_empty_tables(root: Path) -> list[Path]:
             path.unlink()
             removed.append(path)
     return removed
+
+
+def _remove_combined_sources(root: Path) -> list[Path]:
+    path = root / "Manufacturing" / "CombinedSources"
+    if not path.is_dir():
+        return []
+    shutil.rmtree(path)
+    return [path]
 
 
 def _is_cleanup_table_name(path: Path) -> bool:

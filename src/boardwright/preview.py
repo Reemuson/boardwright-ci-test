@@ -1,6 +1,10 @@
+# SPDX-License-Identifier: LicenseRef-Boardwright-Source-Available
+# Copyright (c) Ryan Hicks
+
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass, replace
@@ -10,7 +14,7 @@ from .actions import _gh_command, build_source_label
 from .config import BoardwrightConfig
 from .errors import BoardwrightError
 from .git_ops import current_branch, remote_branch_sha
-from .variants import normalize_variant
+from .variants import VARIANTS, normalize_variant
 
 
 @dataclass(frozen=True)
@@ -23,6 +27,7 @@ class PreviewPlan:
     source_label: str
     output_paths: tuple[Path, ...]
     gh_available: bool
+    repo: str = ""
     gh_command: str = "gh"
 
 
@@ -70,6 +75,7 @@ def build_preview_plan(config: BoardwrightConfig, variant: str | None = None) ->
         source_label=build_source_label(config.root, selected_branch),
         output_paths=expected_output_paths(config.root),
         gh_available=_gh_command() is not None,
+        repo=config.github_repo,
         gh_command=_gh_command() or "gh",
     )
 
@@ -101,18 +107,7 @@ def dispatch_preview(plan: PreviewPlan, root: Path) -> None:
         raise BoardwrightError(f"Missing preview workflow: {workflow_path}")
 
     completed = subprocess.run(
-        [
-            plan.gh_command,
-            "workflow",
-            "run",
-            plan.workflow,
-            "--ref",
-            plan.branch,
-            "-f",
-            f"variant={plan.variant}",
-            "-f",
-            f"source_label={plan.source_label}",
-        ],
+        list(_preview_dispatch_command(plan)),
         cwd=root,
         text=True,
         capture_output=True,
@@ -131,19 +126,34 @@ def preview_manual_fallback(plan: PreviewPlan) -> str:
             "GitHub CLI is unavailable or could not dispatch the preview.",
             "",
             "Manual fallback:",
-            f"Open GitHub Actions -> {plan.workflow} -> Run workflow",
+            f"GitHub Actions: {plan.workflow} -> Run workflow",
             f"Ref: {plan.branch}",
             "Inputs:",
             f"- variant: {plan.variant}",
             f"- source_label: {plan.source_label}",
             "",
             "Equivalent gh command:",
-            (
-                f"{plan.gh_command} workflow run {plan.workflow} --ref {plan.branch} "
-                f"-f variant={plan.variant} -f source_label={plan.source_label}"
-            ),
+            " ".join(_preview_dispatch_command(plan)),
         ]
     )
+
+
+def _preview_dispatch_command(plan: PreviewPlan) -> tuple[str, ...]:
+    command = [
+        plan.gh_command,
+        "workflow",
+        "run",
+        plan.workflow,
+        "--ref",
+        plan.branch,
+        "-f",
+        f"variant={plan.variant}",
+        "-f",
+        f"source_label={plan.source_label}",
+    ]
+    if plan.repo:
+        command.extend(("--repo", plan.repo))
+    return tuple(command)
 
 
 def preview_artifact_name(variant: str) -> str:
@@ -166,7 +176,7 @@ def list_preview_runs(
                     "GitHub CLI is not installed, so Boardwright cannot inspect preview artifacts.",
                     "",
                     "Manual fallback:",
-                    f"Open GitHub Actions -> {config.preview_workflow}",
+                    f"GitHub Actions: {config.preview_workflow}",
                     f"Branch: {config.dev_branch}",
                     "Confirm the latest successful run matches the latest pushed dev commit.",
                     "Download artifact: boardwright-preview-<VARIANT>",
@@ -205,7 +215,7 @@ def list_preview_runs(
                     f"Could not list preview workflow runs: {message}",
                     "",
                     "Manual fallback:",
-                    f"Open GitHub Actions -> {config.preview_workflow}",
+                    f"GitHub Actions: {config.preview_workflow}",
                     f"Branch: {config.dev_branch}",
                     "Confirm the latest successful run matches the latest pushed dev commit.",
                 ]
@@ -292,13 +302,14 @@ def evaluate_preview_state(
     expected_sha: str,
     variant: str,
 ) -> PreviewState:
-    artifact_name = preview_artifact_name(variant)
+    selected_variant = normalize_variant(variant)
+    artifact_name = preview_artifact_name(selected_variant)
     if not expected_sha:
         return PreviewState(
             state="missing",
             artifact_name=artifact_name,
             expected_sha="",
-            message=f"Could not resolve origin/dev. Push {variant} preview source first.",
+            message=f"Could not resolve origin/dev. Push {selected_variant} preview source first.",
         )
     if not runs:
         return PreviewState(
@@ -308,7 +319,25 @@ def evaluate_preview_state(
             message="No preview workflow runs found for dev.",
         )
 
-    latest = runs[0]
+    variant_runs = tuple(
+        run
+        for run in runs
+        if preview_variant_from_title(run.title) == selected_variant
+    )
+    any_variant_titles = any(preview_variant_from_title(run.title) for run in runs)
+    if variant_runs:
+        considered_runs = variant_runs
+    elif any_variant_titles:
+        return PreviewState(
+            state="missing",
+            artifact_name=artifact_name,
+            expected_sha=expected_sha,
+            message=f"No {selected_variant} preview workflow runs found for dev.",
+        )
+    else:
+        considered_runs = runs
+
+    latest = considered_runs[0]
     if latest.status != "completed":
         return PreviewState(
             state="running",
@@ -359,6 +388,25 @@ def build_preview_state(
         selected_variant,
     )
     return replace(state, reviewed=preview_reviewed(config, state, output_dir))
+
+
+def latest_preview_variant(
+    runs: tuple[PreviewRun, ...],
+    fallback: str,
+) -> str:
+    for run in runs:
+        variant = preview_variant_from_title(run.title)
+        if variant:
+            return variant
+    return normalize_variant(fallback)
+
+
+def preview_variant_from_title(title: str) -> str | None:
+    normalized = (title or "").upper()
+    for variant in VARIANTS:
+        if re.search(rf"\b{re.escape(variant)}\b", normalized):
+            return variant
+    return None
 
 
 def preview_reviewed(
@@ -427,7 +475,7 @@ def fetch_latest_preview_artifact(
                     "GitHub CLI is not installed, so Boardwright cannot fetch preview artifacts.",
                     "",
                     "Manual fallback:",
-                    f"Open GitHub Actions -> {config.preview_workflow}",
+                    f"GitHub Actions: {config.preview_workflow}",
                     f"Branch: {config.dev_branch}",
                     f"Download artifact: {preview_artifact_name(variant or config.preview_variant)}",
                 ]

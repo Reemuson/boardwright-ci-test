@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LicenseRef-Boardwright-Source-Available
+# Copyright (c) Ryan Hicks
+
 from __future__ import annotations
 
 import shutil
@@ -84,7 +87,7 @@ def format_testbench_plan(plan: TestbenchPlan) -> str:
         "",
         f"Source: {plan.source}",
         f"Target: {plan.target}",
-        f"GitHub repo: {plan.github_repo or '(set during init or manually)'}",
+        f"GitHub repo: {plan.github_repo or '(derived from Git URL)'}",
         "",
         "Notes:",
     ]
@@ -151,19 +154,33 @@ def _rewrite_project_yaml(target: Path, github_repo: str) -> None:
         return
     path = target / ".boardwright" / "project.yaml"
     text = path.read_text(encoding="utf-8")
-    lines = []
+    git_url = f"https://github.com/{github_repo}.git"
+    lines: list[str] = []
     replaced = False
+    inserted = False
+    in_project = False
     for line in text.splitlines():
-        if line.strip().startswith("github_repo:"):
-            indent = line[: len(line) - len(line.lstrip())]
-            lines.append(f'{indent}github_repo: "{github_repo}"')
-            replaced = True
-        else:
+        stripped = line.strip()
+        if stripped == "project:":
+            in_project = True
             lines.append(line)
-    if not replaced:
-        raise BoardwrightError("Could not find project.github_repo in copied project.yaml.")
+            continue
+        if in_project and line and not line.startswith(" "):
+            if not replaced and not inserted:
+                lines.append(f'  git_url: "{git_url}"')
+                inserted = True
+            in_project = False
+        if stripped.startswith("git_url:"):
+            indent = line[: len(line) - len(line.lstrip())]
+            lines.append(f'{indent}git_url: "{git_url}"')
+            replaced = True
+            continue
+        if stripped.startswith("github_repo:"):
+            continue
+        lines.append(line)
+    if in_project and not replaced and not inserted:
+        lines.append(f'  git_url: "{git_url}"')
     path.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
-
 
 def _git(root: Path, *args: str, check: bool = True) -> str:
     completed = subprocess.run(

@@ -1,7 +1,19 @@
+# SPDX-License-Identifier: LicenseRef-Boardwright-Source-Available
+# Copyright (c) Ryan Hicks
+
 from __future__ import annotations
 
+import re
 import subprocess
 from pathlib import Path
+
+_SEMVER_TAG = re.compile(
+    r"^v?(?P<major>0|[1-9]\d*)\."
+    r"(?P<minor>0|[1-9]\d*)\."
+    r"(?P<patch>0|[1-9]\d*)"
+    r"(?P<prerelease>-[0-9A-Za-z.-]+)?"
+    r"(?:\+[0-9A-Za-z.-]+)?$"
+)
 
 
 def git_available(root: Path) -> bool:
@@ -29,9 +41,60 @@ def dirty_files(root: Path) -> list[str]:
     return [line for line in output.splitlines() if line.strip()]
 
 
+def remote_url(root: Path, remote: str = "origin") -> str:
+    if not remote.strip():
+        return ""
+    return _git(root, "remote", "get-url", remote, check=False)
+
+
 def latest_tag(root: Path) -> str | None:
-    tag = _git(root, "describe", "--tags", "--abbrev=0", check=False)
-    return tag or None
+    """Return the latest semantic release tag, falling back to prereleases.
+
+    This is intentionally repository-wide rather than `git describe`, because
+    the dashboard wants the most recent release label even when the current
+    branch tip is not descended from that tag.
+    """
+    tags = [line.strip() for line in _git(root, "tag", "--list", check=False).splitlines()]
+    stable: list[tuple[tuple[int, int, int], str]] = []
+    prerelease: list[tuple[tuple[object, ...], str]] = []
+    for tag in tags:
+        parsed = _parse_semver_tag(tag)
+        if parsed is None:
+            continue
+        version, pre = parsed
+        if pre is None:
+            stable.append((version, tag))
+        else:
+            prerelease.append((version + (_prerelease_key(pre),), tag))
+
+    if stable:
+        return max(stable, key=lambda item: item[0])[1]
+    if prerelease:
+        return max(prerelease, key=lambda item: item[0])[1]
+    return None
+
+
+def _parse_semver_tag(tag: str) -> tuple[tuple[int, int, int], str | None] | None:
+    match = _SEMVER_TAG.match(tag)
+    if not match:
+        return None
+    version = (
+        int(match.group("major")),
+        int(match.group("minor")),
+        int(match.group("patch")),
+    )
+    prerelease = match.group("prerelease")
+    return version, prerelease[1:] if prerelease else None
+
+
+def _prerelease_key(prerelease: str) -> tuple[tuple[int, object], ...]:
+    parts: list[tuple[int, object]] = []
+    for part in prerelease.split("."):
+        if part.isdigit():
+            parts.append((0, int(part)))
+        else:
+            parts.append((1, part))
+    return tuple(parts)
 
 
 def ahead_behind(root: Path) -> tuple[int, int]:

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LicenseRef-Boardwright-Source-Available
+# Copyright (c) Ryan Hicks
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -48,32 +51,32 @@ def build_workflow_state(
     if has_errors:
         stage = "validation_blocked"
         next_action = "Fix validation"
-        reason = "Validation has blocking errors."
+        reason = "Validation is blocking."
     elif dirty and not status.unreleased_changes:
         stage = "needs_changelog"
-        next_action = "Record Changes"
-        reason = "Source files changed without a changelog entry."
+        next_action = "Add changelog"
+        reason = "Add a changelog entry."
     elif dirty:
         stage = "ready_to_commit"
-        next_action = "Commit + Push"
-        reason = "Changelog exists and project changes are pending."
+        next_action = "Commit"
+        reason = "Commit changed files."
     elif needs_push:
         stage = "needs_push"
-        next_action = "Commit + Push"
-        reason = "Local commits still need to reach origin/dev."
+        next_action = "Commit"
+        reason = "Push local commits."
     elif status.behind:
         stage = "behind_remote"
-        next_action = "Refresh branch"
-        reason = "Local branch is behind its upstream."
+        next_action = "Rebase or pull"
+        reason = "Rebase or pull."
     elif preview_state is not None:
         stage, next_action, reason = _preview_stage(preview_state, release_summary, accepted_state)
     elif status.unreleased_changes:
         stage = "preview_missing"
-        next_action = "Review Artifacts"
-        reason = "Preview should run after dev is pushed."
+        next_action = "Preview"
+        reason = "Run preview."
     else:
         stage = "editing"
-        next_action = "Continue editing"
+        next_action = "Edit in KiCad"
         reason = "No pending local workflow action is required."
 
     steps = _workflow_steps(
@@ -112,24 +115,24 @@ def _preview_stage(
     if preview_state.state == "running":
         return ("preview_running", "Wait for preview", preview_state.message)
     if preview_state.state == "failed":
-        return ("preview_failed", "Review Artifacts", preview_state.message)
+        return ("preview_failed", "Review", preview_state.message)
     if preview_state.state == "stale":
-        return ("preview_stale", "Review Artifacts", preview_state.message)
+        return ("preview_stale", "Review", preview_state.message)
     if preview_state.state == "missing":
-        return ("preview_missing", "Review Artifacts", preview_state.message)
+        return ("preview_missing", "Preview", preview_state.message)
     if preview_state.ready and not preview_state.reviewed:
-        return ("preview_ready", "Review Artifacts", "Fresh preview is ready to review.")
+        return ("preview_ready", "Fetch", "Preview is ready.")
     if preview_state.ready and preview_state.reviewed:
         if accepted_state is None:
-            return ("preview_reviewed", "Accept to Main", "Fresh preview has been reviewed.")
+            return ("preview_reviewed", "Accept", "Preview reviewed.")
         if accepted_state.state == "running":
-            return ("accepted_running", "Wait for accepted outputs", accepted_state.message)
+            return ("accepted_running", "Wait for accepted", accepted_state.message)
         if not accepted_state.ready:
-            return ("accepted_missing", "Accept to Main", accepted_state.message)
+            return ("accepted_missing", "Accept", accepted_state.message)
         if _release_ready(release_summary):
-            return ("release_ready", "Create Release", "Accepted main outputs are ready for release.")
-        return ("preview_reviewed", "Accept to Main", "Fresh preview has been reviewed.")
-    return ("preview_missing", "Review Artifacts", "Preview state is unknown.")
+            return ("release_ready", "Release", "Ready for release.")
+        return ("preview_reviewed", "Accept", "Preview reviewed.")
+    return ("preview_missing", "Preview", "Preview is unknown.")
 
 
 def _workflow_steps(
@@ -154,41 +157,39 @@ def _workflow_steps(
 
     return (
         WorkflowStep(
-            "1 Edit in KiCad",
+            "1 Edit",
             "external",
-            "Make schematic, PCB, BOM, or documentation changes in KiCad/files.",
+            "Work in KiCad.",
         ),
         WorkflowStep(
-            "2 Record changes",
+            "2 Record",
             record_state,
-            "CHANGELOG.md has unreleased entries."
-            if status.unreleased_changes
-            else "Add the next design/change note.",
+            "Add changelog entry." if status.unreleased_changes else "Add a design note.",
         ),
         WorkflowStep(
-            "3 Commit + push",
+            "3 Commit",
             commit_state,
             _commit_push_detail(status),
         ),
         WorkflowStep(
-            "4 Preview CI",
+            "4 Preview",
             preview_step_state,
-            "Dispatch preview when dev is pushed and ready to review.",
+            "Run preview.",
         ),
         WorkflowStep(
-            "5 Review artifacts",
+            "5 Review",
             review_state,
             _review_detail(preview_state),
         ),
         WorkflowStep(
-            "6 Accept to main",
+            "6 Accept",
             accept_state,
             _accepted_detail(config, accepted_state),
         ),
         WorkflowStep(
-            "7 Create release",
+            "7 Release",
             release_state,
-            release_summary,
+            _release_detail(release_summary),
         ),
     )
 
@@ -208,37 +209,37 @@ def _actions(
     clean_pushed = not has_errors and not dirty and not needs_push
     preview_reviewed = bool(preview_state and preview_state.ready and preview_state.reviewed)
     return (
-        CockpitAction("Record Changes", not has_errors, "Record a changelog entry."),
+        CockpitAction("Record", not has_errors, "Record a changelog entry."),
         CockpitAction(
-            "Commit + Push",
+            "Commit",
             not has_errors and not wrong_dev_branch and (dirty or needs_push),
             _commit_action_reason(config, status, has_errors, wrong_dev_branch, dirty, needs_push),
         ),
         CockpitAction(
-            "Generate Preview",
+            "Preview",
             clean_pushed and not wrong_dev_branch,
-            "Dispatch preview CI for a selected variant."
+            "Run a preview."
             if clean_pushed and not wrong_dev_branch
-            else "Commit and push dev before generating preview.",
+            else "Commit and push dev first.",
         ),
         CockpitAction(
-            "Review Artifacts",
+            "Review",
             clean_pushed,
-            "Review or fetch preview artifacts." if clean_pushed else "Commit and push before reviewing artifacts.",
+            "Review preview." if clean_pushed else "Commit and push first.",
         ),
         CockpitAction(
-            "Accept to Main",
+            "Accept",
             clean_pushed and preview_reviewed,
-            "Fresh reviewed preview is available." if preview_reviewed else "Review a fresh preview first.",
+            "Preview reviewed." if preview_reviewed else "Review preview first.",
         ),
         CockpitAction(
-            "Create Release",
+            "Release",
             clean_pushed,
-            "Open the release checklist."
+            "Review checklist."
             if clean_pushed
-            else "Commit and push before checking release readiness.",
+            else "Commit and push first.",
         ),
-        CockpitAction("Project Info", True, "Edit project metadata and variant defaults."),
+        CockpitAction("Info", True, "Edit project metadata and variants."),
         CockpitAction("Refresh", True, "Refresh project state."),
     )
 
@@ -291,15 +292,15 @@ def _accept_step_state(
 
 def _commit_push_detail(status: ProjectStatus) -> str:
     if status.dirty_count:
-        return f"{status.dirty_count} changed file(s) need commit and push."
+        return f"{status.dirty_count} changed file(s)."
     if status.ahead:
-        return f"{status.ahead} local commit(s) need push."
-    return "Working tree is clean and no local commits are waiting."
+        return f"{status.ahead} local commit(s)."
+    return "Working tree is clean."
 
 
 def _review_detail(preview_state: PreviewState | None) -> str:
     if preview_state is None:
-        return "Poll CI, fetch preview artifacts, inspect generated outputs."
+        return "Poll CI and review."
     return preview_state.message or f"Preview is {preview_state.state}."
 
 
@@ -308,8 +309,14 @@ def _accepted_detail(
     accepted_state: AcceptedMainState | None,
 ) -> str:
     if accepted_state is None:
-        return f"{config.main_workflow} | {config.main_variant} | ref {config.release_branch}"
+        return f"{config.main_workflow} | {config.main_variant} | {config.release_branch}"
     return accepted_state.message or f"Accepted outputs are {accepted_state.state}."
+
+
+def _release_detail(release_summary: str) -> str:
+    if release_summary == "ready for dry-run":
+        return "Ready for dry run."
+    return release_summary
 
 
 def _commit_action_reason(
@@ -321,14 +328,14 @@ def _commit_action_reason(
     needs_push: bool,
 ) -> str:
     if has_errors:
-        return "Fix validation errors first."
+        return "Fix validation."
     if wrong_dev_branch:
-        return f"Switch to {config.dev_branch} first."
+        return f"Switch to {config.dev_branch}."
     if dirty:
-        return "Commit changed files and push dev."
+        return "Commit changes."
     if needs_push:
-        return "Push local commits to origin/dev."
-    return "No local changes or commits need pushing."
+        return "Push commits."
+    return "Nothing to push."
 
 
 def _release_ready(release_summary: str) -> bool:

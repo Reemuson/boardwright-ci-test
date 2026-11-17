@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LicenseRef-Boardwright-Source-Available
+# Copyright (c) Ryan Hicks
+
 """Prune empty conditional KiBot PDF pages after table CSV generation."""
 
 from __future__ import annotations

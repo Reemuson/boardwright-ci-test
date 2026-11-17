@@ -1,7 +1,13 @@
+# SPDX-License-Identifier: LicenseRef-Boardwright-Source-Available
+# Copyright (c) Ryan Hicks
+
 from __future__ import annotations
 
 import argparse
+import os
 import sys
+import shutil
+import subprocess
 from pathlib import Path
 
 from .accepted import build_accepted_main_state, format_accepted_state
@@ -13,20 +19,51 @@ from .actions import (
 )
 from .changelog import SUPPORTED_SECTIONS, add_unreleased_entry
 from .commit_messages import suggest_commit_message
-from .config import init_config, load_config
+from .config import find_project_root, init_config, load_config
 from .doctor import doctor_exit_code, format_doctor_report, run_doctor
 from .errors import BoardwrightError
 from .generated_outputs import clean_generated_outputs, format_cleanup_summary
 from .git_ops import commit_all, dirty_files
 from .legal import generate_legal_files
+from .managed_project import (
+    apply_update_plan,
+    build_update_plan,
+    update_status,
+    write_plan,
+)
+from .migration import (
+    apply_migration_plan,
+    build_migration_plan,
+    looks_like_nguyen_project,
+    migration_summary,
+)
 from .preview import build_preview_plan, dispatch_preview, preview_manual_fallback
 from .preview import build_preview_state, fetch_latest_preview_artifact, format_preview_state
-from .release import build_release_plan, prepare_release, validate_release_plan
+from .project_setup import setup_project_repository
+from .impact import format_impact
+from .release import assess_plan_impact, build_release_plan, prepare_release, validate_release_plan
 from .revision_history import write_revision_variables
+from .schematic_generation import (
+    add_hierarchical_sheet,
+    generate_hierarchical_project,
+    generate_one_sheet_schematic,
+    generate_revision_history_sheet,
+    slugify,
+)
+from .sheet_titles import (
+    collect_actual_sheet_titles,
+    compare_sheet_title_overrides,
+    find_primary_schematic,
+    read_sheet_title_overrides,
+    write_sheet_title_overrides,
+)
+from .source_package import build_source_package
 from .status import collect_status
 from .testbench import build_testbench_plan, format_testbench_plan, init_testbench
 from .validation import validate_project
+from .worksheet_logo import embed_logo_in_worksheets
 from .workflow_state import build_workflow_state
+from .git_ops import remote_url
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -68,8 +105,24 @@ def main(argv: list[str] | None = None) -> int:
             return _review(args)
         if args.command == "testbench":
             return _testbench(args)
+        if args.command == "adopt":
+            return _adopt(args)
+        if args.command == "migrate":
+            return _migrate(args)
+        if args.command == "update":
+            return _update(args)
+        if args.command == "generate":
+            return _generate(args)
         if args.command == "outputs":
             return _outputs(args)
+        if args.command == "sheet-title":
+            return _sheet_title(args)
+        if args.command == "worksheet-logo":
+            return _worksheet_logo(args)
+        if args.command == "source-package":
+            return _source_package(args)
+        if args.command == "docker-kibot":
+            return _docker_kibot(args)
         return _tui()
     except BoardwrightError as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -92,6 +145,15 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Do not install Boardwright GitHub workflow files.",
     )
 
+    init.add_argument(
+        "--remote-url",
+        help="GitHub remote URL or OWNER/repo slug to configure as origin.",
+    )
+    init.add_argument(
+        "--no-git",
+        action="store_true",
+        help="Create Boardwright files without initializing a git repository.",
+    )
     subparsers.add_parser("status", help="Show project workflow status.")
 
     change = subparsers.add_parser("change", help="Add an unreleased changelog entry.")
@@ -125,7 +187,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
 
     subparsers.add_parser("validate", help="Validate core Boardwright project files.")
-    subparsers.add_parser("tui", help="Open the Boardwright TUI.")
+    subparsers.add_parser("tui", help="Launch the Boardwright TUI.")
 
     preview = subparsers.add_parser("preview", help="Plan or dispatch preview outputs.")
     preview.add_argument(
@@ -185,14 +247,41 @@ def _build_parser() -> argparse.ArgumentParser:
         help="GitHub Release state for CI-owned release preparation.",
     )
     release.add_argument(
+        "--drawing-revision",
+        required=False,
+        help="Controlled drawing revision to add to document_revisions.yaml.",
+    )
+    release.add_argument(
+        "--revision-description",
+        required=False,
+        help="Short revision-table description, 60 characters or fewer.",
+    )
+    release.add_argument(
         "--dispatch",
         action="store_true",
         help="Dispatch the CI-owned prepare-release workflow.",
     )
+    release.add_argument(
+        "--change-class",
+        action="append",
+        default=[],
+        metavar="CLASS",
+        help="Change class (repeatable or comma-separated): documentation, electrical, fabrication, assembly, tooling.",
+    )
+    release.add_argument(
+        "--justification",
+        default="",
+        help="Why this release is needed; recorded in .boardwright/releases.yaml.",
+    )
+    release.add_argument(
+        "--source-sha",
+        default="",
+        help="Reviewed commit the prepare-release workflow must build (default: pushed release branch head).",
+    )
 
     subparsers.add_parser(
         "revision-history",
-        help="Write fixed REVHIST_* variables from CHANGELOG.md.",
+        help="Write fixed REVTABLE_* variables from document_revisions.yaml.",
     )
 
     subparsers.add_parser("git-status", help="List changed files.")
@@ -250,6 +339,186 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Copy files without initializing git branches.",
     )
 
+    adopt = subparsers.add_parser(
+        "adopt",
+        help="Adopt an existing KiCad project into Boardwright configuration.",
+    )
+    adopt.add_argument(
+        "--github-repo",
+        help="GitHub repo slug, such as OWNER/repo. Defaults to origin when available.",
+    )
+    adopt.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite the default Boardwright files if they already exist.",
+    )
+    adopt.add_argument(
+        "--no-workflows",
+        action="store_true",
+        help="Do not install Boardwright GitHub workflow files.",
+    )
+
+    migrate = subparsers.add_parser(
+        "migrate",
+        help="Migrate a Nguyen hierarchical template project to Boardwright.",
+    )
+    migrate_subparsers = migrate.add_subparsers(dest="migrate_command")
+    migrate_plan = migrate_subparsers.add_parser(
+        "plan",
+        help="Inspect a legacy project and write a reviewable migration plan.",
+    )
+    migrate_plan.add_argument(
+        "--project",
+        type=Path,
+        help="Primary root KiCad project when more than one .kicad_pro exists.",
+    )
+    migrate_plan.add_argument(
+        "--output",
+        type=Path,
+        required=True,
+        help="YAML migration plan to write.",
+    )
+    migrate_apply = migrate_subparsers.add_parser(
+        "apply",
+        help="Apply a reviewed migration plan on a clean migration branch.",
+    )
+    migrate_apply.add_argument("plan", type=Path, help="Reviewed migration plan YAML.")
+
+    update = subparsers.add_parser(
+        "update",
+        help="Inspect or update Boardwright-managed project infrastructure.",
+    )
+    update_subparsers = update.add_subparsers(dest="update_command")
+    update_subparsers.add_parser("status", help="Show installed payload state and local modifications.")
+    update_plan = update_subparsers.add_parser(
+        "plan",
+        help="Write a reviewable Boardwright update plan.",
+    )
+    update_plan.add_argument("--to", default="", help="Target payload version.")
+    update_plan.add_argument("--output", type=Path, required=True, help="YAML update plan to write.")
+    update_apply = update_subparsers.add_parser(
+        "apply",
+        help="Apply a conflict-free Boardwright update plan.",
+    )
+    update_apply.add_argument("plan", type=Path, help="Reviewed update plan YAML.")
+
+    generate = subparsers.add_parser(
+        "generate",
+        help="Generate schematic skeletons and extra sheet files.",
+    )
+    generate_subparsers = generate.add_subparsers(dest="generate_command")
+    generate_revision = generate_subparsers.add_parser(
+        "revision-history",
+        help="Copy the revision-history sheet template to a new file.",
+    )
+    generate_revision.add_argument(
+        "--output",
+        type=Path,
+        required=True,
+        help="Target schematic file to write.",
+    )
+    generate_revision.add_argument(
+        "--title",
+        default="REVISION HISTORY",
+        help="Revision-history title to place in the title block.",
+    )
+    generate_revision.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite the target file if it already exists.",
+    )
+    generate_one_sheet = generate_subparsers.add_parser(
+        "one-sheet",
+        help="Create a single-sheet schematic skeleton.",
+    )
+    generate_one_sheet.add_argument(
+        "--output",
+        type=Path,
+        required=True,
+        help="Target schematic file to write.",
+    )
+    generate_one_sheet.add_argument(
+        "--title",
+        help="Schematic title. Defaults to the configured PCBA name.",
+    )
+    generate_one_sheet.add_argument(
+        "--company",
+        help="Company line. Defaults to the configured company.",
+    )
+    generate_one_sheet.add_argument(
+        "--revision",
+        help="Revision text. Defaults to the configured board revision.",
+    )
+    generate_one_sheet.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite the target file if it already exists.",
+    )
+    generate_hierarchy = generate_subparsers.add_parser(
+        "hierarchy",
+        help="Create a hierarchical project skeleton.",
+    )
+    generate_hierarchy.add_argument(
+        "--output-dir",
+        type=Path,
+        required=True,
+        help="Directory to receive the generated project files.",
+    )
+    generate_hierarchy.add_argument(
+        "--project-name",
+        help="Project title. Defaults to the configured PCBA name.",
+    )
+    generate_hierarchy.add_argument(
+        "--company",
+        help="Company line. Defaults to the configured company.",
+    )
+    generate_hierarchy.add_argument(
+        "--revision",
+        help="Revision text. Defaults to the configured board revision.",
+    )
+    generate_hierarchy.add_argument(
+        "--sheet-name",
+        default="Section A",
+        help="Hierarchical sheet name.",
+    )
+    generate_hierarchy.add_argument(
+        "--child-file",
+        help="Child schematic filename. Defaults to a slugified sheet name.",
+    )
+    generate_hierarchy.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite generated files if they already exist.",
+    )
+    generate_sheet = generate_subparsers.add_parser(
+        "sheet",
+        help="Add a hierarchical sheet to an existing schematic.",
+    )
+    generate_sheet.add_argument(
+        "--parent",
+        type=Path,
+        help="Parent schematic to update. Defaults to the primary schematic.",
+    )
+    generate_sheet.add_argument(
+        "--sheet-name",
+        required=True,
+        help="Hierarchical sheet name.",
+    )
+    generate_sheet.add_argument(
+        "--child-file",
+        type=Path,
+        help="Child schematic file to create. Defaults to a slugified sheet name.",
+    )
+    generate_sheet.add_argument(
+        "--child-title",
+        help="Child schematic title. Defaults to the sheet name.",
+    )
+    generate_sheet.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite generated files if they already exist.",
+    )
+
     outputs = subparsers.add_parser("outputs", help="Manage generated KiBot output packages.")
     outputs_subparsers = outputs.add_subparsers(dest="outputs_command")
     outputs_clean = outputs_subparsers.add_parser(
@@ -263,19 +532,106 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Generated output root. Defaults to the current directory.",
     )
 
+    sheet_title = subparsers.add_parser(
+        "sheet-title",
+        help="Check or sync local sheet-title placeholder overrides.",
+    )
+    sheet_title.add_argument(
+        "--sync",
+        action="store_true",
+        help="Write .boardwright/sheet_titles.env from the current schematic titles.",
+    )
+    sheet_title.add_argument(
+        "--schematic",
+        type=Path,
+        help="Top-level schematic to inspect. Defaults to the primary project schematic.",
+    )
+    sheet_title.add_argument(
+        "--limit",
+        type=int,
+        default=40,
+        help="Maximum sheet title entries to track.",
+    )
+
+    worksheet_logo = subparsers.add_parser(
+        "worksheet-logo",
+        help="Embed a PNG logo into KiCad worksheet bitmap data.",
+    )
+    worksheet_logo.add_argument(
+        "--logo",
+        type=Path,
+        help="PNG image to embed. Defaults to template.sheet_image from project.yaml.",
+    )
+    worksheet_logo.add_argument(
+        "--worksheet",
+        type=Path,
+        action="append",
+        help="Worksheet to update. Can be repeated. Defaults to the worksheet from the KiCad project.",
+    )
+    worksheet_logo.add_argument(
+        "--all-templates",
+        action="store_true",
+        help="Update every .kicad_wks file under Templates/.",
+    )
+    worksheet_logo.add_argument(
+        "--bitmap-index",
+        type=int,
+        default=0,
+        help="Zero-based bitmap block to replace. Defaults to the first bitmap.",
+    )
+
+    source_package = subparsers.add_parser(
+        "source-package",
+        help="Create a curated source archive from the current repository checkout.",
+    )
+    source_package.add_argument(
+        "--output",
+        type=Path,
+        required=True,
+        help="Archive path to write.",
+    )
+    source_package.add_argument(
+        "--prefix",
+        help="Top-level folder name in the archive. Defaults to the repository folder name.",
+    )
+    source_package.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite the archive if it already exists.",
+    )
+
+    docker_kibot = subparsers.add_parser(
+        "docker-kibot",
+        help="Launch the bundled local KiBot Docker helper script.",
+    )
+    docker_kibot.add_argument(
+        "--version",
+        "-v",
+        default="9",
+        help="KiCad major version for the Docker image tag. Defaults to 9.",
+    )
+
     return parser
 
 
 def _init(args: argparse.Namespace) -> int:
-    written = init_config(force=args.force, workflows=not args.no_workflows)
+    project_root = Path.cwd().resolve()
+    written = init_config(root=project_root, force=args.force, workflows=not args.no_workflows)
+    config = load_config(project_root)
+    remote = (args.remote_url or "").strip()
+    if not remote and not args.no_git and sys.stdin.isatty():
+        remote = input("GitHub remote URL or OWNER/repo (blank to skip): ").strip()
+
+    setup = setup_project_repository(config, remote, git=not args.no_git)
     if not written:
         print("Boardwright config already exists. Use --force to overwrite defaults.")
-        return 0
     for path in written:
         print(f"wrote {path}")
+    for message in setup.messages:
+        print(message)
+    if setup.remote_url:
+        print(f"Remote: {setup.remote_url}")
     return 0
-
-
 def _status() -> int:
     config = load_config()
     status = collect_status(config)
@@ -367,6 +723,284 @@ def _outputs(args: argparse.Namespace) -> int:
         return 0
     print("usage: boardwright outputs clean [--root PATH]")
     return 0
+
+
+def _adopt(args: argparse.Namespace) -> int:
+    project_root = find_project_root(Path.cwd())
+    if not (project_root / ".boardwright").is_dir() and looks_like_nguyen_project(project_root):
+        raise BoardwrightError(
+            "Detected a Nguyen hierarchical template project. "
+            "Use `boardwright migrate plan --output migration.yaml`."
+        )
+    written = init_config(root=project_root, force=args.force, workflows=not args.no_workflows)
+    config = load_config(project_root)
+    repo = (args.github_repo or _github_repo_from_remote(config.root)).strip()
+    updates = {}
+    git_url = remote_url(config.root)
+    if not git_url and repo:
+        git_url = f"https://github.com/{repo}.git"
+    if git_url:
+        current_git_url = str(config.project.get("project", {}).get("git_url", "")).strip()
+        if git_url != current_git_url:
+            updates["git_url"] = git_url
+    if updates:
+        from .config import update_project_config
+
+        update_project_config(config, project_fields=updates)
+        written.append(config.root / ".boardwright" / "project.yaml")
+
+    for path in written:
+        print(f"wrote {path}")
+    print("Adopted existing project into Boardwright.")
+    return 0
+
+
+def _migrate(args: argparse.Namespace) -> int:
+    if args.migrate_command == "plan":
+        root = find_project_root(Path.cwd())
+        plan = build_migration_plan(root, args.project)
+        target = write_plan(args.output, plan)
+        print(migration_summary(plan))
+        print(f"Wrote migration plan: {target}")
+        return 1 if plan.get("blockers") else 0
+    if args.migrate_command == "apply":
+        written = apply_migration_plan(args.plan)
+        for path in written:
+            print(f"wrote {path}")
+        print("Migration applied. Review and commit the changes; no commit was created.")
+        return 0
+    print("usage: boardwright migrate {plan,apply}")
+    return 0
+
+
+def _update(args: argparse.Namespace) -> int:
+    root = find_project_root(Path.cwd())
+    if args.update_command in {None, "status"}:
+        status = update_status(root)
+        print(f"Schema version: {status['schema_version']}")
+        print(f"Installed template: {status['installed_version']}")
+        print(f"Available template: {status['available_version']}")
+        print(f"Modified managed files: {len(status['modified'])}")
+        print(f"Missing managed files: {len(status['missing'])}")
+        print(f"Update blockers: {len(status['blockers'])}")
+        return 0
+    if args.update_command == "plan":
+        plan = build_update_plan(root, to_version=args.to)
+        target = write_plan(args.output, plan)
+        print(f"Wrote update plan: {target}")
+        print(f"Blockers: {len(plan.get('blockers', []))}")
+        return 1 if plan.get("blockers") else 0
+    if args.update_command == "apply":
+        written = apply_update_plan(args.plan)
+        for path in written:
+            print(f"updated {path}")
+        print("Boardwright update applied; no commit was created.")
+        return 0
+    print("usage: boardwright update {status,plan,apply}")
+    return 0
+
+
+def _generate(args: argparse.Namespace) -> int:
+    config = load_config()
+    if args.generate_command == "revision-history":
+        result = generate_revision_history_sheet(
+            config.root,
+            args.output if args.output.is_absolute() else config.root / args.output,
+            title=args.title,
+            force=args.force,
+        )
+        print(f"wrote {result.path}")
+        return 0
+    if args.generate_command == "one-sheet":
+        output = args.output if args.output.is_absolute() else config.root / args.output
+        result = generate_one_sheet_schematic(
+            output,
+            title=args.title or config.pcba_name,
+            company=args.company or str(config.project.get("project", {}).get("company", "")),
+            revision=args.revision or config.board_revision,
+            force=args.force,
+        )
+        print(f"wrote {result.path}")
+        return 0
+    if args.generate_command == "hierarchy":
+        result = generate_hierarchical_project(
+            args.output_dir if args.output_dir.is_absolute() else config.root / args.output_dir,
+            project_name=args.project_name or config.pcba_name,
+            company=args.company or str(config.project.get("project", {}).get("company", "")),
+            revision=args.revision or config.board_revision,
+            sheet_name=args.sheet_name,
+            child_filename=args.child_file,
+            force=args.force,
+        )
+        for item in result:
+            print(f"wrote {item.path}")
+        return 0
+    if args.generate_command == "sheet":
+        parent = args.parent or find_primary_schematic(config.root)
+        if parent is None:
+            raise BoardwrightError("Could not find a top-level KiCad schematic.")
+        parent = parent if parent.is_absolute() else config.root / parent
+        child_file = args.child_file or parent.with_name(f"{slugify(args.sheet_name)}.kicad_sch")
+        child_file = child_file if child_file.is_absolute() else config.root / child_file
+        result = add_hierarchical_sheet(
+            parent,
+            child_file,
+            sheet_name=args.sheet_name,
+            child_title=args.child_title,
+            force=args.force,
+        )
+        for item in result:
+            print(f"wrote {item.path}")
+        return 0
+    print("usage: boardwright generate {revision-history,one-sheet,hierarchy,sheet}")
+    return 0
+
+
+def _sheet_title(args: argparse.Namespace) -> int:
+    config = load_config()
+    schematic = args.schematic or find_primary_schematic(config.root)
+    if schematic is None:
+        raise BoardwrightError("Could not find a top-level KiCad schematic.")
+
+    titles = collect_actual_sheet_titles(
+        config.root,
+        schematic=schematic,
+        max_titles=args.limit,
+    )
+
+    if args.sync:
+        path = write_sheet_title_overrides(config.root, titles)
+        print(
+            f"Updated {_display_path(path, config.root)} with {len(titles)} sheet title placeholder(s)."
+        )
+        return 0
+
+    overrides = read_sheet_title_overrides(config.root)
+    if not overrides:
+        print(
+            "No local sheet-title overrides found. Run `boardwright sheet-title --sync` "
+            "to create .boardwright/sheet_titles.env."
+        )
+        return 1
+
+    issues = compare_sheet_title_overrides(titles, overrides)
+    if issues:
+        print(f"Sheet title overrides drift from {_display_path(schematic, config.root)}:")
+        for issue in issues[:8]:
+            print(f"- {issue}")
+        remaining = len(issues) - 8
+        if remaining > 0:
+            print(f"- ... and {remaining} more")
+        print("Run `boardwright sheet-title --sync` to refresh .boardwright/sheet_titles.env.")
+        return 1
+
+    print(
+        f"Sheet title overrides are in sync with {_display_path(schematic, config.root)}."
+    )
+    return 0
+
+
+def _worksheet_logo(args: argparse.Namespace) -> int:
+    config = load_config()
+    logo = args.logo or Path(config.template_sheet_image)
+    logo = logo if logo.is_absolute() else config.root / logo
+
+    if args.all_templates:
+        worksheets = sorted((config.root / "Templates").glob("*.kicad_wks"))
+    elif args.worksheet:
+        worksheets = [
+            path if path.is_absolute() else config.root / path
+            for path in args.worksheet
+        ]
+    else:
+        worksheet = Path(config.worksheet)
+        worksheets = [worksheet if worksheet.is_absolute() else config.root / worksheet]
+
+    if not worksheets:
+        raise BoardwrightError("No worksheet files selected.")
+
+    results = embed_logo_in_worksheets(
+        worksheets,
+        logo,
+        bitmap_index=args.bitmap_index,
+    )
+    for result in results:
+        worksheet_label = _display_path(result.worksheet, config.root)
+        logo_label = _display_path(result.logo, config.root)
+        print(
+            f"updated {worksheet_label} with {logo_label} "
+            f"({result.png_width}x{result.png_height}, bitmap {result.bitmap_index})"
+        )
+    return 0
+
+
+def _source_package(args: argparse.Namespace) -> int:
+    config = load_config()
+    result = build_source_package(
+        config.root,
+        args.output if args.output.is_absolute() else config.root / args.output,
+        prefix=args.prefix,
+        force=args.force,
+    )
+    print(f"wrote {result.path} ({result.file_count} file(s))")
+    return 0
+
+
+def _docker_kibot(args: argparse.Namespace) -> int:
+    config = load_config()
+    if shutil.which("docker") is None:
+        raise BoardwrightError("Docker is not installed. Install Docker Desktop or Docker Engine to use the local KiBot runner.")
+
+    if os.name == "nt":
+        script = config.root / "boardwright_resources" / "kibot" / "resources" / "scripts" / "docker_kibot_windows.bat"
+        command = ["cmd", "/c", str(script), "-v", str(args.version)]
+    else:
+        script = config.root / "boardwright_resources" / "kibot" / "resources" / "scripts" / "docker_kibot_linux.sh"
+        command = ["/bin/sh", str(script), "-v", str(args.version)]
+
+    if not script.exists():
+        raise BoardwrightError(f"Missing local KiBot helper script: {script}")
+
+    completed = subprocess.run(
+        command,
+        cwd=config.root,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        message = completed.stderr.strip() or completed.stdout.strip()
+        raise BoardwrightError(f"Local KiBot runner failed: {message}")
+
+    output = completed.stdout.strip()
+    if output:
+        print(output)
+    return 0
+
+
+def _display_path(path: Path, root: Path) -> str:
+    try:
+        return str(path.relative_to(root))
+    except ValueError:
+        return str(path)
+
+
+def _github_repo_from_remote(root: Path) -> str:
+    origin = remote_url(root)
+    if not origin:
+        return ""
+    patterns = (
+        r"^https://github\.com/(?P<repo>[^/]+/[^/]+?)(?:\.git)?/?$",
+        r"^git@github\.com:(?P<repo>[^/]+/[^/]+?)(?:\.git)?$",
+        r"^ssh://git@github\.com/(?P<repo>[^/]+/[^/]+?)(?:\.git)?/?$",
+    )
+    import re
+
+    for pattern in patterns:
+        match = re.match(pattern, origin)
+        if match:
+            return match.group("repo")
+    return ""
 
 
 def _change(args: argparse.Namespace) -> int:
@@ -478,7 +1112,24 @@ def _release(args: argparse.Namespace) -> int:
             args.version,
             args.variant,
             args.kind,
+            args.drawing_revision or "",
+            args.revision_description or "",
+            change_classes=args.change_class,
+            justification=args.justification,
+            source_sha=args.source_sha or _pushed_release_sha(config),
         )
+        impact = assess_plan_impact(
+            config,
+            args.version,
+            change_classes=args.change_class,
+            justification=args.justification or args.revision_description or "",
+            drawing_revision=args.drawing_revision or "",
+        )
+        for line in format_impact(impact):
+            print(line)
+        if impact.problems:
+            print("Release impact has blocking problems; not dispatching.")
+            return 1
         print(f"Workflow: {action.workflow}")
         print(f"Ref: {action.ref}")
         print(f"GitHub CLI: {'available' if action.gh_available else 'not found'}")
@@ -500,9 +1151,15 @@ def _release(args: argparse.Namespace) -> int:
             args.version,
             allow_dirty=args.allow_dirty,
             dry_run=False,
+            drawing_revision=args.drawing_revision or "",
+            revision_description=args.revision_description or "",
+            change_classes=args.change_class,
+            justification=args.justification,
+            variant=args.variant,
         )
         print(f"Prepared release {plan.version}.")
-        print("Updated CHANGELOG.md and .boardwright/revision_history_variables.env.")
+        print("Recorded release identities in .boardwright/releases.yaml.")
+        print("Updated CHANGELOG.md, .boardwright/document_revisions.yaml, and revision-history variables.")
         print(f"Suggested commit: release: prepare {plan.version}")
         print("Next steps: review changes and prefer boardwright release --dispatch for CI-owned tagging.")
         return 0
@@ -514,16 +1171,36 @@ def _release(args: argparse.Namespace) -> int:
     print(f"Release branch: {plan.release_branch}")
     print(f"Working tree changes: {plan.dirty_count}")
     print(f"Local tag exists: {'yes' if plan.local_tag_exists else 'no'}")
-    print(f"Remote tag exists: {'yes' if plan.remote_tag_exists else 'no'}")
+    print(f"Remote tag: {plan.remote_tag_state}" + (f" ({plan.remote_error})" if plan.remote_error else ""))
     print(f"Unreleased changes: {'yes' if plan.has_unreleased_changes else 'no'}")
+    impact = assess_plan_impact(
+        config,
+        args.version,
+        change_classes=args.change_class,
+        justification=args.justification or args.revision_description or "",
+        drawing_revision=args.drawing_revision or "",
+    )
+    print()
+    for line in format_impact(impact):
+        print(line)
+    problems = [*problems, *impact.problems]
     if problems:
         print("Problems:")
         for problem in problems:
             print(f"- {problem}")
         return 1
-    print("Dry run passed. Use --prepare to update release files.")
+    print("Dry run passed. Use --prepare with --drawing-revision and --revision-description to update release files.")
     print(f"Suggested commit after prepare: release: prepare {plan.version}")
     return 0
+
+
+def _pushed_release_sha(config) -> str:
+    try:
+        from .accepted import latest_pushed_main_sha
+
+        return latest_pushed_main_sha(config)
+    except BoardwrightError:
+        return ""
 
 
 def _revision_history() -> int:

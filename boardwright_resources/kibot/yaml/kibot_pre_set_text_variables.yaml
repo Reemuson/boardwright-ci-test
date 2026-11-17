@@ -9,14 +9,10 @@ preflight:
   set_text_variables:
 
     # Git related information
-    - variable: 'REVISION'
-      command: 'if [ -f .boardwright/release.env ]; then . .boardwright/release.env; fi; if [ -n "$RELEASE_VERSION" ]; then echo "$RELEASE_VERSION"; else git describe --tags --exact-match 2>/dev/null || git describe --tags --abbrev=0 2>/dev/null || echo ""; fi'
-    - variable: 'BOARD_REVISION'
-      text: '@BOARD_REVISION@'
     - variable: 'RELEASE_VERSION'
-      command: 'if [ -f .boardwright/release.env ]; then . .boardwright/release.env; fi; if [ -n "$RELEASE_VERSION" ]; then echo "$RELEASE_VERSION"; else git describe --tags --exact-match 2>/dev/null || git describe --tags --abbrev=0 2>/dev/null || echo ""; fi'
+      command: 'if [ -f .boardwright/release.env ]; then . .boardwright/release.env; fi; if [ -n "$RELEASE_VERSION" ]; then echo "$RELEASE_VERSION"; elif [ -n "@RELEASE_VERSION@" ]; then echo "@RELEASE_VERSION@"; else git describe --tags --exact-match 2>/dev/null || git describe --tags --abbrev=0 2>/dev/null || echo ""; fi'
     - variable: 'RELEASE_DATE'
-      command: 'git log -1 --format="%ad" --date="format:%d-%b-%Y"'
+      command: 'if [ -f .boardwright/release.env ]; then . .boardwright/release.env; fi; if [ -n "$RELEASE_DATE" ]; then echo "$RELEASE_DATE"; elif [ -n "@RELEASE_DATE@" ]; then echo "@RELEASE_DATE@"; else git log -1 --format="%ad" --date="format:%d-%b-%Y"; fi'
     - variable: 'RELEASE_DATE_NUM'
       command: 'git log -1 --format="%ad" --date=short'
     - variable: 'GIT_HASH_SCH'
@@ -27,71 +23,106 @@ preflight:
       text: '@GIT_URL@'
 
     # Metadata
-    - variable: 'PROJECT_NAME'
-      text: '@PROJECT_NAME@'
-    - variable: 'BOARD_NAME'
-      text: '@BOARD_NAME@'
+    - variable: 'PCBA_NAME'
+      text: '@PCBA_NAME@'
+    - variable: 'PCB_NAME'
+      text: '@PCB_NAME@'
     - variable: 'COMPANY'
       text: '@COMPANY@'
     - variable: 'DESIGNER'
       text: '@DESIGNER@'
+    - variable: 'PROJECT_NUMBER'
+      text: '@PROJECT_NUMBER@'
+    - variable: 'BOARD_REVISION'
+      text: '@BOARD_REVISION@'
+    - variable: 'PCB_REVISION'
+      text: '@BOARD_REVISION@'
+    - variable: 'SCHEMATIC_REVISION'
+      text: '@SCHEMATIC_REVISION@'
+    - variable: 'DOCUMENT_TYPE'
+      text: '@DOCUMENT_TYPE@'
+    - variable: 'DRAWING_TITLE'
+      text: '@DRAWING_TITLE@'
+    - variable: 'DRAWING_NUMBER'
+      text: '@DRAWING_NUMBER@'
+    - variable: 'DRAWING_REVISION'
+      text: '@DRAWING_REVISION@'
+    - variable: 'DRAWN_BY'
+      text: '@DRAWN_BY@'
+    - variable: 'DRAWN_DATE'
+      text: '@DRAWN_DATE@'
     - variable: 'VARIANT'
       text: '%V'
+    - variable: 'SHEET_LEGAL_NOTICE'
+      text: '@SHEET_LEGAL_NOTICE@'
+    - variable: 'TEMPLATE_LOGO'
+      text: '@TEMPLATE_LOGO@'
 
-    # Revision history
-    - variable: 'REVHIST_1_TITLE'
-      command: '@GET_REVHIST_CMD@ REVHIST_1_TITLE'
-    - variable: 'REVHIST_1_BODY'
-      command: '@GET_REVHIST_CMD@ REVHIST_1_BODY'
-    - variable: 'REVHIST_2_TITLE'
-      command: '@GET_REVHIST_CMD@ REVHIST_2_TITLE'
-    - variable: 'REVHIST_2_BODY'
-      command: '@GET_REVHIST_CMD@ REVHIST_2_BODY'
-    - variable: 'REVHIST_3_TITLE'
-      command: '@GET_REVHIST_CMD@ REVHIST_3_TITLE'
-    - variable: 'REVHIST_3_BODY'
-      command: '@GET_REVHIST_CMD@ REVHIST_3_BODY'
-    - variable: 'REVHIST_4_TITLE'
-      command: '@GET_REVHIST_CMD@ REVHIST_4_TITLE'
-    - variable: 'REVHIST_4_BODY'
-      command: '@GET_REVHIST_CMD@ REVHIST_4_BODY'
-    - variable: 'REVHIST_5_TITLE'
-      command: '@GET_REVHIST_CMD@ REVHIST_5_TITLE'
-    - variable: 'REVHIST_5_BODY'
-      command: '@GET_REVHIST_CMD@ REVHIST_5_BODY'
-    - variable: 'REVHIST_6_TITLE'
-      command: '@GET_REVHIST_CMD@ REVHIST_6_TITLE'
-    - variable: 'REVHIST_6_BODY'
-      command: '@GET_REVHIST_CMD@ REVHIST_6_BODY'
-    - variable: 'REVHIST_7_TITLE'
-      command: '@GET_REVHIST_CMD@ REVHIST_7_TITLE'
-    - variable: 'REVHIST_7_BODY'
-      command: '@GET_REVHIST_CMD@ REVHIST_7_BODY'
-    - variable: 'REVHIST_8_TITLE'
-      command: '@GET_REVHIST_CMD@ REVHIST_8_TITLE'
-    - variable: 'REVHIST_8_BODY'
-      command: '@GET_REVHIST_CMD@ REVHIST_8_BODY'
-    - variable: 'REVHIST_9_TITLE'
-      command: '@GET_REVHIST_CMD@ REVHIST_9_TITLE'
-    - variable: 'REVHIST_9_BODY'
-      command: '@GET_REVHIST_CMD@ REVHIST_9_BODY'
-    - variable: 'REVHIST_10_TITLE'
-      command: '@GET_REVHIST_CMD@ REVHIST_10_TITLE'
-    - variable: 'REVHIST_10_BODY'
-      command: '@GET_REVHIST_CMD@ REVHIST_10_BODY'
-    - variable: 'REVHIST_11_TITLE'
-      command: '@GET_REVHIST_CMD@ REVHIST_11_TITLE'
-    - variable: 'REVHIST_11_BODY'
-      command: '@GET_REVHIST_CMD@ REVHIST_11_BODY'
-    - variable: 'REVHIST_12_TITLE'
-      command: '@GET_REVHIST_CMD@ REVHIST_12_TITLE'
-    - variable: 'REVHIST_12_BODY'
-      command: '@GET_REVHIST_CMD@ REVHIST_12_BODY'
+    # Revision table
+    - variable: 'REVTABLE_1_REV'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_1_REV'
+    - variable: 'REVTABLE_1_DATE'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_1_DATE'
+    - variable: 'REVTABLE_1_DESC'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_1_DESC'
+    - variable: 'REVTABLE_1_DRAWN'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_1_DRAWN'
+    - variable: 'REVTABLE_2_REV'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_2_REV'
+    - variable: 'REVTABLE_2_DATE'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_2_DATE'
+    - variable: 'REVTABLE_2_DESC'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_2_DESC'
+    - variable: 'REVTABLE_2_DRAWN'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_2_DRAWN'
+    - variable: 'REVTABLE_3_REV'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_3_REV'
+    - variable: 'REVTABLE_3_DATE'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_3_DATE'
+    - variable: 'REVTABLE_3_DESC'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_3_DESC'
+    - variable: 'REVTABLE_3_DRAWN'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_3_DRAWN'
+    - variable: 'REVTABLE_4_REV'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_4_REV'
+    - variable: 'REVTABLE_4_DATE'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_4_DATE'
+    - variable: 'REVTABLE_4_DESC'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_4_DESC'
+    - variable: 'REVTABLE_4_DRAWN'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_4_DRAWN'
+    - variable: 'REVTABLE_5_REV'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_5_REV'
+    - variable: 'REVTABLE_5_DATE'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_5_DATE'
+    - variable: 'REVTABLE_5_DESC'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_5_DESC'
+    - variable: 'REVTABLE_5_DRAWN'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_5_DRAWN'
+    - variable: 'REVTABLE_6_REV'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_6_REV'
+    - variable: 'REVTABLE_6_DATE'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_6_DATE'
+    - variable: 'REVTABLE_6_DESC'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_6_DESC'
+    - variable: 'REVTABLE_6_DRAWN'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_6_DRAWN'
+    - variable: 'REVTABLE_NOTE'
+      command: '@GET_REVTABLE_CMD@ REVTABLE_NOTE'
 
     # Fabrication notes
     - variable: 'FABRICATION_NOTES'
       expand_in_command: true
-      command: '[ -s "@FABRICATION_DIR@/%f-fabrication_notes%v.txt" ] && cat "@FABRICATION_DIR@/%f-fabrication_notes%v.txt" || cat "@REPORT_TEMPLATE_DIR@/fabrication_notes.txt"'
+      command: '[ -s "@FABRICATION_DIR@/%f-fabrication_notes%v.txt" ] && cat "@FABRICATION_DIR@/%f-fabrication_notes%v.txt" || echo ""'
+    - variable: 'FABRICATION_SUMMARY'
+      expand_in_command: true
+      command: '[ -s "@FABRICATION_DIR@/%f-fabrication_summary.txt" ] && cat "@FABRICATION_DIR@/%f-fabrication_summary.txt" || echo "FABRICATION SNAPSHOT unavailable."'
+    - variable: 'COMPONENT_COUNT_SUMMARY'
+      expand_in_command: true
+      command: '[ -s "@ASSEMBLY_DIR@/%f-component_summary.txt" ] && cat "@ASSEMBLY_DIR@/%f-component_summary.txt" || echo "COMPONENT SNAPSHOT unavailable."'
+    - variable: 'README_BADGES'
+      expand_in_command: true
+      command: '[ -s ".boardwright/readme_badges.txt" ] && cat ".boardwright/readme_badges.txt" || echo ""'
 
 
     # Fabrication notes
@@ -100,8 +131,10 @@ preflight:
       command: '[ -s "@ASSEMBLY_DIR@/%f-assembly_notes%v.txt" ] && cat "@ASSEMBLY_DIR@/%f-assembly_notes%v.txt" || cat "@REPORT_TEMPLATE_DIR@/assembly_notes.txt"'
 
     # Page titles for automatic ToC
+    - variable: 'COMBINED_SHEET_TOTAL'
+      command: 'python3 @SCRIPTS_DIR@/get_sheet_title.py -f "${KIBOT_SCH_NAME}" --dots-number 32 --total -p 1'
     - variable: '@SHEET_NAME_VAR@1'
-      text: 'COVER PAGE'
+      command: '@GET_SHEET_CMD@ 1'
     - variable: '@SHEET_NAME_VAR@2'
       command: '@GET_SHEET_CMD@ 2'
     - variable: '@SHEET_NAME_VAR@3'
@@ -183,12 +216,23 @@ preflight:
 
 ...
 definitions:
-  PROJECT_NAME: ""
-  BOARD_NAME: ""
-  BOARD_REVISION: A
+  PCBA_NAME: ""
+  PCB_NAME: ""
   COMPANY: ""
   DESIGNER: ""
-  REVISION: ""
+  PROJECT_NUMBER: ""
+  BOARD_REVISION: A
+  SCHEMATIC_REVISION: A
+  DOCUMENT_TYPE: SCHEMATIC
+  DRAWING_TITLE: Schematic
+  DRAWING_NUMBER: ""
+  DRAWING_REVISION: A
+  RELEASE_VERSION: ""
+  RELEASE_DATE: ""
+  DRAWN_BY: ""
+  DRAWN_DATE: ""
+  SHEET_LEGAL_NOTICE: ""
+  TEMPLATE_LOGO: ""
   RELEASE_DATE: ""
   RELEASE_DATE_NUM: ""
   GIT_URL: ""
@@ -196,6 +240,6 @@ definitions:
   SCRIPTS_DIR: boardwright_resources/kibot/resources/scripts
   REPORT_TEMPLATE_DIR: boardwright_resources/kibot/resources/templates
   GET_SHEET_CMD: python3 @SCRIPTS_DIR@/get_sheet_title.py -f "${KIBOT_SCH_NAME}" --dots-number 32 -p
-  GET_REVHIST_CMD: python3 @SCRIPTS_DIR@/get_revision_history_var.py
+  GET_REVTABLE_CMD: python3 @SCRIPTS_DIR@/get_revision_history_var.py
   FABRICATION_DIR: Manufacturing/Fabrication
   ASSEMBLY_DIR: Manufacturing/Assembly
