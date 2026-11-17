@@ -1,4 +1,4 @@
-# KiBot configuration file for KDT_Hierarchical Template
+# KiBot configuration file for Boardwright Template
 # KiCad 8.0
 
 kibot:
@@ -76,6 +76,12 @@ groups:
       - @HTML_KIRI_OUTPUT@
       - @HTML_NAV_RES_OUTPUT@
 
+  # KiCad 10 produces the same output set as KiCad 9 (both support ODB++).
+  # Kept as a distinct name so launchers select groups explicitly per version.
+  - name: all_group_k10
+    outputs:
+      - all_group_k9
+
   - name: draft_group
     outputs:
       - @NETLIST_OUTPUT@
@@ -125,7 +131,6 @@ groups:
   - name: tables
     outputs:
       - table_sources
-      - notes
 
   - name: table_sources
     outputs:
@@ -197,11 +202,23 @@ import:
   # Set text variables
   - file: kibot_pre_set_text_variables.yaml
     definitions:
-      PROJECT_NAME: @PROJECT_NAME@
-      BOARD_NAME: @BOARD_NAME@
-      BOARD_REVISION: @BOARD_REVISION@
+      PCBA_NAME: @PCBA_NAME@
+      PCB_NAME: @PCB_NAME@
       COMPANY: @COMPANY@
       DESIGNER: @DESIGNER@
+      PROJECT_NUMBER: @PROJECT_NUMBER@
+      BOARD_REVISION: @BOARD_REVISION@
+      SCHEMATIC_REVISION: @SCHEMATIC_REVISION@
+      DOCUMENT_TYPE: @DOCUMENT_TYPE@
+      DRAWING_TITLE: @DRAWING_TITLE@
+      DRAWING_NUMBER: @DRAWING_NUMBER@
+      DRAWING_REVISION: @DRAWING_REVISION@
+      RELEASE_VERSION: @RELEASE_VERSION@
+      RELEASE_DATE: @RELEASE_DATE@
+      DRAWN_BY: @DRAWN_BY@
+      DRAWN_DATE: '@DRAWN_DATE@'
+      SHEET_LEGAL_NOTICE: @SHEET_LEGAL_NOTICE@
+      TEMPLATE_LOGO: @TEMPLATE_LOGO@
       SCRIPTS_DIR: @SCRIPTS_DIR@
       REPORT_TEMPLATE_DIR: @REPORT_TEMPLATE_DIR@
       FABRICATION_DIR: @FABRICATION_DIR@
@@ -358,7 +375,7 @@ import:
       COMMENT: Interactive BOM in HTML format
       DIR: @ASSEMBLY_DIR@
       EXCLUDE_FILTER: @FILT_TP_EXCLUDE@
-      TITLE: @BOARD_NAME@ Assembly
+      TITLE: @PCBA_NAME@ Assembly
       MPN_FIELD: @MPN_FIELD@
 
   # TXT fabrication notes ------------------------------------------------------
@@ -444,6 +461,7 @@ import:
       COMMENT: Schematic in PDF format
       DIR: @SCHEMATIC_DIR@
       DEFAULT_FONT: 'KiCad Font'
+      COLOR_THEME: @COLOR_THEME@
 
   # Fabrication Document in PDF format
   - file: kibot_out_pdf_fabrication.yaml
@@ -452,6 +470,7 @@ import:
       COMMENT: Fabrication document in PDF format
       DIR: @FABRICATION_DIR@
       COLOR_THEME: @COLOR_THEME@
+      DRAWING_NUMBER: @PCB_NAME@
       SHEET_WKS: @SHEET_WKS@
       SCALING: @FAB_SCALING@
       PTH_NPTH: '@GROUP_PTH_NPTH@'
@@ -471,6 +490,7 @@ import:
       COMMENT: Assembly document in PDF format
       DIR: @ASSEMBLY_DIR@
       COLOR_THEME: @COLOR_THEME@
+      DRAWING_NUMBER: @PCBA_NAME@
       SHEET_WKS: @SHEET_WKS@
       SCALING: @ASSEMBLY_SCALING@
       FAB_EXCLUDE_FILTER: @FILT_TP_EXCLUDE@
@@ -520,7 +540,7 @@ import:
       NAME: @HTML_NAV_RES_OUTPUT@
       COMMENT: Results webpage in HTML format
       DIR: HTML
-      TITLE: @BOARD_NAME@
+      TITLE: @PCBA_NAME@
       LOGO: @LOGO@
       LOGO_URL: @GIT_URL@
 
@@ -531,14 +551,24 @@ definitions:
 
   # Metadata ===================================================================
 
-  PROJECT_NAME: PROJECT NAME
-  BOARD_NAME: BOARD NAME
-  BOARD_REVISION: A
-
+  PCBA_NAME: PCBA NAME
+  PCB_NAME: PCB NAME
   COMPANY: COMPANY
   DESIGNER: F. LAST
+  PROJECT_NUMBER: ''
+  BOARD_REVISION: A
+  SCHEMATIC_REVISION: A
+  DOCUMENT_TYPE: SCHEMATIC
+  DRAWING_TITLE: Schematic
+  DRAWING_NUMBER: ''
+  DRAWING_REVISION: A
+  RELEASE_VERSION: ''
+  RELEASE_DATE: ''
+  DRAWN_BY: ''
+  DRAWN_DATE: ''
 
-  LOGO: 'assets/logos/rd-logo.png'
+  LOGO: 'assets/logos/logo-wordmark-colour.png'
+  TEMPLATE_LOGO: 'assets/logos/logo-block-black.png'
   GIT_URL: ''
 
   # Preflight ==================================================================
@@ -564,7 +594,8 @@ definitions:
   # Schematic parameters =======================================================
 
   COLOR_THEME: KiCad_Theme
-  SHEET_WKS: ${KIPRJMOD}/Templates/KDT_Template_PCB_GIT_A4.kicad_wks
+  SHEET_WKS: ${KIPRJMOD}/Templates/Boardwright_Template_PCB_GIT_A4.kicad_wks
+  SHEET_LEGAL_NOTICE: 'THIS DESIGN AND/OR DRAWING IS THE PROPERTY OF RYAN HICKS\nAND SHALL NOT BE REPRODUCED WITHOUT AUTHORISATION.'
   FAB_SCALING: 1
   ASSEMBLY_SCALING: 1
 

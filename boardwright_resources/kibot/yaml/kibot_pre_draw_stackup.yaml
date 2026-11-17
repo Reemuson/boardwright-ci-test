@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: MIT
+# Original template material copyright Nguyen Vincent.
+# Modified for Boardwright by Ryan Hicks.
+
 # KiBot preflight for Draw Fancy Stackup feature
 # https://kibot.readthedocs.io/en/latest/configuration/preflights/draw_fancy_stackup.html
 

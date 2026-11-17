@@ -1,4 +1,7 @@
 @echo off
+REM SPDX-License-Identifier: MIT
+REM Original template material copyright Nguyen Vincent.
+
 REM Set variables for display and user name
 set DISPLAY=host.docker.internal:0.0
 set USER_NAME=%USERNAME%

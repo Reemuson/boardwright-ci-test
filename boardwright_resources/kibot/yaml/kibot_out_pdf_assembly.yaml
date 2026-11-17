@@ -25,7 +25,7 @@ outputs:
     pages:
       - scaling: @SCALING@
         layer_var: ''
-        title: '@DOC_TITLE@'
+        title: 'ASSEMBLY OVERVIEW'
         sheet: TOP/BOTTOM VIEW
         sheet_reference_color: '#000000'
         layers:
@@ -34,7 +34,7 @@ outputs:
 
       - scaling: @SCALING@
         layer_var: "TOP ASSEMBLY (SCALE @SCALING@:1)"
-        title: '@DOC_TITLE@'
+        title: 'TOP ASSEMBLY'
         sheet: TOP ASSEMBLY (SCALE @SCALING@:1)
         sheet_reference_color: '#000000'
         colored_holes: true
@@ -62,7 +62,7 @@ outputs:
         layer_var: "BOTTOM ASSEMBLY (SCALE @SCALING@:1)"
         mirror: true
         mirror_pcb_text: false
-        title: '@DOC_TITLE@'
+        title: 'BOTTOM ASSEMBLY'
         sheet: BOTTOM ASSEMBLY (SCALE @SCALING@:1)
         sheet_reference_color: '#000000'
         colored_holes: true
@@ -92,8 +92,9 @@ definitions:
   COMMENT: Assembly document in PDF format
   DIR: Manufacturing/Assembly
   DOC_TITLE: ASSEMBLY
+  DRAWING_NUMBER: PCBA NAME
   COLOR_THEME: KiCad_Theme
-  SHEET_WKS: ${KIPRJMOD}/Templates/KDT_Template_PCB_GIT_A4.kicad_wks
+  SHEET_WKS: ${KIPRJMOD}/Templates/Boardwright_Template_PCB_GIT_A4.kicad_wks
   SCALING: 1.0
   FAB_EXCLUDE_FILTER: exclude_testpoints
   LAYER_TITLE_PAGE: TitlePage

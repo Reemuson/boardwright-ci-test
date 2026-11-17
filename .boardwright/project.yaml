@@ -7,7 +7,7 @@ project:
   github_repo: ''
   product_family: BOARDWRIGHT
   product_generation: TEMPLATE
-  board_name: FIC-100A
+  pcba_name: FIC-100A
   board_revision: A
 variants:
   dev_default: DRAFT

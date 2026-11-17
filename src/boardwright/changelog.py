@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LicenseRef-Boardwright-Source-Available
+# Copyright (c) Ryan Hicks
+
 from __future__ import annotations
 
 import re
@@ -119,8 +122,7 @@ def promote_unreleased_file(
 
 def add_unreleased_entry(root: Path, section: str, message: str) -> None:
     normalized = _normalize_section(section)
-    cleaned_message = message.strip()
-    if not cleaned_message:
+    if not message.strip():
         raise BoardwrightError("Change message cannot be empty.")
 
     path = changelog_path(root)
@@ -128,7 +130,7 @@ def add_unreleased_entry(root: Path, section: str, message: str) -> None:
     if "## [Unreleased]" not in text:
         raise BoardwrightError("CHANGELOG.md must contain a '## [Unreleased]' section.")
 
-    updated = _insert_unreleased_entry(text, normalized, cleaned_message)
+    updated = _insert_unreleased_entry(text, normalized, message)
     path.write_text(updated, encoding="utf-8", newline="\n")
 
 
@@ -161,7 +163,7 @@ def _insert_unreleased_entry(text: str, section: str, message: str) -> str:
         body,
         re.MULTILINE,
     )
-    entry = f"- {message}"
+    entry = _format_changelog_entries(message)
 
     if section_match:
         insert_at = section_match.end()
@@ -181,3 +183,35 @@ def _insert_unreleased_entry(text: str, section: str, message: str) -> str:
         body = f"{prefix}\n\n### {section}\n\n{entry}\n"
 
     return before.rstrip() + "\n" + body.rstrip() + "\n" + after
+
+
+def _format_changelog_entries(message: str) -> str:
+    lines = [line.rstrip() for line in message.strip().splitlines()]
+    lines = [line for line in lines if line.strip()]
+    if not lines:
+        raise BoardwrightError("Change message cannot be empty.")
+    if len(lines) == 1:
+        return f"- {_strip_bullet(lines[0]).strip()}"
+
+    entries: list[str] = []
+    current_index: int | None = None
+    saw_explicit_bullet = any(_is_bullet(line) for line in lines)
+    for line in lines:
+        stripped = line.strip()
+        if _is_bullet(stripped):
+            entries.append(f"- {_strip_bullet(stripped).strip()}")
+            current_index = len(entries) - 1
+        elif saw_explicit_bullet and current_index is not None and line[:1].isspace():
+            entries[current_index] += f"\n  {stripped}"
+        else:
+            entries.append(f"- {stripped}")
+            current_index = len(entries) - 1
+    return "\n".join(entries)
+
+
+def _is_bullet(line: str) -> bool:
+    return bool(re.match(r"^\s*[-*]\s+", line))
+
+
+def _strip_bullet(line: str) -> str:
+    return re.sub(r"^\s*[-*]\s+", "", line, count=1)

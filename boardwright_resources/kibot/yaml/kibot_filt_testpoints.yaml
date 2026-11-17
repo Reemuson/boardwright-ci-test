@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: MIT
+# Original template material copyright Nguyen Vincent.
+# Modified for Boardwright by Ryan Hicks.
+
 # KiBot Filter for testpoints
 # These filters are used for multiple outputs to highlight testpoints
 # or generate testpoint lists for top and bottom layers

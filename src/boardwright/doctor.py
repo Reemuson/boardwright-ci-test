@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LicenseRef-Boardwright-Source-Available
+# Copyright (c) Ryan Hicks
+
 from __future__ import annotations
 
 import shutil
@@ -86,28 +89,29 @@ def _check_git(config: BoardwrightConfig, checks: list[DoctorCheck]) -> None:
     origin_url = _git(root, "remote", "get-url", "origin", check=False)
     if origin_url:
         checks.append(DoctorCheck("ok", "Remote URL", origin_url))
-        if config.github_repo and config.github_repo not in origin_url:
+        git_url = str(config.project.get("project", {}).get("git_url", "") or "").strip()
+        if git_url and git_url != origin_url:
             checks.append(
                 DoctorCheck(
                     "warning",
-                    "GitHub repo",
-                    f"project.yaml uses {config.github_repo}, but origin is {origin_url}.",
+                    "Git URL",
+                    f"project.yaml uses {git_url}, but origin is {origin_url}.",
                 )
             )
-    elif config.github_repo:
+    elif str(config.project.get("project", {}).get("git_url", "") or "").strip():
         checks.append(
             DoctorCheck(
                 "warning",
-                "GitHub repo",
-                f"project.yaml uses {config.github_repo}, but origin URL could not be read.",
+                "Git URL",
+                "project.git_url is set, but origin URL could not be read.",
             )
         )
     else:
         checks.append(
             DoctorCheck(
                 "warning",
-                "GitHub repo",
-                "project.github_repo is blank; manual GitHub fallback URLs will be limited.",
+                "Git URL",
+                "project.git_url is blank; manual GitHub fallback URLs will be limited.",
             )
         )
 
@@ -154,7 +158,7 @@ def _check_workflows(config: BoardwrightConfig, checks: list[DoctorCheck]) -> No
     _check_workflow_inputs(
         config,
         config.prepare_release_workflow,
-        ("version", "variant", "release_kind"),
+        ("version", "variant", "release_kind", "drawing_revision", "revision_description"),
         checks,
     )
     _check_workflow_inputs(config, config.release_workflow, (), checks)

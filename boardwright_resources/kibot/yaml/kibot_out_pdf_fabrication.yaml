@@ -63,7 +63,7 @@ outputs:
           force_font_width: 1 # mm
     pages:
       - scaling: @SCALING@
-        title: '@DOC_TITLE@'
+        title: 'TOP FABRICATION'
         sheet: 'TOP FABRICATION (SCALE @SCALING@:1)'
         layer_var: 'TOP FABRICATION (SCALE @SCALING@:1)'
         sheet_reference_color: '#000000'
@@ -90,7 +90,7 @@ outputs:
       - scaling: @SCALING@
         mirror: true
         mirror_pcb_text: false
-        title: '@DOC_TITLE@'
+        title: 'BOTTOM FABRICATION'
         sheet: 'BOTTOM FABRICATION (SCALE @SCALING@:1)'
         layer_var: 'BOTTOM FABRICATION (SCALE @SCALING@:1)'
         sheet_reference_color: '#000000'
@@ -115,7 +115,7 @@ outputs:
             color: '#000000'
 
       - scaling: @SCALING@
-        title: '@DOC_TITLE@'
+        title: '%lp DRILL MAP'
         sheet: 'DRILL DRAWING (%lp)'
         layer_var: 'DRILL DRAWING %lp (SCALE @SCALING@:1)'
         sheet_reference_color: '#000000'
@@ -130,7 +130,7 @@ outputs:
             color: '#000000'
 
       - scaling: @SCALING@
-        title: '@DOC_TITLE@'
+        title: 'TOP TESTPOINTS'
         sheet: 'TOP TEST POINTS (SCALE @SCALING@:1)'
         layer_var: 'TOP TEST POINTS (SCALE @SCALING@:1)'
         sheet_reference_color: '#000000'
@@ -158,7 +158,7 @@ outputs:
       - scaling: @SCALING@
         mirror : true
         mirror_pcb_text: true
-        title: '@DOC_TITLE@'
+        title: 'BOTTOM TESTPOINTS'
         sheet: 'BOTTOM TEST POINTS (SCALE @SCALING@:1)'
         layer_var: 'BOTTOM TEST POINTS (SCALE @SCALING@:1)'
         sheet_reference_color: '#000000'
@@ -186,7 +186,7 @@ outputs:
       - scaling: @SCALING@
         sheet: '%ln (SCALE @SCALING@:1)'
         layer_var: '%ln (SCALE @SCALING@:1)'
-        title: '@DOC_TITLE@'
+        title: '%ln COPPER'
         sheet_reference_color: '#000000'
         colored_holes: true
         holes_color: "#FFFFFF"
@@ -201,8 +201,9 @@ definitions:
   COMMENT: Fabrication document in PDF format
   DIR: Manufacturing/Fabrication
   DOC_TITLE: FABRICATION
+  DRAWING_NUMBER: PCB NAME
   COLOR_THEME: KiCad_Theme
-  SHEET_WKS: ${KIPRJMOD}/Templates/KDT_Template_PCB_GIT_A4.kicad_wks
+  SHEET_WKS: ${KIPRJMOD}/Templates/Boardwright_Template_PCB_GIT_A4.kicad_wks
   SCALING: 1.0
   FAB_EXCLUDE_FILTER: only_testpoints
   LAYER_DRILL_MAP: DrillMap

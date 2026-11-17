@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LicenseRef-Boardwright-Source-Available
+# Copyright (c) Ryan Hicks
+
 """Prepare Boardwright-owned KiCad table placeholders for CI rendering."""
 
 from __future__ import annotations

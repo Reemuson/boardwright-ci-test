@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: MIT
+# Original template material copyright Nguyen Vincent.
+# Modified for Boardwright by Ryan Hicks.
+
 # KiBot output for generating an HTML page for navigating the results
 # https://kibot.readthedocs.io/en/latest/configuration/outputs/navigate_results_rb.html
 

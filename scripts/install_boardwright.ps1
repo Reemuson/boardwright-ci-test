@@ -1,8 +1,12 @@
+# SPDX-License-Identifier: LicenseRef-Boardwright-Source-Available
+# Copyright (c) Ryan Hicks
+
 param(
     [ValidateSet("User", "Project")]
     [string]$Scope = "User",
     [switch]$NoTui,
     [switch]$NoPathUpdate,
+    [switch]$NoFonts,
     [switch]$InstallProfileCommand,
     [switch]$Run
 )
@@ -12,6 +16,69 @@ $RepoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $RepoRoot
 
 $extra = if ($NoTui) { "" } else { ".[tui]" }
+
+function Install-BoardwrightFonts {
+    $fontSource = Join-Path $RepoRoot "boardwright_resources\kibot\resources\fonts"
+    if (-not (Test-Path $fontSource)) {
+        Write-Warning "Bundled font directory not found: $fontSource"
+        return
+    }
+
+    $fonts = Get-ChildItem -LiteralPath $fontSource -Filter *.ttf
+    if (-not $fonts) {
+        Write-Warning "No bundled .ttf fonts found in: $fontSource"
+        return
+    }
+
+    if ($IsWindows -or $env:OS -eq "Windows_NT") {
+        $fontTarget = Join-Path $env:LOCALAPPDATA "Microsoft\Windows\Fonts"
+        if (-not (Test-Path $fontTarget)) {
+            New-Item -ItemType Directory -Force $fontTarget | Out-Null
+        }
+
+        $fontRegPath = "HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts"
+        if (-not (Test-Path $fontRegPath)) {
+            New-Item -Path $fontRegPath -Force | Out-Null
+        }
+
+        foreach ($font in $fonts) {
+            $target = Join-Path $fontTarget $font.Name
+            Copy-Item -LiteralPath $font.FullName -Destination $target -Force
+            $fontName = [System.IO.Path]::GetFileNameWithoutExtension($font.Name)
+            New-ItemProperty -Path $fontRegPath -Name "$fontName (TrueType)" -Value $target -PropertyType String -Force | Out-Null
+        }
+
+        Write-Host ""
+        Write-Host "Installed bundled Boardwright fonts for the current Windows user:"
+        Write-Host "  $fontTarget"
+        Write-Host "Restart KiCad if it was already open."
+        return
+    }
+
+    $home = [System.Environment]::GetFolderPath("UserProfile")
+    $fontTarget = Join-Path $home ".local/share/fonts"
+    if (-not (Test-Path $fontTarget)) {
+        New-Item -ItemType Directory -Force $fontTarget | Out-Null
+    }
+
+    foreach ($font in $fonts) {
+        Copy-Item -LiteralPath $font.FullName -Destination (Join-Path $fontTarget $font.Name) -Force
+    }
+
+    $fcCache = Get-Command fc-cache -ErrorAction SilentlyContinue
+    if ($fcCache) {
+        & $fcCache.Source -f $fontTarget | Out-Null
+    }
+
+    Write-Host ""
+    Write-Host "Installed bundled Boardwright fonts for the current user:"
+    Write-Host "  $fontTarget"
+    Write-Host "Restart KiCad if it was already open."
+}
+
+if (-not $NoFonts) {
+    Install-BoardwrightFonts
+}
 
 if ($Scope -eq "Project") {
     $venvPython = Join-Path $RepoRoot ".venv\Scripts\python.exe"

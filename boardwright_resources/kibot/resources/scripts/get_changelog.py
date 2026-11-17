@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Original template material copyright Nguyen Vincent.
+
 import argparse
 import re
 import sys
