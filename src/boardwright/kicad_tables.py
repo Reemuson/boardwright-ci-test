@@ -16,6 +16,13 @@ from pathlib import Path
 
 from .config import _worksheet_from_kicad_project, load_config
 from .errors import BoardwrightError
+from .fabrication_requirements import (
+    FabricationRequirementError,
+    derive_project_requirements,
+    undeclared_manufacturing_keys,
+    undeclared_message,
+    unstated_requirements,
+)
 from .git_ops import remote_url
 from .kicad_variables import sync_kicad_project_text_variables
 
@@ -29,6 +36,9 @@ IMPEDANCE_TABLE_TEMPLATE = Path(
 FABRICATION_NOTES_TEMPLATE = Path(
     "boardwright_resources/kibot/resources/templates/fabrication_notes.txt"
 )
+# Project-owned approved wording. Outside the Boardwright payload
+# (boardwright_resources/, src/boardwright/), so updates never replace it.
+PROJECT_FABRICATION_NOTES_TEMPLATE = Path(".boardwright/templates/fabrication_notes.txt")
 ASSEMBLY_NOTES_TEMPLATE = Path(
     "boardwright_resources/kibot/resources/templates/assembly_notes.txt"
 )
@@ -480,18 +490,22 @@ def _write_manufacturing_notes(root: Path, config=None) -> None:
     values = _fabrication_note_values(root, config)
     project_stem = _project_stem(root)
 
-    fabrication = _resource_text(root, FABRICATION_NOTES_TEMPLATE)
-    impedance_rows = _impedance_entries(config)
-    if not impedance_rows:
-        fabrication = _strip_impedance_controlled_note(fabrication)
-    else:
-        fabrication = _strip_note_condition_markers(fabrication)
-    fabrication = _render_note_template(fabrication, values)
+    template, source = fabrication_notes_template(root)
+    unstated = unstated_requirements(template, config.manufacturing)
+    if unstated:
+        raise FabricationRequirementError(
+            f"{source} does not state declared requirement(s): "
+            + ", ".join(f"manufacturing.{key}" for key in unstated)
+            + ". Reference them in the template, or declare them empty/null to omit them."
+        )
+    fabrication = _render_note_template(template, values, _note_conditions(root, config))
     fabrication_dir = root / "Manufacturing" / "Fabrication"
     fabrication_dir.mkdir(parents=True, exist_ok=True)
+    # The only writer of this controlled output (KiBot has no notes output).
     (fabrication_dir / f"{project_stem}-fabrication_notes.txt").write_text(
         fabrication,
         encoding="utf-8",
+        newline="\n",
     )
 
     assembly = _resource_text(root, ASSEMBLY_NOTES_TEMPLATE)
@@ -581,6 +595,26 @@ def _github_repo_from_url(url: str) -> str:
     return ""
 
 
+def fabrication_notes_template(root: Path) -> tuple[str, str]:
+    """Return (template text, source path): the project's approved wording if present."""
+    project_template = root / PROJECT_FABRICATION_NOTES_TEMPLATE
+    if project_template.is_file():
+        return project_template.read_text(encoding="utf-8"), PROJECT_FABRICATION_NOTES_TEMPLATE.as_posix()
+    return _resource_text(root, FABRICATION_NOTES_TEMPLATE), FABRICATION_NOTES_TEMPLATE.as_posix()
+
+
+def _note_conditions(root: Path, config) -> dict[str, bool]:
+    """Names usable in template ``#?`` condition lines."""
+    manufacturing = config.manufacturing if config is not None else {}
+    conditions = {
+        "stackup": "(stackup" in _pcb_path(root).read_text(encoding="utf-8"),
+        "impedance_controlled": bool(_impedance_entries(config)),
+    }
+    for key in ("rohs_pb_free", "halogen_free", "tented_vias", "silkscreen_enabled", "conformal_coating"):
+        conditions[key] = bool(_optional_bool(manufacturing.get(key)))
+    return conditions
+
+
 def _resource_text(root: Path, relative_path: Path) -> str:
     project_path = root / relative_path
     if project_path.is_file():
@@ -590,9 +624,23 @@ def _resource_text(root: Path, relative_path: Path) -> str:
 
 
 def _fabrication_note_values(root: Path, config=None) -> dict[str, str]:
-    pcb = _pcb_path(root).read_text(encoding="utf-8")
+    pcb_path = _pcb_path(root)
+    pcb = pcb_path.read_text(encoding="utf-8")
     width, height = _board_size_mm(pcb)
-    pth, npth = _min_drill_sizes(pcb)
+    if width <= 0 or height <= 0:
+        raise FabricationRequirementError("The PCB has no Edge.Cuts outline to size the board from.")
+    if config is None:
+        try:
+            config = load_config(root)
+        except BoardwrightError as error:
+            raise FabricationRequirementError(
+                f"Cannot render fabrication notes without a readable project configuration: {error}"
+            ) from error
+    missing = undeclared_manufacturing_keys(config.project.get("manufacturing"))
+    if missing:
+        raise FabricationRequirementError(undeclared_message(missing))
+    # Fail-closed: raises if any minimum feature size cannot be derived.
+    requirements = derive_project_requirements(root, pcb_path)
     manufacturing = config.manufacturing if config is not None else {}
     company = _first_match(pcb, r'\(property\s+"([^"]*)"\s+"([^"]*)"\)', "")
     company = str(config.project.get("project", {}).get("company") or company or "COMPANY") if config is not None else company or "COMPANY"
@@ -611,6 +659,7 @@ def _fabrication_note_values(root: Path, config=None) -> dict[str, str]:
         "solder_mask_color_text_cap": _cap(_stackup_layer_value(pcb, "F.Mask", "color", "GREEN")),
         "silk_screen_color_text_cap": _cap(silk_color),
         "manufacturing_standard_note": _manufacturing_standard_note(manufacturing_standard),
+        "manufacturing_standard_cap": _cap(manufacturing_standard),
         "core_material_cap": _cap(core_material),
         "flammability_rating_cap": _cap(flammability_rating),
         "tg_rating_cap": _cap(tg_rating),
@@ -630,15 +679,15 @@ def _fabrication_note_values(root: Path, config=None) -> dict[str, str]:
         "COMPANY_cap": _cap(company),
         "bb_w_mm": _mm(width),
         "bb_h_mm": _mm(height),
-        "thickness_mm": _mm(float(_first_match(pcb, r"\(thickness\s+([-0-9.]+)\)", "0"))),
-        "track_mm": _mm(_min_track_width(pcb, 0.2)),
-        "clearance_mm": _mm(_min_positive_float(re.findall(r"\(clearance\s+([-0-9.]+)\)", pcb), 0.2)),
-        "drill_pth_real_mm": _mm(pth),
-        "drill_npth_real_mm": _mm(npth),
-        "oar_mm": _mm(_min_annular_ring(pcb, 0.15)),
-        "c2h_mm": _mm(0.254),
-        "c2e_mm": _mm(0.250),
-        "h2h_mm": _mm(0.254),
+        "thickness_mm": requirements.thickness.text(),
+        "track_mm": requirements.trace_width.text(),
+        "clearance_mm": requirements.trace_to_trace.text(),
+        "drill_pth_real_mm": requirements.min_pth.text(),
+        "drill_npth_real_mm": requirements.min_npth.text(),
+        "oar_mm": requirements.annular_ring.text(),
+        "c2h_mm": requirements.copper_to_hole.text(),
+        "c2e_mm": requirements.copper_to_edge.text(),
+        "h2h_mm": requirements.hole_to_hole.text(),
     }
 
 
@@ -817,8 +866,8 @@ def _component_summary_text(rows: tuple[tuple[str, int, int, int], ...]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _render_note_template(template: str, values: dict[str, str]) -> str:
-    rendered = template
+def _render_note_template(template: str, values: dict[str, str], conditions: dict[str, bool]) -> str:
+    rendered = _apply_note_conditions(template, conditions)
     for key, value in values.items():
         rendered = rendered.replace("${" + key + "}", value)
     rendered = _strip_empty_note_markers(rendered)
@@ -850,8 +899,50 @@ def _number_fabrication_notes(text: str) -> str:
     return "\n".join(lines)
 
 
+def _apply_note_conditions(text: str, conditions: dict[str, bool]) -> str:
+    """KiBot report semantics: a ``#?EXPR`` line keeps the next line only if EXPR is true."""
+    lines: list[str] = []
+    keep_next = True
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("#?"):
+            keep_next = keep_next and _evaluate_note_condition(stripped[2:].strip(), conditions)
+            continue
+        if keep_next:
+            lines.append(line)
+        keep_next = True
+    return "\n".join(lines)
+
+
+def _evaluate_note_condition(expression: str, conditions: dict[str, bool]) -> bool:
+    import ast
+
+    def evaluate(node) -> bool:
+        if isinstance(node, ast.BoolOp):
+            results = [evaluate(value) for value in node.values]
+            return all(results) if isinstance(node.op, ast.And) else any(results)
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+            return not evaluate(node.operand)
+        if isinstance(node, ast.Name) and node.id in conditions:
+            return conditions[node.id]
+        if isinstance(node, ast.Constant) and isinstance(node.value, bool):
+            return node.value
+        raise FabricationRequirementError(
+            f"Unsupported fabrication-note condition {expression!r}; use and/or/not over: "
+            + ", ".join(sorted(conditions))
+        )
+
+    try:
+        tree = ast.parse(expression, mode="eval")
+    except SyntaxError as error:
+        raise FabricationRequirementError(f"Invalid fabrication-note condition {expression!r}.") from error
+    return evaluate(tree.body)
+
+
 def _collapse_blank_note_lines(text: str) -> str:
-    lines = [line.rstrip() for line in text.splitlines()]
+    # Whitespace-only lines become blank; content lines keep the template's
+    # exact spacing (approved wording is reproduced byte for byte).
+    lines = [line if line.strip() else "" for line in text.splitlines()]
     collapsed: list[str] = []
     blank_count = 0
     for line in lines:
@@ -869,12 +960,19 @@ def _wrap_fabrication_note_lines(text: str, width: int = 80) -> str:
     wrapped: list[str] = []
     for line in text.splitlines():
         if len(line.expandtabs(4)) <= width or not line.strip():
-            wrapped.append(line.rstrip())
+            wrapped.append(line if line.strip() else "")
             continue
         numbered = re.match(r"^(\d+\)\t)(.*)$", line)
         if numbered:
             prefix, body = numbered.groups()
             wrapped.extend(_wrap_numbered_note_line(prefix, body, width))
+            continue
+        lettered = re.match(r"^(\t[A-Z]\.\t)(.*)$", line)
+        if lettered:
+            # Sub-items keep their tab layout; continuation lines align under
+            # the item text, not under the letter.
+            prefix, body = lettered.groups()
+            wrapped.extend(_wrap_numbered_note_line(prefix, body, width, continuation="\t\t"))
             continue
         indent = re.match(r"^\s*", line).group(0)
         wrapped.extend(
@@ -890,7 +988,7 @@ def _wrap_fabrication_note_lines(text: str, width: int = 80) -> str:
     return "\n".join(wrapped).rstrip() + "\n"
 
 
-def _wrap_numbered_note_line(prefix: str, body: str, width: int) -> list[str]:
+def _wrap_numbered_note_line(prefix: str, body: str, width: int, continuation: str = "\t") -> list[str]:
     body_width = max(20, width - len(prefix.expandtabs(4)))
     parts = textwrap.wrap(
         body.strip(),
@@ -901,12 +999,12 @@ def _wrap_numbered_note_line(prefix: str, body: str, width: int) -> list[str]:
     if not parts:
         return [prefix.rstrip()]
     lines = [prefix + parts[0]]
-    continuation_width = max(20, width - len("\t".expandtabs(4)))
+    continuation_width = max(20, width - len(continuation.expandtabs(4)))
     for part in parts[1:]:
         if len(part.expandtabs(4)) <= continuation_width:
-            lines.append("\t" + part)
+            lines.append(continuation + part)
         else:
-            lines.extend("\t" + chunk for chunk in textwrap.wrap(
+            lines.extend(continuation + chunk for chunk in textwrap.wrap(
                 part,
                 width=continuation_width,
                 break_long_words=False,
@@ -914,28 +1012,6 @@ def _wrap_numbered_note_line(prefix: str, body: str, width: int) -> list[str]:
             ))
     return lines
 
-
-def _strip_impedance_controlled_note(text: str) -> str:
-    lines = []
-    for line in text.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("#?stackup and impedance_controlled"):
-            continue
-        if "REFER TO IMPEDANCE TABLE" in line:
-            continue
-        if "CONFIRM TRACE WIDTHS AND SPACINGS" in line:
-            continue
-        lines.append(line)
-    return "\n".join(lines).rstrip() + "\n"
-
-
-def _strip_note_condition_markers(text: str) -> str:
-    lines = [
-        line
-        for line in text.splitlines()
-        if not line.strip().startswith("#?")
-    ]
-    return _collapse_blank_note_lines("\n".join(lines))
 
 
 def _board_size_mm(pcb: str) -> tuple[float, float]:
@@ -957,53 +1033,8 @@ def _board_size_mm(pcb: str) -> tuple[float, float]:
     return max(xs) - min(xs), max(ys) - min(ys)
 
 
-def _min_drill_sizes(pcb: str) -> tuple[float, float]:
-    pth: list[float] = []
-    npth: list[float] = []
-    for block in _iter_sexpr_blocks(pcb, "pad"):
-        drill = _pad_drill(block)
-        if drill is None:
-            continue
-        if "np_thru_hole" in block:
-            npth.append(drill)
-        elif "thru_hole" in block:
-            pth.append(drill)
-    return min(pth) if pth else 0.0, min(npth) if npth else 0.0
 
 
-def _pad_drill(block: str) -> float | None:
-    match = re.search(r"\(drill\s+(?:oval\s+)?([-0-9.]+)(?:\s+([-0-9.]+))?", block)
-    if not match:
-        return None
-    values = [float(value) for value in match.groups() if value is not None]
-    return min(values) if values else None
-
-
-def _min_annular_ring(pcb: str, default: float) -> float:
-    rings: list[float] = []
-    for block in _iter_sexpr_blocks(pcb, "pad"):
-        if "thru_hole" not in block or "np_thru_hole" in block:
-            continue
-        drill = _pad_drill(block)
-        size = re.search(r"\(size\s+([-0-9.]+)\s+([-0-9.]+)\)", block)
-        if drill is None or not size:
-            continue
-        rings.append((min(float(size.group(1)), float(size.group(2))) - drill) / 2)
-    positives = [ring for ring in rings if ring > 0]
-    return min(positives) if positives else default
-
-
-def _min_track_width(pcb: str, default: float) -> float:
-    widths: list[float] = []
-    for head in ("segment", "arc"):
-        for block in _iter_sexpr_blocks(pcb, head):
-            match = re.search(r"\(width\s+([-0-9.]+)\)", block)
-            if match:
-                widths.append(float(match.group(1)))
-    if widths:
-        return min(widths)
-    last_width = re.search(r"\(last_track_width\s+([-0-9.]+)\)", pcb)
-    return float(last_width.group(1)) if last_width else default
 
 
 def _stackup_layer_value(pcb: str, layer_name: str, field: str, default: str) -> str:
@@ -1023,10 +1054,6 @@ def _min_float(values: list[str], default: float) -> float:
     numbers = [float(value) for value in values]
     return min(numbers) if numbers else default
 
-
-def _min_positive_float(values: list[str], default: float) -> float:
-    numbers = [float(value) for value in values if float(value) > 0]
-    return min(numbers) if numbers else default
 
 
 def _mm(value: float) -> str:

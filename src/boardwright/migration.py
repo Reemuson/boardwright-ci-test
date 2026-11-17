@@ -245,6 +245,11 @@ def migration_summary(plan: dict[str, Any]) -> str:
         lines.append(f"Deprecated text variables rewritten automatically: {len(references) - len(manual)}")
     for ref in manual:
         lines.append(f"Manual review: {ref['location']} ${{{ref['variable']}}} - {ref['recommendation']}")
+    lines.append(
+        "Manual review: project.yaml manufacturing requirements (standard, materials, RoHS, "
+        "coating, tenting) are initialised from Boardwright defaults. Check them against the "
+        "last released fabrication notes before the next release."
+    )
     return "\n".join(lines)
 
 

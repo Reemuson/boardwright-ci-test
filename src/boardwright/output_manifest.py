@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
 from dataclasses import dataclass
@@ -301,10 +302,15 @@ def main(argv: list[str] | None = None) -> int:
         help="For reused baselines in the newest ledger entry, compare outputs with the previous release tag.",
     )
     check.add_argument("--root", default=".")
+    check.add_argument(
+        "--repo",
+        default=os.environ.get("GITHUB_REPOSITORY", ""),
+        help="owner/name of the GitHub repository (legacy baselines are fetched from its releases).",
+    )
     args = parser.parse_args(argv)
 
     if args.command == "check-baseline":
-        return _check_baseline(Path(args.root))
+        return _check_baseline(Path(args.root), args.repo)
 
     if args.command == "write":
         root = Path(args.root)
@@ -350,8 +356,11 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def _check_baseline(root: Path) -> int:
+def _check_baseline(root: Path, repository: str = "") -> int:
     import subprocess
+    import tempfile
+
+    from .legacy_baseline import LegacyBaselineError, fetch_published_package
 
     from .release_ledger import load_ledger
 
@@ -383,16 +392,37 @@ def _check_baseline(root: Path) -> int:
         check=False,
     )
     if completed.returncode != 0:
+        # Legacy release: compare against the authenticated published package.
+        # Never a pass by default: an unobtainable or unauthenticated package fails.
         print(
-            f"warning: release {record.previous_version} has no committed output manifest; reuse is "
-            "supported by source fingerprints only (legacy release).",
+            f"Release {record.previous_version} has no committed output manifest (legacy release); "
+            "comparing with its published release package."
         )
-        return 0
-    try:
-        previous = json.loads(completed.stdout.decode("utf-8"))
-    except json.JSONDecodeError as exc:
-        print(f"error: previous manifest is invalid: {exc}", file=sys.stderr)
-        return 2
+        try:
+            with tempfile.TemporaryDirectory(prefix="boardwright-legacy-baseline-") as tmp:
+                package_root, provenance = fetch_published_package(
+                    root, repository, record.previous_version, Path(tmp)
+                )
+                print("\n".join(provenance.lines()))
+                previous = build_manifest(package_root)
+        except LegacyBaselineError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            print(
+                "The reused baseline cannot be verified. Restore access to the published package, or "
+                "re-classify the release (fabrication reissue or new revision).",
+                file=sys.stderr,
+            )
+            return 2
+        if not any(entry.get("category") in categories for entry in previous["files"].values()):
+            print(f"error: the published package of {record.previous_version} has no controlled "
+                  f"{'/'.join(categories)} outputs to compare.", file=sys.stderr)
+            return 2
+    else:
+        try:
+            previous = json.loads(completed.stdout.decode("utf-8"))
+        except json.JSONDecodeError as exc:
+            print(f"error: previous manifest is invalid: {exc}", file=sys.stderr)
+            return 2
     differences = compare_manifests(previous, build_manifest(root), categories)
     hard = blocking(differences)
     for item in differences:

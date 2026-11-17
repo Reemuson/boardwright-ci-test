@@ -329,6 +329,10 @@ jobs:
 
       - name: Check reused baselines against the previous release
         shell: bash
+        env:
+          # Legacy releases (no committed manifest) are verified against their
+          # authenticated published package; failure to fetch it fails the run.
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -o pipefail
           python -m boardwright.output_manifest check-baseline | tee -a "$GITHUB_STEP_SUMMARY"

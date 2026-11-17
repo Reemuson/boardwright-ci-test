@@ -143,11 +143,6 @@ groups:
       - @CSV_TP_TOP_OUTPUT@
       - @CSV_TP_BOTTOM_OUTPUT@
 
-  - name: notes
-    outputs:
-      - @TXT_FAB_NOTES_OUTPUT@
-      - @TXT_ASSEMBLY_NOTES_OUTPUT@
-
   - name: 3d
     outputs:
       - @STEP_OUTPUT@
@@ -378,23 +373,10 @@ import:
       TITLE: @PCBA_NAME@ Assembly
       MPN_FIELD: @MPN_FIELD@
 
-  # TXT fabrication notes ------------------------------------------------------
-  - file: kibot_out_txt_report.yaml
-    definitions:
-      NAME: @TXT_FAB_NOTES_OUTPUT@
-      COMMENT: Fabrication notes in TXT format
-      DIR: @FABRICATION_DIR@
-      OUTPUT_ID: fabrication_notes
-      TEMPLATE: @REPORT_TEMPLATE_DIR@/fabrication_notes.txt
-
-  # TXT assembly notes
-  - file: kibot_out_txt_report.yaml
-    definitions:
-      NAME: @TXT_ASSEMBLY_NOTES_OUTPUT@
-      COMMENT: Assembly notes in TXT format
-      DIR: @ASSEMBLY_DIR@
-      OUTPUT_ID: assembly_notes
-      TEMPLATE: @REPORT_TEMPLATE_DIR@/assembly_notes.txt
+  # Fabrication and assembly notes are NOT KiBot outputs. They are controlled
+  # manufacturing data rendered only by prepare_pcb_tables.py
+  # (boardwright.kicad_tables); a KiBot `report` output writing the same file
+  # silently overrode them in the past (audit F17).
 
   # PNG 3D Viewer renders ------------------------------------------------------
   - file: kibot_out_png_3d_viewer.yaml
@@ -676,8 +658,6 @@ definitions:
   HTML_IBOM_OUTPUT: html_bom_interactive
   HTML_BOM_OUTPUT: html_bom
 
-  TXT_FAB_NOTES_OUTPUT: txt_fabrication_notes
-  TXT_ASSEMBLY_NOTES_OUTPUT: txt_assembly_notes
 
   PNG_3D_VIEWER_TOP: png_3d_viewer_top
   PNG_3D_VIEWER_BOTTOM: png_3d_viewer_bottom
