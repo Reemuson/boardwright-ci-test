@@ -74,6 +74,8 @@ TEXT_HEADS = {"gr_text", "fp_text", "gr_text_box", "fp_text_box", "property", "t
 TOOLING_PREFIXES = (
     "boardwright_resources/kibot/resources/templates/",
     "boardwright_resources/kibot/yaml/kibot_out_",
+    # Global output definitions (e.g. PLOT_REFS/PLOT_VALUES for the Gerbers).
+    "boardwright_resources/kibot/yaml/kibot_main.yaml",
     "boardwright_resources/kibot/yaml/kibot_filt_",
     "boardwright_resources/kibot/yaml/kibot_globals",
 )
@@ -209,6 +211,9 @@ class DesignFingerprint:
     pcb_drawings: str = ""
     fab_volatile_variables: tuple[str, ...] = field(default_factory=tuple)
     tooling: str = ""
+    # Effective Gerber/drill/ODB++ output options (audit F20). Empty in
+    # records written before it existed: then it is not compared.
+    fabrication_outputs: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -238,6 +243,7 @@ class DesignFingerprint:
                     str(item) for item in data.get("fab_volatile_variables", []) or []
                 ),
                 tooling=str(data.get("tooling", "")),
+                fabrication_outputs=str(data.get("fabrication_outputs", "")),
             )
         except KeyError as exc:
             raise BoardwrightError(f"Fingerprint record is missing `{exc.args[0]}`.") from exc
@@ -293,6 +299,7 @@ def compute_fingerprint(reader: SourceReader) -> DesignFingerprint:
         pcb_drawings=_hash(json.dumps(_drawing_items(pcb, resolver))),
         fab_volatile_variables=tuple(sorted(resolver.volatile_used)),
         tooling=_tooling_hash(reader),
+        fabrication_outputs=_fabrication_outputs_hash(reader),
     )
 
 
@@ -597,6 +604,13 @@ def _drawing_items(pcb: SList, resolver: "_TextResolver") -> list[str]:
     return sorted(items)
 
 
+def _fabrication_outputs_hash(reader: SourceReader) -> str:
+    from .kibot_config import fabrication_output_config
+
+    config = fabrication_output_config(reader.read_text)
+    return _hash(config) if config else ""
+
+
 def _tooling_hash(reader: SourceReader) -> str:
     entries: list[tuple[str, str]] = []
     list_tree = getattr(reader, "list_tree", None)
@@ -742,7 +756,12 @@ def _git(root: Path, *args: str) -> str:
 
 def changed_domains(old: DesignFingerprint, new: DesignFingerprint) -> tuple[str, ...]:
     domains = ("pcb_geometry", "pcb_netnames", "fabrication_spec", "assembly", "pcb_drawings", "schematic")
-    return tuple(name for name in domains if getattr(old, name) != getattr(new, name))
+    changed = tuple(name for name in domains if getattr(old, name) != getattr(new, name))
+    # Fabrication output options change the fabrication data without any
+    # source change (audit F20). Only compared when both sides recorded it.
+    if old.fabrication_outputs and new.fabrication_outputs and old.fabrication_outputs != new.fabrication_outputs:
+        changed += ("fabrication_outputs",)
+    return changed
 
 
 def schematic_pcb_parity(reader: SourceReader) -> list[str]:

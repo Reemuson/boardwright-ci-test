@@ -31,6 +31,7 @@ venv/
 # Boardwright local scratch/output
 .boardwright/revision_history_variables.env
 .boardwright-sandbox/
+.boardwright-checks/
 boardwright-preview/
 boardwright-release/
 boardwright-*-release.zip

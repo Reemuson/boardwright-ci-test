@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import base64
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -106,6 +107,29 @@ def format_bitmap_data(
     lines.extend(f'{continuation_indent}"{chunk}"' for chunk in chunks[1:])
     lines.append(f"{indent})")
     return "\n".join(lines)
+
+
+# SHA-256 of the Boardwright placeholder logo embedded in the shipped
+# Templates/Boardwright_*.kicad_wks (assets/logos/logo-block-black.png).
+# tests/test_worksheet_logo.py keeps this in step with the templates.
+BOARDWRIGHT_PLACEHOLDER_LOGO_SHA256 = "59a323ca19ba853839487d9fd13e0fa9a8b9fa1a6311fbaa63d738372840c822"
+
+
+def embedded_png(text: str, bitmap_index: int = 0) -> bytes | None:
+    """The PNG embedded in a worksheet bitmap block, or None if absent."""
+    import base64
+
+    try:
+        start, end = _nth_bitmap_block(text, bitmap_index)
+        block = text[start : end + 1]
+        data_start, data_end = _data_block_bounds(block)
+    except BoardwrightError:
+        return None
+    chunks = re.findall(r'"([A-Za-z0-9+/=]*)"', block[data_start:data_end])
+    try:
+        return base64.b64decode("".join(chunks))
+    except ValueError:
+        return None
 
 
 def png_dimensions(png: bytes) -> tuple[int, int]:

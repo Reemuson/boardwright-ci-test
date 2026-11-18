@@ -379,7 +379,11 @@ def _check_baseline(root: Path, repository: str = "") -> int:
         f"({record.fabrication_baseline.status}), assembly baseline {record.assembly_baseline.id} "
         f"({record.assembly_baseline.status})."
     )
-    if not categories:
+    # A re-issued fabrication baseline (same PCB revision, e.g. A/1 -> A/2)
+    # is not claimed to be identical, but reviewers must see exactly which
+    # controlled fabrication files changed against the previous release.
+    reissue = ("fabrication",) if record.fabrication_baseline.status == "reissued" else ()
+    if not categories and not reissue:
         print("No reused baselines; new outputs become the approved baseline.")
         return 0
     if not record.previous_version:
@@ -413,9 +417,9 @@ def _check_baseline(root: Path, repository: str = "") -> int:
                 file=sys.stderr,
             )
             return 2
-        if not any(entry.get("category") in categories for entry in previous["files"].values()):
+        if not any(entry.get("category") in categories + reissue for entry in previous["files"].values()):
             print(f"error: the published package of {record.previous_version} has no controlled "
-                  f"{'/'.join(categories)} outputs to compare.", file=sys.stderr)
+                  f"{'/'.join(categories + reissue)} outputs to compare.", file=sys.stderr)
             return 2
     else:
         try:
@@ -423,7 +427,24 @@ def _check_baseline(root: Path, repository: str = "") -> int:
         except json.JSONDecodeError as exc:
             print(f"error: previous manifest is invalid: {exc}", file=sys.stderr)
             return 2
-    differences = compare_manifests(previous, build_manifest(root), categories)
+    current = build_manifest(root)
+    if reissue:
+        reissued = compare_manifests(previous, current, reissue)
+        _report_reissue(record, reissued)
+        notes_hard = _reissue_notes_must_match(root, record, reissued)
+        if notes_hard:
+            for item in notes_hard:
+                print(f"ERROR {item}")
+            print(
+                f"The fabrication requirements were only newly declared since {record.previous_version}, "
+                "so the rendered fabrication notes must not change, even in a re-issue. Fix the "
+                "requirements or notes template, or change the requirement deliberately.",
+                file=sys.stderr,
+            )
+            return 1
+        if not categories:
+            return 0
+    differences = compare_manifests(previous, current, categories)
     hard = blocking(differences)
     for item in differences:
         print(("ERROR " if item in hard else "note  ") + str(item))
@@ -441,6 +462,43 @@ def _check_baseline(root: Path, repository: str = "") -> int:
         + (" byte-for-byte." if not differences else f" after normalisation ({len(differences)} regenerated file(s)).")
     )
     return 0
+
+
+def _reissue_notes_must_match(root: Path, record: Any, differences: list[Difference]) -> list[Difference]:
+    """Rendered notes that changed although the requirements were only newly declared.
+
+    The release plan keeps that promise (audit F18): newly declared, unchanged
+    requirements must render the approved notes. A re-issue for another
+    reason (for example F20's silkscreen) must not lift it.
+    """
+    from .impact import _only_newly_declared_requirements
+
+    if not _only_newly_declared_requirements(root, record.previous_version):
+        return []
+    return [
+        item
+        for item in differences
+        if item.kind != "regenerated" and "fabrication_notes" in Path(item.path.split(ZIP_MEMBER_SEPARATOR)[-1]).name
+    ]
+
+
+def _report_reissue(record: Any, differences: list[Difference]) -> None:
+    """Informational: what the fabrication re-issue changes against the previous release."""
+    changed = [item for item in differences if item.kind != "regenerated"]
+    print(
+        f"Fabrication baseline re-issued as {record.fabrication_baseline.id} under PCB revision "
+        f"{record.pcb_revision}. Controlled fabrication files changed since {record.previous_version}:"
+    )
+    for item in changed:
+        print(f"reissue {item}")
+    if not changed:
+        print(
+            f"warning: no controlled fabrication file differs from {record.previous_version}; "
+            "the re-issue changes nothing in the fabrication data. Confirm the classification."
+        )
+    unchanged = len(differences) - len(changed)
+    if unchanged:
+        print(f"{unchanged} other controlled fabrication file(s) are identical after normalisation.")
 
 
 if __name__ == "__main__":

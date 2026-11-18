@@ -18,7 +18,11 @@ outputs:
   options:
     subtract_mask_from_silk: true
     plot_footprint_refs: @PLOT_REFS@
-    plot_footprint_values: false
+    # Values must be plotted: KiCad also drops footprint user text that is
+    # exactly ${VALUE} (e.g. test-point net labels) when this is false. Hidden
+    # and Fab-layer values are never plotted. Guarded by validate and by
+    # python -m boardwright.silkscreen in CI.
+    plot_footprint_values: @PLOT_VALUES@
     create_gerber_job_file: false
 
 ...
@@ -27,3 +31,4 @@ definitions:
   COMMENT: Gerbers in GBR format
   DIR: Manufacturing/Fabrication/Gerbers
   PLOT_REFS: true
+  PLOT_VALUES: true

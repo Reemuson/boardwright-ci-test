@@ -227,6 +227,14 @@ jobs:
         shell: bash
         run: python boardwright_resources/kibot/resources/scripts/combine_review_pdf.py .
 
+      - name: Verify silkscreen Gerbers against the board
+        shell: bash
+        run: |
+          # KiBot runs as root in its container; make the reference plot removable.
+          sudo chown -R "$USER:$USER" .boardwright-checks 2>/dev/null || true
+          set -o pipefail
+          python -m boardwright.silkscreen | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Clean generated outputs
         shell: bash
         run: python boardwright_resources/kibot/resources/scripts/clean_generated_outputs.py .

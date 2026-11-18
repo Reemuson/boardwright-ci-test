@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: MIT
+# Original template material copyright Nguyen Vincent.
+# Modified for Boardwright by Ryan Hicks.
+# Adapted from kibot_out_gerber.yaml.
+
+# Unfiltered silkscreen reference plot. Plots every item that is visible on the
+# silkscreen layers, independent of the release Gerber options, so that
+# `python -m boardwright.silkscreen` can prove the shipped silkscreen Gerbers
+# contain exactly the board's visible markings. Not a deliverable: the check
+# deletes it. Keep subtract_mask_from_silk equal to the release Gerber output.
+
+kibot:
+  version: 1
+
+outputs:
+- name: @NAME@
+  comment: '@COMMENT@'
+  type: gerber
+  dir: '@DIR@'
+  run_by_default: false
+  layers: ['F.Silkscreen', 'B.Silkscreen']
+  options:
+    subtract_mask_from_silk: true
+    plot_footprint_refs: true
+    plot_footprint_values: true
+    create_gerber_job_file: false
+
+...
+definitions:
+  NAME: gbr_silk_reference
+  COMMENT: Unfiltered silkscreen reference plot
+  DIR: .boardwright-checks/silkscreen_reference
