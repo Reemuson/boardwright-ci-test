@@ -558,7 +558,7 @@
 			(color 0 0 255 1)
 		)
 	)
-	(tbtext "${PCBA_NAME}"
+	(tbtext "${DRAWING_NUMBER}"
 		(name "")
 		(pos 75 35.0002)
 		(font
@@ -692,7 +692,7 @@
 			(color 0 0 255 1)
 		)
 	)
-	(tbtext "${PCBA_NAME}"
+	(tbtext "${PROJECT_NUMBER}"
 		(name "")
 		(pos 146 62.0002)
 		(font

@@ -41,6 +41,7 @@ def validate_project(config: BoardwrightConfig) -> list[ValidationIssue]:
     _validate_known_local_branding(root, issues)
     _validate_deprecated_schematic_variables(root, issues, config.project)
     _validate_fabrication_requirements(config, issues)
+    _validate_worksheet_logo(config, issues)
 
     return issues
 
@@ -82,6 +83,39 @@ def _validate_fabrication_requirements(config: BoardwrightConfig, issues: list[V
     except FabricationRequirementError as error:
         issues.append(ValidationIssue("error", str(error)))
     _validate_silkscreen_plotting(config, pcbs[0], issues)
+
+
+def _validate_worksheet_logo(config: BoardwrightConfig, issues: list[ValidationIssue]) -> None:
+    """A project logo must not be replaced by Boardwright's placeholder logo.
+
+    Managed Boardwright worksheets ship with Boardwright's own bitmap. A project
+    that declares its own logo (template.sheet_image, template.logo or
+    assets.logo) must embed it with `boardwright worksheet-logo`; otherwise its
+    drawings silently carry Boardwright branding.
+    """
+    import hashlib
+
+    from .deprecated_variables import active_worksheets
+    from .worksheet_logo import BOARDWRIGHT_PLACEHOLDER_LOGO_SHA256, embedded_png
+
+    declared = str(config.template_sheet_image or "").strip()
+    if not declared:
+        return
+    declared_path = config.root / declared
+    declared_png = declared_path.read_bytes() if declared_path.is_file() else None
+    for worksheet in active_worksheets(config.root):
+        embedded = embedded_png(worksheet.read_text(encoding="utf-8"))
+        if not embedded or embedded == declared_png:
+            continue
+        if hashlib.sha256(embedded).hexdigest() == BOARDWRIGHT_PLACEHOLDER_LOGO_SHA256:
+            issues.append(
+                ValidationIssue(
+                    "warning",
+                    f"{worksheet.relative_to(config.root).as_posix()} still embeds the Boardwright "
+                    f"placeholder logo although the project declares {declared}. Run "
+                    "`boardwright worksheet-logo --worksheet <file>` to embed the project logo.",
+                )
+            )
 
 
 def _validate_silkscreen_plotting(
