@@ -1,0 +1,9 @@
+FABRICATION SNAPSHOT
+- Board size: 40.000 x 25.000 mm
+- Thickness: 1.600 mm
+- Surface finish: ENIG
+- Soldermask color: GREEN
+- Silkscreen color: YELLOW
+- Minimum PTH drill: 0.300 mm
+- Minimum NPTH drill: 0.650 mm
+- Impedance: no impedance controlled traces

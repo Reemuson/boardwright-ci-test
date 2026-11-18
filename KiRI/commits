@@ -1,0 +1,4 @@
+_local_|2026-11-18|root|Local changes not committed|False|True
+ef132e5|2026-11-18|Reemuson|docs(schematic): label the revision note as schematic revision|True|False
+f49be57|2026-11-18|Reemuson|docs(schematic): replace deprecated BOARD_NAME; use pcba_name and Boardwright worksheets|True|False
+1e72d2f|2026-11-17|Reemuson|docs(schematic): use DRAWING_REVISION/PCB_REVISION title-block variables|True|True

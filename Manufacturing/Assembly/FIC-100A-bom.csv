@@ -1,0 +1,20 @@
+Row,Quantity Per PCB,References,Value,Datasheet,Footprint,Description,Manufacturer,MPN,Supplier,SPN,Notes
+1,1,C4,10n,https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/931/C_Series_GeneralAppl_B11.pdf,C_0603_1608Metric,CAP CER 10N 50V X7R 0603,TPK,C1608X7R1H103KT,,,
+2,4,C1 C2 C3 C5,100n,https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/931/C_Series_GeneralAppl_B11.pdf,C_0603_1608Metric,CAP CER 100N 16V X7R 0603,TPK,C1608X7R1C104KT,,,
+3,1,C6,4.7u,https://yageogroup.com/content/datasheet/asset/file/KEM_T2005_T491,CP_EIA-3216-18_Kemet-A,CAP TANT 4.7UF 10% 25V 1206,KEMET,T491A475K025AT,DigiKey,399-10128-1-ND,
+4,2,D3 D5,LED,https://optoelectronics.liteon.com/upload/download/DS22-2000-073/LTST-C170KGKT.pdf,LED_0805_2012Metric,LED GRN CLEAR SMD,Lite-On Inc.,LTST-C170KGKT,DigiKey,160-1414-1-ND,Any low power green 0805 LED
+5,1,D4,LED,https://optoelectronics.liteon.com/upload/download/DS-22-99-0150/LTST-C170KRKT.pdf,LED_0805_2012Metric,LED RED CLEAR SMD,Lite-On Inc.,LTST-C170KRKT,DigiKey,160-1415-1-ND,Any low power red 0805 LED
+6,1,D2,TSAL6100,https://www.vishay.com/docs/81009/tsal6100.pdf,LED_D5.0mm_IRBlack,EMITTER IR 940NM 100MA RADIAL,Vishay Semiconductor Opto Division,TSAL6100,DigiKey,751-1203-ND,
+7,1,FB1,BLM18KG601BH1D,https://pim.murata.com/asset/pim4/ferriteBeadInductortypefilter/QNFA9129_PDF_FERRITEBEADINDUCTORTYPEFILTER?lastModifiedDatetime=20250918112959,L_0603_1608Metric,FERRITE BEAD 600 OHM 0603 1LN,Murata Electronics,BLM18KG101JH1D,DigiKey,490-14032-1-ND,
+8,1,J1,USB4105-GF-A,https://gct.co/files/specs/usb4105-spec.pdf,USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal,CONN RCP USB2.0 TYP C 16P SMD RA,GCT,USB4105-GF-A,DigiKey,2073-USB4105-GF-ACT-ND,
+9,1,Q1,PT334-6C,https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/4819/PT334-6C_Rev4_12-23-16.pdf,LED_D5.0mm_Clear,SENSOR PHOTO 940NM TOP VIEW RAD,Everlight Electronics Co Ltd,PT334-6C,DigiKey,1080-1159-ND,
+10,2,R8 R9,27,https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf,R_0603_1608Metric,RES 27 OHM 1% 1/10W 0603,Analog Technologies,,,,
+11,1,R4,220,https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf,R_0603_1608Metric,RES 220 OHM 1% 1/10W 0603,Analog Technologies,,,,
+12,2,R10 R11,270,https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf,R_0603_1608Metric,RES 270 OHM 1% 1/10W 0603,Analog Technologies,,,,
+13,1,R12,619,https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf,R_0603_1608Metric,RES 619 OHM 1% 1/10W 0603,Analog Technologies,,,,
+14,3,R1 R2 R5,4.7k,https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf,R_0603_1608Metric,RES 4.7K OHM 1% 1/10W 0603,Analog Technologies,,,,
+15,2,R6 R7,5.11k,https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf,R_0603_1608Metric,RES 5.11K OHM 1% 1/10W 0603,Analog Technologies,,,,
+16,1,R3,10k,https://www.analogtechnologies.com/document/New_Resistor_Kits.pdf,R_0603_1608Metric,RES 10K OHM 1% 1/10W 0603,Analog Technologies,,,,
+17,1,U3,FT231XS-U,https://ftdichip.com/wp-content/uploads/2025/06/DS_FT231X.pdf,SSOP-20_3.9x8.7mm_P0.635mm,"Full Speed USB to Full Handshake UART, SSOP-20","FTDI, Future Technology Devices International Ltd",FT231XS-U,DigiKey,768-1156-5-ND,
+18,1,U1,LM393,http://www.ti.com/lit/ds/symlink/lm393.pdf,SOIC-8_3.9x4.9mm_P1.27mm,IC COMPARATOR 2 GEN PUR 8SOIC,Texas Instruments,LM393ADT,DigiKey,497-4267-1-ND,
+19,1,U2,USBLC6-2SC6,https://www.st.com/resource/en/datasheet/cd00050750.pdf,SOT-23-6,TVS DIODE 5.25VWM 17VC SOT23-6,STMicroelectronics,USBLC6-2SC6,DigiKey,497-5235-1-ND,
