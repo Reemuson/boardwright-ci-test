@@ -193,6 +193,20 @@ def assess_release_impact(
             f"current schema {current.schema}; re-baseline explicitly."
         )
     detected = changed_domains(base.fingerprint, current)
+    if "fabrication_spec" in detected:
+        newly_declared = _only_newly_declared_requirements(config.root, base.version)
+        if newly_declared:
+            # Requirements that were implicit (template wording or defaults) are
+            # now declared explicitly. That is not a change of requirement by
+            # itself; check-baseline proves it by comparing the rendered notes
+            # with the approved release outputs and fails otherwise.
+            detected = tuple(domain for domain in detected if domain != "fabrication_spec")
+            reviews.append(
+                f"Fabrication requirements newly declared since {base.version}: "
+                + ", ".join(newly_declared)
+                + f". No declared requirement changed. check-baseline must show the fabrication notes "
+                f"match release {base.version}; any difference blocks the release."
+            )
     if current.fab_volatile_variables:
         # ${RELEASE_VERSION} etc. on silk/copper render differently for every
         # release, so the fabrication data can never be reused unchanged.
@@ -355,8 +369,9 @@ def assess_release_impact(
             )
         reviews.append(
             "Output tooling changed: rendered fabrication/assembly notes and output options may differ. "
-            "The prepare workflow compares controlled outputs (including rendered notes) with the "
-            "previous release where a manifest exists."
+            "For a reused baseline, the prepare workflow compares controlled outputs (including rendered "
+            "notes) with the previous release: its committed manifest, or for a legacy release its "
+            "authenticated published package."
         )
     unrecorded = [
         label
@@ -393,6 +408,44 @@ def assess_release_impact(
         reviews=tuple(reviews),
         format_changed=format_changed,
     )
+
+
+def _only_newly_declared_requirements(root: Path, base_version: str) -> tuple[str, ...]:
+    """Requirement keys declared now but absent at the baseline, if that is the
+    whole fabrication-spec difference; otherwise ``()`` (a real change).
+
+    Fails safe: an unreadable baseline, a changed or removed key, or a newly
+    added key that is not a fabrication-note requirement returns ``()``.
+    """
+    from .fabrication_requirements import DECLARED_MANUFACTURING_KEYS
+    from .fingerprint import (
+        NOTES_TEMPLATE_SPEC_KEY,
+        PROJECT_NOTES_TEMPLATE,
+        GitRefReader,
+        WorkingTreeReader,
+        fabrication_spec_items,
+    )
+
+    base_reader = GitRefReader(root, f"refs/tags/{base_version}", label=f"tag {base_version}")
+    base_project = base_reader.read_text(".boardwright/project.yaml")
+    if base_project is None:
+        return ()
+    current_reader = WorkingTreeReader(root)
+    try:
+        base = fabrication_spec_items(base_project, base_reader.read_text(PROJECT_NOTES_TEMPLATE))
+        current = fabrication_spec_items(
+            current_reader.read_text(".boardwright/project.yaml"),
+            current_reader.read_text(PROJECT_NOTES_TEMPLATE),
+        )
+    except Exception:  # noqa: BLE001 - any parse problem means "treat as changed"
+        return ()
+    declarable = set(DECLARED_MANUFACTURING_KEYS) | {NOTES_TEMPLATE_SPEC_KEY}
+    if any(key not in current or current[key] != value for key, value in base.items()):
+        return ()
+    added = tuple(sorted(key for key in current if key not in base))
+    if not added or any(key not in declarable for key in added):
+        return ()
+    return added
 
 
 def ledger_records_for_pcb(records: list[ReleaseRecord], pcb_revision: str) -> list[ReleaseRecord]:

@@ -49,6 +49,7 @@ ${material_requirements_block}
 @NOTE@	CONFIRM TRACE WIDTHS AND SPACINGS.
 #?stackup and impedance_controlled
 
+
 ${conformal_coating_note}
 
 ${fabrication_extra_notes}

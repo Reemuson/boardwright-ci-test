@@ -40,8 +40,47 @@ def validate_project(config: BoardwrightConfig) -> list[ValidationIssue]:
     _validate_readme_template(root, issues)
     _validate_known_local_branding(root, issues)
     _validate_deprecated_schematic_variables(root, issues, config.project)
+    _validate_fabrication_requirements(config, issues)
 
     return issues
+
+
+def _validate_fabrication_requirements(config: BoardwrightConfig, issues: list[ValidationIssue]) -> None:
+    """Errors for anything that would stop fabrication notes rendering truthfully."""
+    from .fabrication_requirements import (
+        FabricationRequirementError,
+        derive_project_requirements,
+        undeclared_manufacturing_keys,
+        undeclared_message,
+    )
+
+    from .fabrication_requirements import unstated_requirements
+    from .kicad_tables import fabrication_notes_template
+
+    missing = undeclared_manufacturing_keys(config.project.get("manufacturing"))
+    if missing:
+        issues.append(ValidationIssue("error", undeclared_message(missing)))
+    try:
+        template, source = fabrication_notes_template(config.root)
+    except OSError as error:
+        issues.append(ValidationIssue("error", f"Fabrication notes template is unreadable: {error}"))
+    else:
+        unstated = unstated_requirements(template, config.project.get("manufacturing"))
+        if unstated:
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"{source} does not state declared requirement(s): "
+                    + ", ".join(f"manufacturing.{key}" for key in unstated),
+                )
+            )
+    pcbs = sorted(config.root.glob("*.kicad_pcb"))
+    if len(pcbs) != 1:
+        return  # _validate_kicad_and_kibot reports missing or ambiguous boards.
+    try:
+        derive_project_requirements(config.root, pcbs[0])
+    except FabricationRequirementError as error:
+        issues.append(ValidationIssue("error", str(error)))
 
 
 def _require_file(path: Path, issues: list[ValidationIssue]) -> None:

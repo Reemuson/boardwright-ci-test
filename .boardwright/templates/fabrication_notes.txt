@@ -1,0 +1,66 @@
+FABRICATION NOTES (UNLESS OTHERWISE SPECIFIED)
+
+@NOTE@	FABRICATE PER ${manufacturing_standard_cap}.
+
+@NOTE@	OUTLINE DEFINED IN SEPARATE GERBER FILE WITH
+	"Edge_Cuts.GBR" SUFFIX.
+
+	DIMENSIONS OF CIRCUMSIZED RECTANGLE SHOWN ON THIS
+	DRAWING FOR REFERENCE ONLY.
+
+@NOTE@	SEE SEPARATE DRILL FILES WITH ".DRL" SUFFIX 
+	FOR HOLE LOCATIONS.
+
+	SELECTED HOLE LOCATIONS SHOWN ON THIS DRAWING 
+	FOR REFERENCE ONLY.
+
+@NOTE@	SURFACE FINISH: ${pcb_finish_cap}
+
+@NOTE@	SOLDERMASK ON BOTH SIDES OF THE BOARD SHALL 
+	BE LPI, COLOR ${solder_mask_color_text_cap}.
+
+#?silkscreen_enabled
+@NOTE@	SILK SCREEN LEGEND TO BE APPLIED PER LAYER 
+#?silkscreen_enabled
+	STACKUP USING ${silk_screen_color_text_cap} NON-CONDUCTIVE EPOXY INK.
+
+#?tented_vias
+@NOTE@	ALL VIAS ARE TENTED ON BOTH SIDES UNLESS 
+#?tented_vias
+	SOLDERMASK OPENED IN GERBER.
+
+#?rohs_pb_free
+@NOTE@	VENDOR SHOULD FOLLOW ROHS COMPLIANT PROCESS 
+#?rohs_pb_free
+	AND Pb FREE FOR MANUFACTURING
+
+@NOTE@	PCB MATERIAL REQUIREMENTS:
+
+	A.	FLAMMABILITY RATING MUST MEET OR EXCEED 
+		${flammability_rating_cap} REQUIREMENTS.
+	B.	Tg ${tg_rating_cap} OR EQUIVALENT.
+#?rohs_pb_free and halogen_free
+	C.	EQUIVALENT MATERIAL SHALL BE RoHS COMPLIANT, 
+#?rohs_pb_free and halogen_free
+		HALOGEN FREE AND APPROVED BY ${COMPANY_cap}.
+
+@NOTE@	DESIGN GEOMETRY MINIMUM FEATURE SIZES:
+
+	BOARD SIZE				${bb_w_mm} × ${bb_h_mm} mm
+	BOARD THICKNESS		${thickness_mm} mm
+	TRACE WIDTH			${track_mm} mm
+	TRACE TO TRACE		${clearance_mm} mm
+	MIN. HOLE (PTH)			${drill_pth_real_mm} mm
+	MIN. HOLE (NPTH)		${drill_npth_real_mm} mm
+	ANNULAR RING			${oar_mm} mm
+	COPPER TO HOLE		${c2h_mm} mm
+	COPPER TO EDGE		${c2e_mm} mm
+	HOLE TO HOLE			${h2h_mm} mm
+#?stackup and impedance_controlled
+
+#?stackup and impedance_controlled
+@NOTE@	REFER TO IMPEDANCE TABLE FOR IMPEDANCE CONTROL REQUIREMENTS.
+#?stackup and impedance_controlled
+
+#?stackup and impedance_controlled
+@NOTE@	CONFIRM SPACE WIDTHS AND SPACINGS.

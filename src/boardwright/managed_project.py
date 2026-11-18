@@ -453,6 +453,7 @@ def _plan_config_migrations(root: Path) -> tuple[list[str], dict[str, str]]:
         default = yaml.safe_load(DEFAULT_CONFIG_FILES[filename]) or {}
         migrated = _merge_missing(current, default)
         if filename == "project.yaml":
+            migrated = _keep_requirements_undeclared(current, migrated)
             project = migrated.get("project", {})
             if (
                 isinstance(project, dict)
@@ -474,6 +475,7 @@ def _migrated_config_bytes(root: Path, relative: str) -> bytes:
     current = yaml.safe_load(path.read_text(encoding="utf-8")) if path.is_file() else {}
     migrated = _merge_missing(current or {}, default)
     if filename == "project.yaml":
+        migrated = _keep_requirements_undeclared(current or {}, migrated)
         project = migrated.get("project", {})
         if (
             isinstance(project, dict)
@@ -482,6 +484,24 @@ def _migrated_config_bytes(root: Path, relative: str) -> bytes:
         ):
             project["git_url"] = str(project.pop("github_repo")).strip()
     return _yaml_bytes(migrated)
+
+
+def _keep_requirements_undeclared(current: dict[str, Any], migrated: dict[str, Any]) -> dict[str, Any]:
+    """Never fill fabrication-note requirements from Boardwright defaults.
+
+    A requirement the project has not declared stays missing, so validation
+    reports it instead of an update silently changing the approved notes.
+    """
+    from .fabrication_requirements import DECLARED_MANUFACTURING_KEYS
+
+    before = current.get("manufacturing") if isinstance(current, dict) else None
+    before = before if isinstance(before, dict) else {}
+    after = migrated.get("manufacturing")
+    if isinstance(after, dict):
+        for key in DECLARED_MANUFACTURING_KEYS:
+            if key not in before:
+                after.pop(key, None)
+    return migrated
 
 
 def _merge_missing(current: Any, default: Any) -> Any:
