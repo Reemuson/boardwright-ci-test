@@ -429,7 +429,19 @@ def _check_baseline(root: Path, repository: str = "") -> int:
             return 2
     current = build_manifest(root)
     if reissue:
-        _report_reissue(record, compare_manifests(previous, current, reissue))
+        reissued = compare_manifests(previous, current, reissue)
+        _report_reissue(record, reissued)
+        notes_hard = _reissue_notes_must_match(root, record, reissued)
+        if notes_hard:
+            for item in notes_hard:
+                print(f"ERROR {item}")
+            print(
+                f"The fabrication requirements were only newly declared since {record.previous_version}, "
+                "so the rendered fabrication notes must not change, even in a re-issue. Fix the "
+                "requirements or notes template, or change the requirement deliberately.",
+                file=sys.stderr,
+            )
+            return 1
         if not categories:
             return 0
     differences = compare_manifests(previous, current, categories)
@@ -450,6 +462,24 @@ def _check_baseline(root: Path, repository: str = "") -> int:
         + (" byte-for-byte." if not differences else f" after normalisation ({len(differences)} regenerated file(s)).")
     )
     return 0
+
+
+def _reissue_notes_must_match(root: Path, record: Any, differences: list[Difference]) -> list[Difference]:
+    """Rendered notes that changed although the requirements were only newly declared.
+
+    The release plan keeps that promise (audit F18): newly declared, unchanged
+    requirements must render the approved notes. A re-issue for another
+    reason (for example F20's silkscreen) must not lift it.
+    """
+    from .impact import _only_newly_declared_requirements
+
+    if not _only_newly_declared_requirements(root, record.previous_version):
+        return []
+    return [
+        item
+        for item in differences
+        if item.kind != "regenerated" and "fabrication_notes" in Path(item.path.split(ZIP_MEMBER_SEPARATOR)[-1]).name
+    ]
 
 
 def _report_reissue(record: Any, differences: list[Difference]) -> None:
