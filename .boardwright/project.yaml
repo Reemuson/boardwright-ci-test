@@ -40,3 +40,15 @@ manufacturing:
   tented_vias: true
   silkscreen_enabled: true
   conformal_coating: null
+# Worksheet logo: the exact image embedded in the 0.1.3 drawings
+# (Templates/KDT_Template_*.kicad_wks at tag 0.1.3).
+template:
+  sheet_image: assets/logos/rd-logo-worksheet.png
+# Controlled drawing revisions. A is the first lettered issue of each drawing;
+# it supersedes the drawings issued with release 0.1.3, which used the release
+# version as their revision identifier. No earlier lettered revision exists.
+documents:
+  assembly:
+    revision: A
+  fabrication:
+    revision: A

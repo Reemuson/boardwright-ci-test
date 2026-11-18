@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fabrication drawing revision A (first lettered issue) supersedes the drawing
+  issued with 0.1.3. Its minimum-feature table now matches the design rules:
+  trace to trace 0.200 mm (0.1.3 drawing: 0.600), min. PTH hole 0.300 mm
+  (0.600), annular ring 0.150 mm (0.200). The 0.1.3 notes text file already
+  stated the correct values.
+- Gerber front silkscreen now includes the TP1 GND and TP2 +3V3 test-point
+  labels. The 0.1.3 Gerbers omitted them; the 0.1.3 ODB++ data contained them.
+- Title blocks show the project name and the Ryan Dynamics logo again.
+
+
 ## [0.1.3] - 2026-05-26
 
 ### Notes
