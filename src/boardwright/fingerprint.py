@@ -74,6 +74,8 @@ TEXT_HEADS = {"gr_text", "fp_text", "gr_text_box", "fp_text_box", "property", "t
 TOOLING_PREFIXES = (
     "boardwright_resources/kibot/resources/templates/",
     "boardwright_resources/kibot/yaml/kibot_out_",
+    # Global output definitions (e.g. PLOT_REFS/PLOT_VALUES for the Gerbers).
+    "boardwright_resources/kibot/yaml/kibot_main.yaml",
     "boardwright_resources/kibot/yaml/kibot_filt_",
     "boardwright_resources/kibot/yaml/kibot_globals",
 )

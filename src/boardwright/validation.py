@@ -81,6 +81,22 @@ def _validate_fabrication_requirements(config: BoardwrightConfig, issues: list[V
         derive_project_requirements(config.root, pcbs[0])
     except FabricationRequirementError as error:
         issues.append(ValidationIssue("error", str(error)))
+    _validate_silkscreen_plotting(config, pcbs[0], issues)
+
+
+def _validate_silkscreen_plotting(
+    config: BoardwrightConfig, pcb: Path, issues: list[ValidationIssue]
+) -> None:
+    """Visible silkscreen text must reach the Gerbers (F20)."""
+    from .silkscreen import validate_plot_options
+
+    try:
+        pcb_text = pcb.read_text(encoding="utf-8")
+    except OSError as error:
+        issues.append(ValidationIssue("error", f"{pcb.name} is unreadable: {error}"))
+        return
+    for problem in validate_plot_options(config.root, pcb_text):
+        issues.append(ValidationIssue("error", problem))
 
 
 def _require_file(path: Path, issues: list[ValidationIssue]) -> None:

@@ -91,6 +91,7 @@ groups:
     outputs:
       - tables
       - @GERBER_OUTPUT@
+      - gbr_silk_reference
       - @EXCELLON_DRILL_OUTPUT@
       # - @DXF_DRILL_MAP_OUTPUT@
       - @PDF_DRILL_MAP_OUTPUT@
@@ -101,6 +102,7 @@ groups:
     outputs:
       - tables
       - @GERBER_OUTPUT@
+      - gbr_silk_reference
       - @ODB_OUTPUT@
       - @EXCELLON_DRILL_OUTPUT@
       # - @DXF_DRILL_MAP_OUTPUT@
@@ -260,6 +262,15 @@ import:
       COMMENT: Gerbers in GBR format
       DIR: @GERBERS_DIR@
       PLOT_REFS: @PLOT_REFS@
+      PLOT_VALUES: @PLOT_VALUES@
+
+  # Unfiltered silkscreen plot used only to verify the shipped Gerbers
+  # (python -m boardwright.silkscreen). Deleted by that check; never shipped.
+  - file: kibot_out_silk_reference.yaml
+    definitions:
+      NAME: gbr_silk_reference
+      COMMENT: Unfiltered silkscreen reference plot (verification only)
+      DIR: .boardwright-checks/silkscreen_reference
 
   # ODB++ ----------------------------------------------------------------------
   - file: kibot_out_odb.yaml
@@ -572,6 +583,7 @@ definitions:
   # Gerber parameters ==========================================================
 
   PLOT_REFS: true # reference designators
+  PLOT_VALUES: true # visible footprint value text on silkscreen (test-point labels)
 
   # Schematic parameters =======================================================
 

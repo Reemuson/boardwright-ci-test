@@ -274,6 +274,23 @@ def assess_release_impact(
                 "board if the marking should stay stable."
             )
         fab_status = "reissued"
+    elif tooling_changed and "fabrication" in declared:
+        # The PCB source is unchanged but Boardwright's output tooling changes
+        # what the fabrication package contains (for example a Gerber plot
+        # option that dropped silkscreen text). That is a fabrication-output
+        # change: re-issue the package under the same PCB revision.
+        if proposed.fabrication_revision == previous.fabrication_revision:
+            problems.append(
+                "Fabrication outputs are re-issued; the fabrication drawing revision must change "
+                f"(still {previous.fabrication_revision or '(blank)'})."
+            )
+        reviews.append(
+            f"Fabrication outputs re-issued because output tooling changed them; the PCB source is "
+            f"unchanged, so PCB revision {proposed.pcb_revision} is retained. check-baseline lists every "
+            f"controlled fabrication file that differs from {base.version}: confirm only the intended "
+            "layers changed and tell the fabricator which issue to build."
+        )
+        fab_status = "reissued"
     else:
         if "fabrication" in declared:
             problems.append(
@@ -372,6 +389,12 @@ def assess_release_impact(
             "For a reused baseline, the prepare workflow compares controlled outputs (including rendered "
             "notes) with the previous release: its committed manifest, or for a legacy release its "
             "authenticated published package."
+            + (
+                ""
+                if fab_status == "reissued"
+                else " If the tooling change alters fabrication outputs, that comparison blocks: declare "
+                "`fabrication` to re-issue the fabrication package instead."
+            )
         )
     unrecorded = [
         label
