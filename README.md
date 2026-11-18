@@ -54,7 +54,7 @@ FABRICATION SNAPSHOT
 - Surface finish: ENIG
 - Soldermask color: GREEN
 - Silkscreen color: YELLOW
-- Minimum PTH drill: 0.600 mm
+- Minimum PTH drill: 0.300 mm
 - Minimum NPTH drill: 0.650 mm
 - Impedance: no impedance controlled traces
 
