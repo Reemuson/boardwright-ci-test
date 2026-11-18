@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Schematic revision note now reads "SCH REV" so it is not mistaken for the
+  PCB revision. Documentation only: circuit, BOM and PCB unchanged.
+
 ## [0.1.4] - 2026-11-18
 ### Fixed
 
