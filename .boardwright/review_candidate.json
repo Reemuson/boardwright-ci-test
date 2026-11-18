@@ -1,0 +1,62 @@
+{
+  "inputs": {
+    "IN_CHANGE_CLASSES": "documentation,fabrication,tooling",
+    "IN_DRAWING_REVISION": "B",
+    "IN_JUSTIFICATION": "Fabrication baseline A/2 re-issue, PCB revision A unchanged (PCB source unchanged). Fabrication drawing rev A, first lettered issue, supersedes the drawing issued with 0.1.3 (revision identifier 0.1.3); it corrects the minimum-feature table to the design rules: trace to trace 0.200 mm (0.1.3 drawing 0.600), min PTH hole 0.300 mm (0.600), annular ring 0.150 mm (0.200). Gerber F.Silkscreen now includes the TP1 GND and TP2 +3V3 labels; the 0.1.3 Gerbers omitted them (plot_footprint_values off) while the 0.1.3 ODB++ contained them. Assembly drawing rev A, first lettered issue, content unchanged. Schematic rev B: revision variables. Title-block logo and project name restored. Fabrication requirements declared unchanged from 0.1.3.",
+    "IN_RELEASE_KIND": "draft",
+    "IN_REVISION_DESCRIPTION": "Revision variables; title-block project name",
+    "IN_VARIANT": "RELEASED",
+    "IN_VERSION": "0.1.4"
+  },
+  "ledger_entry": {
+    "assembly_baseline": {
+      "id": "A",
+      "status": "reused"
+    },
+    "change_classes": [
+      "documentation",
+      "fabrication",
+      "tooling"
+    ],
+    "fabrication_baseline": {
+      "id": "A/2",
+      "status": "reissued"
+    },
+    "fingerprint": {
+      "assembly": "89a8491b157028b5f4c1700a6fcb5e4e1ef1c61e5586e9c7399f030acdf631b5",
+      "fab_volatile_variables": [],
+      "fabrication_outputs": "7e2fc9913b1c057cdd86a08d0fe540aff2f3578f0b240df854322244444ec060",
+      "fabrication_spec": "ffaa578d11f0e0187106cc4f35e53d8c457e6248fa1394e1e9705c2c9ed2e20d",
+      "pcb_drawings": "dcd68097fd2881351b661cff99a9db7bbe4b436c723493236a6e7609320b020c",
+      "pcb_file": "FIC-100A.kicad_pcb",
+      "pcb_format": "20241229/9.0",
+      "pcb_geometry": "0c2657665e927b6c96f75994341e747df5bc02d0772a4cfd12c97804083619a0",
+      "pcb_netnames": "d7e4fea1ea99d1307647752df4acc74aaf93ebc1d044edac3bffe3f28f5a2d16",
+      "schema": 2,
+      "schematic": "b0eb2ca304127ec9de283f206973717116f7f36962097777946efb3cfb2cb621",
+      "schematic_files": [
+        "Block Diagram.kicad_sch",
+        "FIC-100A.kicad_sch",
+        "Project Architecture.kicad_sch",
+        "Revision History.kicad_sch"
+      ],
+      "schematic_format": "20250114/9.0",
+      "source": "working tree",
+      "tooling": "213ea760534d95b6814fd329269ccc425105bcb7365abfe9071d9f1494fd4a18"
+    },
+    "identities": {
+      "assembly_revision": "A",
+      "fabrication_revision": "A",
+      "pcb_revision": "A",
+      "schematic_revision": "B"
+    },
+    "justification": "Fabrication baseline A/2 re-issue, PCB revision A unchanged (PCB source unchanged). Fabrication drawing rev A, first lettered issue, supersedes the drawing issued with 0.1.3 (revision identifier 0.1.3); it corrects the minimum-feature table to the design rules: trace to trace 0.200 mm (0.1.3 drawing 0.600), min PTH hole 0.300 mm (0.600), annular ring 0.150 mm (0.200). Gerber F.Silkscreen now includes the TP1 GND and TP2 +3V3 labels; the 0.1.3 Gerbers omitted them (plot_footprint_values off) while the 0.1.3 ODB++ contained them. Assembly drawing rev A, first lettered issue, content unchanged. Schematic rev B: revision variables. Title-block logo and project name restored. Fabrication requirements declared unchanged from 0.1.3.",
+    "previous_version": "0.1.3",
+    "source_commit": "f6eebfbd5759f57737e2a0049f471061c099d042",
+    "variant": "RELEASED",
+    "version": "0.1.4"
+  },
+  "manifest_sha256": "1cd30504f39077032e331fca26706756589f243573d9a2945d74e3b427eb1aed",
+  "schema": 1,
+  "source_sha": "f6eebfbd5759f57737e2a0049f471061c099d042"
+}

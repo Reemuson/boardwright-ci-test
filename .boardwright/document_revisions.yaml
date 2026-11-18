@@ -1,19 +1,18 @@
-# Controlled drawing revision history (newest first).
-# Revision A is the first lettered issue of the fabrication and assembly
-# drawings. It supersedes the drawings issued with release 0.1.3, which used
-# the release version (0.1.3) as their revision identifier.
 document_revisions:
   schematic:
-    rows: []
+    rows:
+    - revision: B
+      date: '2026-11-18'
+      description: Revision variables; title-block project name
   assembly:
     rows:
-      - revision: A
-        date: 2026-11-18
-        description: First lettered issue; supersedes 0.1.3 issue
-        drawn_by: R. HICKS
+    - revision: A
+      date: 2026-11-18
+      description: First lettered issue; supersedes 0.1.3 issue
+      drawn_by: R. HICKS
   fabrication:
     rows:
-      - revision: A
-        date: 2026-11-18
-        description: 'Supersedes 0.1.3 issue; min. features, TP1/TP2 silk labels'
-        drawn_by: R. HICKS
+    - revision: A
+      date: 2026-11-18
+      description: Supersedes 0.1.3 issue; min. features, TP1/TP2 silk labels
+      drawn_by: R. HICKS

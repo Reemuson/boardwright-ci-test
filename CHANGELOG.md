@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-11-18
 ### Fixed
 
 - Fabrication drawing revision A (first lettered issue) supersedes the drawing

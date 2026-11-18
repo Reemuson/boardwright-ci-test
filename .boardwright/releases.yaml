@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: CC0-1.0
+# Boardwright release ledger. Append-only: never edit published entries.
+schema: 1
+releases:
+  - version: 0.1.4
+    date: '2026-11-18'
+    source_commit: f6eebfbd5759f57737e2a0049f471061c099d042
+    previous_version: 0.1.3
+    variant: RELEASED
+    identities:
+      pcb_revision: A
+      schematic_revision: B
+      assembly_revision: A
+      fabrication_revision: A
+    change_classes:
+    - documentation
+    - fabrication
+    - tooling
+    justification: 'Fabrication baseline A/2 re-issue, PCB revision A unchanged (PCB
+      source unchanged). Fabrication drawing rev A, first lettered issue, supersedes
+      the drawing issued with 0.1.3 (revision identifier 0.1.3); it corrects the minimum-feature
+      table to the design rules: trace to trace 0.200 mm (0.1.3 drawing 0.600), min
+      PTH hole 0.300 mm (0.600), annular ring 0.150 mm (0.200). Gerber F.Silkscreen
+      now includes the TP1 GND and TP2 +3V3 labels; the 0.1.3 Gerbers omitted them (plot_footprint_values
+      off) while the 0.1.3 ODB++ contained them. Assembly drawing rev A, first lettered
+      issue, content unchanged. Schematic rev B: revision variables. Title-block logo
+      and project name restored. Fabrication requirements declared unchanged from 0.1.3.'
+    fabrication_baseline:
+      id: A/2
+      status: reissued
+    assembly_baseline:
+      id: A
+      status: reused
+    fingerprint:
+      schema: 2
+      source: working tree
+      pcb_geometry: 0c2657665e927b6c96f75994341e747df5bc02d0772a4cfd12c97804083619a0
+      pcb_netnames: d7e4fea1ea99d1307647752df4acc74aaf93ebc1d044edac3bffe3f28f5a2d16
+      fabrication_spec: ffaa578d11f0e0187106cc4f35e53d8c457e6248fa1394e1e9705c2c9ed2e20d
+      assembly: 89a8491b157028b5f4c1700a6fcb5e4e1ef1c61e5586e9c7399f030acdf631b5
+      schematic: b0eb2ca304127ec9de283f206973717116f7f36962097777946efb3cfb2cb621
+      pcb_format: 20241229/9.0
+      schematic_format: 20250114/9.0
+      pcb_file: FIC-100A.kicad_pcb
+      schematic_files:
+      - Block Diagram.kicad_sch
+      - FIC-100A.kicad_sch
+      - Project Architecture.kicad_sch
+      - Revision History.kicad_sch
+      pcb_drawings: dcd68097fd2881351b661cff99a9db7bbe4b436c723493236a6e7609320b020c
+      fab_volatile_variables: []
+      tooling: 213ea760534d95b6814fd329269ccc425105bcb7365abfe9071d9f1494fd4a18
+      fabrication_outputs: 7e2fc9913b1c057cdd86a08d0fe540aff2f3578f0b240df854322244444ec060

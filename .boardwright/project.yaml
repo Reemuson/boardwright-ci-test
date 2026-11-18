@@ -26,10 +26,6 @@ outputs:
 assets:
   logo: assets/logos/rd-logo.png
   product_image: ''
-# Approved fabrication requirements, as stated by published release 0.1.3
-# (boardwright-0.1.3-release.zip, FIC-100A-fabrication_notes.txt). Wording is
-# kept in .boardwright/templates/fabrication_notes.txt. Empty/null = 0.1.3
-# makes no such statement; do not replace with Boardwright defaults.
 manufacturing:
   manufacturing_standard: IPC-6012A Class 2
   core_material: ''
@@ -40,15 +36,20 @@ manufacturing:
   tented_vias: true
   silkscreen_enabled: true
   conformal_coating: null
-# Worksheet logo: the exact image embedded in the 0.1.3 drawings
-# (Templates/KDT_Template_*.kicad_wks at tag 0.1.3).
 template:
   sheet_image: assets/logos/rd-logo-worksheet.png
-# Controlled drawing revisions. A is the first lettered issue of each drawing;
-# it supersedes the drawings issued with release 0.1.3, which used the release
-# version as their revision identifier. No earlier lettered revision exists.
 documents:
   assembly:
     revision: A
   fabrication:
     revision: A
+  schematic:
+    title: Schematic
+    type: SCHEMATIC
+    number_source: pcba_name
+    revision: B
+    revision_scheme: lettered
+    drawn_by: ''
+    drawn_date: ''
+    include_full_revision_history: true
+sheet: {}
