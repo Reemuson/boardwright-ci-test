@@ -51,9 +51,10 @@ DOMAIN_LABELS = {
     "assembly": "Assembly/BOM (parts, values, placement, DNP, BOM fields, notes)",
     "pcb_drawings": "PCB drawing layers (fabrication/assembly drawing content)",
     "release_marking": "Release-dependent text on fabrication layers",
+    "fabrication_outputs": "Fabrication output options (Gerber, drill, ODB++ plot settings)",
     "schematic": "Schematic content",
 }
-FABRICATION_DATA_DOMAINS = {"pcb_netnames", "fabrication_spec", "release_marking"}
+FABRICATION_DATA_DOMAINS = {"pcb_netnames", "fabrication_spec", "release_marking", "fabrication_outputs"}
 
 
 @dataclass(frozen=True)

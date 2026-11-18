@@ -119,62 +119,30 @@ def plot_option_omissions(
 # --- KiBot Gerber options -----------------------------------------------------
 
 
-def _scalar(text: str, key: str) -> str | None:
-    match = re.search(rf"^\s*{re.escape(key)}:\s*([^#\n]*?)\s*(?:#.*)?$", text, re.M)
-    return match.group(1).strip().strip("'\"") if match else None
-
-
-def _import_definitions(main_text: str, file_name: str) -> str:
-    match = re.search(
-        rf"^\s*- file:\s*{re.escape(file_name)}\s*\n((?:\s{{4,}}.*\n)+)", main_text, re.M
-    )
-    return match.group(1) if match else ""
-
-
-def _read_lf(path: Path) -> str:
-    return "\n".join(path.read_text(encoding="utf-8").splitlines()) + "\n"
-
-
 def gerber_plot_options(root: Path) -> dict[str, bool]:
     """Resolve plot_footprint_refs/values for the release Gerber output.
 
-    Resolution follows KiBot's template order: the import's definitions in
-    kibot_main.yaml, then kibot_main's global definitions, then the output
-    file's own defaults. Raises ValueError when a value cannot be resolved.
+    Resolution follows KiBot's template order (see :mod:`kibot_config`).
+    Raises ValueError when a value cannot be resolved.
     """
-    config = _read_lf(root / GERBER_CONFIG)
+    from .kibot_config import Resolver
+
     main_path = root / KIBOT_MAIN
-    main = _read_lf(main_path) if main_path.exists() else ""
-    import_block = _import_definitions(main, GERBER_CONFIG.name)
-    main_globals = main.split("\ndefinitions:", 1)[-1] if "\ndefinitions:" in main else ""
-    own_defaults = config.split("\ndefinitions:", 1)[-1] if "\ndefinitions:" in config else ""
-
-    sources = (import_block, main_globals, own_defaults)
-
-    def resolve(value: str, start: int = 0) -> str:
-        # Each level may refer to the next one (e.g. the import maps
-        # PLOT_REFS: @PLOT_REFS@ onto kibot_main's global definition).
-        placeholder = re.fullmatch(r"@(\w+)@", value)
-        if not placeholder:
-            return value
-        name = placeholder.group(1)
-        for level in range(start, len(sources)):
-            found = _scalar(sources[level], name)
-            if found is not None:
-                return resolve(found, level + 1)
-        raise ValueError(f"{GERBER_CONFIG}: cannot resolve @{name}@")
-
+    resolver = Resolver(
+        (root / GERBER_CONFIG).read_text(encoding="utf-8"),
+        main_path.read_text(encoding="utf-8") if main_path.exists() else "",
+        GERBER_CONFIG.name,
+    )
     result = {}
     for key in ("plot_footprint_refs", "plot_footprint_values"):
-        raw = _scalar(config.split("\ndefinitions:", 1)[0], key)
-        if raw is None:
+        value = resolver.option(key)
+        if value is None:
             # KiBot defaults both to true.
             result[key] = True
             continue
-        value = resolve(raw).lower()
-        if value not in ("true", "false"):
+        if value.lower() not in ("true", "false"):
             raise ValueError(f"{GERBER_CONFIG}: {key} resolves to {value!r}, expected true/false")
-        result[key] = value == "true"
+        result[key] = value.lower() == "true"
     return result
 
 
