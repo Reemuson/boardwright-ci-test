@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-11-18
 ### Changed
 
 - Schematic revision note now reads "SCH REV" so it is not mistaken for the

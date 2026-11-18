@@ -23,9 +23,9 @@
 | PCB name | FIC-100A |
 | Drawing number | FIC-100A |
 | Document type | SCHEMATIC |
-| Drawing revision | B |
+| Drawing revision | C |
 | Board revision | A |
-| Release version | 0.1.4 |
+| Release version | 0.1.5 |
 | Variant | RELEASED |
 | Dimensions | 40.0 x 25.0 mm |
 
@@ -40,7 +40,7 @@ The source branch contains the KiCad project and the Boardwright configuration.
 Use these links to get outputs or inspect a workflow:
 
 - [Latest release](https://github.com/Reemuson/boardwright-ci-test/releases/latest)
-- [Release package](https://github.com/Reemuson/boardwright-ci-test/releases/latest/download/boardwright-0.1.4-release.zip)
+- [Release package](https://github.com/Reemuson/boardwright-ci-test/releases/latest/download/boardwright-0.1.5-release.zip)
 - [Preview workflow](https://github.com/Reemuson/boardwright-ci-test/actions/workflows/dev-preview.yaml)
 - [Accepted outputs workflow](https://github.com/Reemuson/boardwright-ci-test/actions/workflows/main-outputs.yaml)
 - [Prepare release workflow](https://github.com/Reemuson/boardwright-ci-test/actions/workflows/prepare-release.yaml)

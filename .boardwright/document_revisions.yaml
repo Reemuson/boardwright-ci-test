@@ -1,6 +1,9 @@
 document_revisions:
   schematic:
     rows:
+    - revision: C
+      date: '2026-11-18'
+      description: Revision note labelled SCH REV
     - revision: B
       date: '2026-11-18'
       description: Revision variables; title-block project name

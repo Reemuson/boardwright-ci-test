@@ -8,9 +8,9 @@
     },
     "Manufacturing/Assembly/FIC-100A-assembly.pdf": {
       "category": "informational",
-      "normalized_sha256": "81c81c525c6e0a88efde6780cf3f288c9e53040623ebac2a531a37cf61d00c17",
-      "sha256": "81c81c525c6e0a88efde6780cf3f288c9e53040623ebac2a531a37cf61d00c17",
-      "size": "4649903"
+      "normalized_sha256": "3bd388522b53eb02aec4f4fc734400cd85db8afe9f9cf4563b984f71069dd5cf",
+      "sha256": "3bd388522b53eb02aec4f4fc734400cd85db8afe9f9cf4563b984f71069dd5cf",
+      "size": "4650257"
     },
     "Manufacturing/Assembly/FIC-100A-assembly_notes.txt": {
       "category": "assembly",
@@ -26,8 +26,8 @@
     },
     "Manufacturing/Assembly/FIC-100A-bom.html": {
       "category": "informational",
-      "normalized_sha256": "0d40c5e8b15b427946170eefb701265788dca4c98350d33b9b20b935833b10e4",
-      "sha256": "0d40c5e8b15b427946170eefb701265788dca4c98350d33b9b20b935833b10e4",
+      "normalized_sha256": "8f650574772f793a25fe6f07a26982c5c80e52640c5366d98e60d774cb6ca7dc",
+      "sha256": "8f650574772f793a25fe6f07a26982c5c80e52640c5366d98e60d774cb6ca7dc",
       "size": "25423"
     },
     "Manufacturing/Assembly/FIC-100A-component_summary.txt": {
@@ -62,99 +62,99 @@
     },
     "Manufacturing/Fabrication/FIC-100A-GERBERS.zip": {
       "category": "informational",
-      "normalized_sha256": "31d5ff021fb03a999b318098899772f4835e01470ed8fd3af8ceb61b5d0dbab3",
-      "sha256": "31d5ff021fb03a999b318098899772f4835e01470ed8fd3af8ceb61b5d0dbab3",
-      "size": "1260471"
+      "normalized_sha256": "b923f824c47f0333faa47235f939868aa968e672b8d88a65f364e58f2b4314c9",
+      "sha256": "b923f824c47f0333faa47235f939868aa968e672b8d88a65f364e58f2b4314c9",
+      "size": "1260281"
     },
     "Manufacturing/Fabrication/FIC-100A-GERBERS.zip!/FIC-100A-B_Mask.gbr": {
       "category": "fabrication",
       "normalized_sha256": "169868dc3d191ca68d2a3a3ede479feabddd560a044edbe0e1693030d774d4e8",
-      "sha256": "5334c8ca8cb44f205f4f62667e7c35dd9a2c2b4a970a0a9eb68bf2499e501d00",
+      "sha256": "91011827832c7e975bc06ea57b341c1fcd3d01757b3b4c95edcdb191be541255",
       "size": "3520"
     },
     "Manufacturing/Fabrication/FIC-100A-GERBERS.zip!/FIC-100A-B_Paste.gbr": {
       "category": "fabrication",
       "normalized_sha256": "e9cce39c54e6cd11d7148a0358a3b05cd1ea3f02a490067955689faab6466b68",
-      "sha256": "960aeee14c7d142754c1334b30cc68ab6420a43846e3d5f52a7c62cfcba6499f",
+      "sha256": "e278648a4d0f01589c4149bf3c12c1d78da1a243b62e940c36f4c725792a12f0",
       "size": "452"
     },
     "Manufacturing/Fabrication/FIC-100A-GERBERS.zip!/FIC-100A-B_Silkscreen.gbr": {
       "category": "fabrication",
       "normalized_sha256": "6e91ac2796b604118cc73808520ce0c8ca6633787c917724fb3b464f187ea8d8",
-      "sha256": "6a43e7790bccb31d965fa196139eb41af40aef0a0ddf4baf5176557f09994e28",
+      "sha256": "ffdb7910d0ce0cfd84d6ee562e19ce95d486b3a43e424def28012483e72ffbc7",
       "size": "12588"
     },
     "Manufacturing/Fabrication/FIC-100A-GERBERS.zip!/FIC-100A-Edge_Cuts.gbr": {
       "category": "fabrication",
       "normalized_sha256": "163a8dac1a82ddb97317433e42eb658f7f46af8edb62983810459cc93295e45a",
-      "sha256": "89af73b98cf7d88e5de2c2689224373a8fe5d4675e3d16ece62174862b668434",
+      "sha256": "70755547cddb53a558f6a5deec85c54518c481dd0d396d1ef2ec6949fc3102c6",
       "size": "992"
     },
     "Manufacturing/Fabrication/FIC-100A-GERBERS.zip!/FIC-100A-F_Mask.gbr": {
       "category": "fabrication",
       "normalized_sha256": "5c1107549bcc7e0249e5b3806773bfba77999f8c903c0b710a15fb057ee7017e",
-      "sha256": "04a8050ea49c9d911c1373b25662da6e725fc257a6e865a6b773effb6581c712",
+      "sha256": "5d34c8a655aae7a9b797cabcd62e3ec3c3259fbbb4cae96ed3403763a7b56d92",
       "size": "8737"
     },
     "Manufacturing/Fabrication/FIC-100A-GERBERS.zip!/FIC-100A-F_Paste.gbr": {
       "category": "fabrication",
       "normalized_sha256": "bd1713fc66fa9c5085ab1f4ba41a7cd1a8e68f5af081bb80aead69eab73aad80",
-      "sha256": "2efed5f6167fb5027c9c180906812eb44adbc16547bfdafd9398f0ea6ffecf01",
+      "sha256": "80a9b28373a2597f5c6486ec302dd0607b4fed942a5b97b0c9a91c445a8fbc55",
       "size": "5402"
     },
     "Manufacturing/Fabrication/FIC-100A-GERBERS.zip!/FIC-100A-F_Silkscreen.gbr": {
       "category": "fabrication",
       "normalized_sha256": "5a0549a1b02eff2be40e3f342a61a8138ff294619989f5bba9bdd1a35ccbaa4e",
-      "sha256": "636bc729a6136c82026b05d209aa03e20a60c53217a32ffb668974f15aea2511",
+      "sha256": "b638fd3d4a6ace6c669c41b178b74e5c31e9126d764d0b589d0180a43446547e",
       "size": "70251"
     },
     "Manufacturing/Fabrication/FIC-100A-GERBERS.zip!/FIC-100A-L1 (Sig, PWR).gbr": {
       "category": "fabrication",
       "normalized_sha256": "8c0ea925f481f7ee56fbe35bfe4f3ebb8ac853b1445e16e2b032182da2a94f7e",
-      "sha256": "1fc311e49d2275c430621a0b22a944ce5b38a00b5b71e4e5e9a855652b33a8e9",
+      "sha256": "0501a60e40a57b04150757de9a04a0770249a819c9c6c237c50927892627a002",
       "size": "187264"
     },
     "Manufacturing/Fabrication/FIC-100A-GERBERS.zip!/FIC-100A-L2 (Sig, GND).gbr": {
       "category": "fabrication",
       "normalized_sha256": "0f36545d3a3eac54885e555ac1c68fbd0adb2c8813ee8360255f49018cd24f75",
-      "sha256": "567848f5e44080d68f98ec92681169c13b596fa3c5c09ba459ddb1d1a18383d9",
+      "sha256": "dbda4db8d36f0e96001dfe41bfa5d189a065e1400e2ae91a2c222f958c857cd2",
       "size": "83395"
     },
     "Manufacturing/Fabrication/FIC-100A-GERBERS.zip!/FIC-100A-NPTH_drill.drl": {
       "category": "fabrication",
       "normalized_sha256": "cbe48ea84754d2a85bc4326770f507cbdb0c88dbe13308fc36c053341bb09020",
-      "sha256": "3e551b5c4df5a938d09e2073b48fc76da73363199ba80a86b72f4af35009f724",
+      "sha256": "41905d6aded358efbd2b51e30952504b9f3b2d5dd1e90f53ad893a237a2cee96",
       "size": "369"
     },
     "Manufacturing/Fabrication/FIC-100A-GERBERS.zip!/FIC-100A-NPTH_drill_map.pdf": {
       "category": "informational",
-      "normalized_sha256": "f120ab92f726100cc76ac77c518a915126e62b8f8be3131322eb2dabf5f95209",
-      "sha256": "f120ab92f726100cc76ac77c518a915126e62b8f8be3131322eb2dabf5f95209",
+      "normalized_sha256": "35ef263591b985a94d92b7242035f5aa22b7e5c0c935e8ab4f46941bc06ccaf2",
+      "sha256": "35ef263591b985a94d92b7242035f5aa22b7e5c0c935e8ab4f46941bc06ccaf2",
       "size": "7814"
     },
     "Manufacturing/Fabrication/FIC-100A-GERBERS.zip!/FIC-100A-PTH_drill.drl": {
       "category": "fabrication",
       "normalized_sha256": "20ea879057e76baf89f99ec2f4790a30c6781edfdab59c99fbba3ec0d07ba5c4",
-      "sha256": "456e7178c1f555d28ce14e02881b268588fe657fc6e4f6263c81a805a94b1a92",
+      "sha256": "b33abe668eba339672f5f6f7c0f9342c2dd766ff798e5061383c78fb372e32e3",
       "size": "1783"
     },
     "Manufacturing/Fabrication/FIC-100A-GERBERS.zip!/FIC-100A-PTH_drill_map.pdf": {
       "category": "informational",
-      "normalized_sha256": "3b1b57b8c965630f8a62e1e6fe5e50c7d73d126866d98994a657ef81808b2a8c",
-      "sha256": "3b1b57b8c965630f8a62e1e6fe5e50c7d73d126866d98994a657ef81808b2a8c",
+      "normalized_sha256": "ecf2a29dcd597b378b23af6263623cdf78d9459e69ffffc2df09c7979cb2222e",
+      "sha256": "ecf2a29dcd597b378b23af6263623cdf78d9459e69ffffc2df09c7979cb2222e",
       "size": "17590"
     },
     "Manufacturing/Fabrication/FIC-100A-GERBERS.zip!/FIC-100A-fabrication.pdf": {
       "category": "informational",
-      "normalized_sha256": "e13105cb9563ec96b7fb4a30a4f8bf49758503aa77e63caecf36234049a04cec",
-      "sha256": "e13105cb9563ec96b7fb4a30a4f8bf49758503aa77e63caecf36234049a04cec",
-      "size": "1165601"
+      "normalized_sha256": "4e01f69aa71321f091dbf14fda9f5f3bec516b9dabc94b6fa4c912b733594cd0",
+      "sha256": "4e01f69aa71321f091dbf14fda9f5f3bec516b9dabc94b6fa4c912b733594cd0",
+      "size": "1165364"
     },
     "Manufacturing/Fabrication/FIC-100A-fabrication.pdf": {
       "category": "informational",
-      "normalized_sha256": "e13105cb9563ec96b7fb4a30a4f8bf49758503aa77e63caecf36234049a04cec",
-      "sha256": "e13105cb9563ec96b7fb4a30a4f8bf49758503aa77e63caecf36234049a04cec",
-      "size": "1165601"
+      "normalized_sha256": "4e01f69aa71321f091dbf14fda9f5f3bec516b9dabc94b6fa4c912b733594cd0",
+      "sha256": "4e01f69aa71321f091dbf14fda9f5f3bec516b9dabc94b6fa4c912b733594cd0",
+      "size": "1165364"
     },
     "Manufacturing/Fabrication/FIC-100A-fabrication_notes.txt": {
       "category": "fabrication",
@@ -170,117 +170,117 @@
     },
     "Manufacturing/Fabrication/FIC-100A-odb.zip": {
       "category": "informational",
-      "normalized_sha256": "f6fdbb9a53fc28b7ccf9c96d0ceb1203fbd92300d55649fdd1f7b698609a092b",
-      "sha256": "f6fdbb9a53fc28b7ccf9c96d0ceb1203fbd92300d55649fdd1f7b698609a092b",
-      "size": "700948"
+      "normalized_sha256": "4ec20fa4907c1d56d2c47c6f4384dda371c1894e05ef1ce44375d49ee725e6f4",
+      "sha256": "4ec20fa4907c1d56d2c47c6f4384dda371c1894e05ef1ce44375d49ee725e6f4",
+      "size": "700873"
     },
     "Manufacturing/Fabrication/Gerbers/FIC-100A-B_Mask.gbr": {
       "category": "fabrication",
       "normalized_sha256": "169868dc3d191ca68d2a3a3ede479feabddd560a044edbe0e1693030d774d4e8",
-      "sha256": "5334c8ca8cb44f205f4f62667e7c35dd9a2c2b4a970a0a9eb68bf2499e501d00",
+      "sha256": "91011827832c7e975bc06ea57b341c1fcd3d01757b3b4c95edcdb191be541255",
       "size": "3520"
     },
     "Manufacturing/Fabrication/Gerbers/FIC-100A-B_Paste.gbr": {
       "category": "fabrication",
       "normalized_sha256": "e9cce39c54e6cd11d7148a0358a3b05cd1ea3f02a490067955689faab6466b68",
-      "sha256": "960aeee14c7d142754c1334b30cc68ab6420a43846e3d5f52a7c62cfcba6499f",
+      "sha256": "e278648a4d0f01589c4149bf3c12c1d78da1a243b62e940c36f4c725792a12f0",
       "size": "452"
     },
     "Manufacturing/Fabrication/Gerbers/FIC-100A-B_Silkscreen.gbr": {
       "category": "fabrication",
       "normalized_sha256": "6e91ac2796b604118cc73808520ce0c8ca6633787c917724fb3b464f187ea8d8",
-      "sha256": "6a43e7790bccb31d965fa196139eb41af40aef0a0ddf4baf5176557f09994e28",
+      "sha256": "ffdb7910d0ce0cfd84d6ee562e19ce95d486b3a43e424def28012483e72ffbc7",
       "size": "12588"
     },
     "Manufacturing/Fabrication/Gerbers/FIC-100A-Edge_Cuts.gbr": {
       "category": "fabrication",
       "normalized_sha256": "163a8dac1a82ddb97317433e42eb658f7f46af8edb62983810459cc93295e45a",
-      "sha256": "89af73b98cf7d88e5de2c2689224373a8fe5d4675e3d16ece62174862b668434",
+      "sha256": "70755547cddb53a558f6a5deec85c54518c481dd0d396d1ef2ec6949fc3102c6",
       "size": "992"
     },
     "Manufacturing/Fabrication/Gerbers/FIC-100A-F_Mask.gbr": {
       "category": "fabrication",
       "normalized_sha256": "5c1107549bcc7e0249e5b3806773bfba77999f8c903c0b710a15fb057ee7017e",
-      "sha256": "04a8050ea49c9d911c1373b25662da6e725fc257a6e865a6b773effb6581c712",
+      "sha256": "5d34c8a655aae7a9b797cabcd62e3ec3c3259fbbb4cae96ed3403763a7b56d92",
       "size": "8737"
     },
     "Manufacturing/Fabrication/Gerbers/FIC-100A-F_Paste.gbr": {
       "category": "fabrication",
       "normalized_sha256": "bd1713fc66fa9c5085ab1f4ba41a7cd1a8e68f5af081bb80aead69eab73aad80",
-      "sha256": "2efed5f6167fb5027c9c180906812eb44adbc16547bfdafd9398f0ea6ffecf01",
+      "sha256": "80a9b28373a2597f5c6486ec302dd0607b4fed942a5b97b0c9a91c445a8fbc55",
       "size": "5402"
     },
     "Manufacturing/Fabrication/Gerbers/FIC-100A-F_Silkscreen.gbr": {
       "category": "fabrication",
       "normalized_sha256": "5a0549a1b02eff2be40e3f342a61a8138ff294619989f5bba9bdd1a35ccbaa4e",
-      "sha256": "636bc729a6136c82026b05d209aa03e20a60c53217a32ffb668974f15aea2511",
+      "sha256": "b638fd3d4a6ace6c669c41b178b74e5c31e9126d764d0b589d0180a43446547e",
       "size": "70251"
     },
     "Manufacturing/Fabrication/Gerbers/FIC-100A-L1 (Sig, PWR).gbr": {
       "category": "fabrication",
       "normalized_sha256": "8c0ea925f481f7ee56fbe35bfe4f3ebb8ac853b1445e16e2b032182da2a94f7e",
-      "sha256": "1fc311e49d2275c430621a0b22a944ce5b38a00b5b71e4e5e9a855652b33a8e9",
+      "sha256": "0501a60e40a57b04150757de9a04a0770249a819c9c6c237c50927892627a002",
       "size": "187264"
     },
     "Manufacturing/Fabrication/Gerbers/FIC-100A-L2 (Sig, GND).gbr": {
       "category": "fabrication",
       "normalized_sha256": "0f36545d3a3eac54885e555ac1c68fbd0adb2c8813ee8360255f49018cd24f75",
-      "sha256": "567848f5e44080d68f98ec92681169c13b596fa3c5c09ba459ddb1d1a18383d9",
+      "sha256": "dbda4db8d36f0e96001dfe41bfa5d189a065e1400e2ae91a2c222f958c857cd2",
       "size": "83395"
     },
     "Manufacturing/Fabrication/Gerbers/FIC-100A-NPTH_drill.drl": {
       "category": "fabrication",
       "normalized_sha256": "cbe48ea84754d2a85bc4326770f507cbdb0c88dbe13308fc36c053341bb09020",
-      "sha256": "3e551b5c4df5a938d09e2073b48fc76da73363199ba80a86b72f4af35009f724",
+      "sha256": "41905d6aded358efbd2b51e30952504b9f3b2d5dd1e90f53ad893a237a2cee96",
       "size": "369"
     },
     "Manufacturing/Fabrication/Gerbers/FIC-100A-NPTH_drill_map.pdf": {
       "category": "informational",
-      "normalized_sha256": "f120ab92f726100cc76ac77c518a915126e62b8f8be3131322eb2dabf5f95209",
-      "sha256": "f120ab92f726100cc76ac77c518a915126e62b8f8be3131322eb2dabf5f95209",
+      "normalized_sha256": "35ef263591b985a94d92b7242035f5aa22b7e5c0c935e8ab4f46941bc06ccaf2",
+      "sha256": "35ef263591b985a94d92b7242035f5aa22b7e5c0c935e8ab4f46941bc06ccaf2",
       "size": "7814"
     },
     "Manufacturing/Fabrication/Gerbers/FIC-100A-PTH_drill.drl": {
       "category": "fabrication",
       "normalized_sha256": "20ea879057e76baf89f99ec2f4790a30c6781edfdab59c99fbba3ec0d07ba5c4",
-      "sha256": "456e7178c1f555d28ce14e02881b268588fe657fc6e4f6263c81a805a94b1a92",
+      "sha256": "b33abe668eba339672f5f6f7c0f9342c2dd766ff798e5061383c78fb372e32e3",
       "size": "1783"
     },
     "Manufacturing/Fabrication/Gerbers/FIC-100A-PTH_drill_map.pdf": {
       "category": "informational",
-      "normalized_sha256": "3b1b57b8c965630f8a62e1e6fe5e50c7d73d126866d98994a657ef81808b2a8c",
-      "sha256": "3b1b57b8c965630f8a62e1e6fe5e50c7d73d126866d98994a657ef81808b2a8c",
+      "normalized_sha256": "ecf2a29dcd597b378b23af6263623cdf78d9459e69ffffc2df09c7979cb2222e",
+      "sha256": "ecf2a29dcd597b378b23af6263623cdf78d9459e69ffffc2df09c7979cb2222e",
       "size": "17590"
     },
     "Reports/report_FIC-100A-drc.html": {
       "category": "informational",
-      "normalized_sha256": "35a5f0653abed8bc87f0679fa64b5501087a59375007c697a000a7c29541a91f",
-      "sha256": "35a5f0653abed8bc87f0679fa64b5501087a59375007c697a000a7c29541a91f",
+      "normalized_sha256": "38b1287d3e367e2605d81455275e599b3ace3fd3905a6d8981fa5b3f24c4d4d2",
+      "sha256": "38b1287d3e367e2605d81455275e599b3ace3fd3905a6d8981fa5b3f24c4d4d2",
       "size": "140920"
     },
     "Reports/report_FIC-100A-drc.rpt": {
       "category": "informational",
-      "normalized_sha256": "2eaa79c509c9850281c020e3f946ca0fe9a5b918f1b1b321f97605b2b8e1b1ac",
-      "sha256": "2eaa79c509c9850281c020e3f946ca0fe9a5b918f1b1b321f97605b2b8e1b1ac",
+      "normalized_sha256": "4b6459fc5e1bfd31b273f625e542604df9577c9b59dc201c925504a0aa6f9052",
+      "sha256": "4b6459fc5e1bfd31b273f625e542604df9577c9b59dc201c925504a0aa6f9052",
       "size": "4741"
     },
     "Reports/report_FIC-100A-erc.html": {
       "category": "informational",
-      "normalized_sha256": "b4f7085a3ff3b69c1bed47db19ed44e4fde3bb9990561f024c6930e62ad789e3",
-      "sha256": "b4f7085a3ff3b69c1bed47db19ed44e4fde3bb9990561f024c6930e62ad789e3",
+      "normalized_sha256": "d77530e1b8efb7134032a6ea739f89517e9e5a61e1854a1c70443afa69306e29",
+      "sha256": "d77530e1b8efb7134032a6ea739f89517e9e5a61e1854a1c70443afa69306e29",
       "size": "135638"
     },
     "Reports/report_FIC-100A-erc.rpt": {
       "category": "informational",
-      "normalized_sha256": "79ab940577cff7cd50fb773819375f019bd282b8d4b3a120e83c040be5c95c64",
-      "sha256": "79ab940577cff7cd50fb773819375f019bd282b8d4b3a120e83c040be5c95c64",
+      "normalized_sha256": "8507a800f7bccdf870fe78a0845146b7ba5ed93d96c4f773740759c7d6c1546a",
+      "sha256": "8507a800f7bccdf870fe78a0845146b7ba5ed93d96c4f773740759c7d6c1546a",
       "size": "881"
     },
     "Schematic/FIC-100A-schematic.pdf": {
       "category": "informational",
-      "normalized_sha256": "f95fc61e6d539490c1c70cbf4200fdea69f988aace5c67328797858f635a6231",
-      "sha256": "f95fc61e6d539490c1c70cbf4200fdea69f988aace5c67328797858f635a6231",
-      "size": "2768900"
+      "normalized_sha256": "c4ab64146bae9b7ad3213da2859d7850206fa95b06d04a5f1484440ce532ed0f",
+      "sha256": "c4ab64146bae9b7ad3213da2859d7850206fa95b06d04a5f1484440ce532ed0f",
+      "size": "2770142"
     },
     "Testing/Testpoints/FIC-100A-testpoints-top.csv": {
       "category": "informational",

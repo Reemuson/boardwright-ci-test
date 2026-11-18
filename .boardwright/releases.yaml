@@ -51,3 +51,45 @@ releases:
       fab_volatile_variables: []
       tooling: 213ea760534d95b6814fd329269ccc425105bcb7365abfe9071d9f1494fd4a18
       fabrication_outputs: 7e2fc9913b1c057cdd86a08d0fe540aff2f3578f0b240df854322244444ec060
+  - version: 0.1.5
+    date: '2026-11-18'
+    source_commit: c0cabc2471e342f7f833b11f021dcd4c4bb0912b
+    previous_version: 0.1.4
+    variant: RELEASED
+    identities:
+      pcb_revision: A
+      schematic_revision: C
+      assembly_revision: A
+      fabrication_revision: A
+    change_classes:
+    - documentation
+    justification: 'Documentation-only: the schematic revision note now reads SCH REV
+      so it is not mistaken for the PCB revision. Circuit, BOM and PCB unchanged; PCB
+      revision A, fabrication baseline A/2 and assembly baseline A reused; fabrication
+      and assembly drawing revisions A unchanged.'
+    fabrication_baseline:
+      id: A/2
+      status: reused
+    assembly_baseline:
+      id: A
+      status: reused
+    fingerprint:
+      schema: 2
+      source: working tree
+      pcb_geometry: 0c2657665e927b6c96f75994341e747df5bc02d0772a4cfd12c97804083619a0
+      pcb_netnames: d7e4fea1ea99d1307647752df4acc74aaf93ebc1d044edac3bffe3f28f5a2d16
+      fabrication_spec: ffaa578d11f0e0187106cc4f35e53d8c457e6248fa1394e1e9705c2c9ed2e20d
+      assembly: 89a8491b157028b5f4c1700a6fcb5e4e1ef1c61e5586e9c7399f030acdf631b5
+      schematic: cc336623bb8bcdb41a8c92a4fc3db64ef6a4d23ef0992a015c1ef957fa15a766
+      pcb_format: 20241229/9.0
+      schematic_format: 20250114/9.0
+      pcb_file: FIC-100A.kicad_pcb
+      schematic_files:
+      - Block Diagram.kicad_sch
+      - FIC-100A.kicad_sch
+      - Project Architecture.kicad_sch
+      - Revision History.kicad_sch
+      pcb_drawings: dcd68097fd2881351b661cff99a9db7bbe4b436c723493236a6e7609320b020c
+      fab_volatile_variables: []
+      tooling: 213ea760534d95b6814fd329269ccc425105bcb7365abfe9071d9f1494fd4a18
+      fabrication_outputs: 7e2fc9913b1c057cdd86a08d0fe540aff2f3578f0b240df854322244444ec060

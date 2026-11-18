@@ -47,7 +47,7 @@ documents:
     title: Schematic
     type: SCHEMATIC
     number_source: pcba_name
-    revision: B
+    revision: C
     revision_scheme: lettered
     drawn_by: ''
     drawn_date: ''
