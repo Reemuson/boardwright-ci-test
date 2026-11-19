@@ -1,0 +1,3 @@
+# Negative test: local overrides must never enter a controlled build.
+project:
+  pcba_name: LOCAL OVERRIDE
