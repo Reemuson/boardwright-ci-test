@@ -14,7 +14,11 @@ from .errors import BoardwrightError
 from .git_ops import current_branch, dirty_files
 from .impact import ImpactAssessment, assess_release_impact
 from .release_ledger import append_record, load_ledger, verify_ledger_history
-from .revision_history import record_document_revision_release, write_revision_variables
+from .config import update_project_config
+from .drawing_revisions import RevisionHistoryPlan, apply_revision_history, plan_revision_history
+from .impact import proposed_identities
+from .release_ledger import latest_baseline
+from .revision_history import write_revision_variables
 
 
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
@@ -108,12 +112,19 @@ def prepare_release(
         schematic_revision=drawing_revision if document_key == "schematic" else "",
     )
     problems.extend(impact.problems)
+    release_date = date.today()
+    history = plan_release_revision_history(
+        config,
+        drawing_revision=drawing_revision if document_key == "schematic" else "",
+        revision_description=revision_description,
+        release_date=release_date.isoformat(),
+    )
+    problems.extend(history.problems)
     if problems:
         raise BoardwrightError("; ".join(problems))
 
     if not dry_run:
         source_commit = _head_commit(config)
-        release_date = date.today()
         # Record the ledger first: it validates and refuses duplicates before
         # any other release file is touched.
         append_record(
@@ -121,18 +132,42 @@ def prepare_release(
             impact.record(date=release_date.isoformat(), source_commit=source_commit, variant=variant),
         )
         promote_unreleased_file(config.root, version, release_date, allow_empty=True)
-        record_document_revision_release(
-            config,
-            revision=drawing_revision,
-            description=revision_description,
-            date=release_date.isoformat(),
-            document_key=document_key,
-        )
+        # Drawing revision tables change only for documents whose revision
+        # advances; issued rows are never rewritten.
+        apply_revision_history(config, history)
+        schematic = next(item for item in history.documents if item.document == "schematic")
+        if schematic.changed:
+            settings = dict(config.document_settings("schematic"))
+            settings["revision"] = schematic.proposed_revision
+            update_project_config(config, document_fields={"schematic": settings})
         from .config import load_config
 
         write_revision_variables(load_config(config.root, local=False), document_key)
 
     return plan
+
+
+def plan_release_revision_history(
+    config: BoardwrightConfig,
+    *,
+    drawing_revision: str = "",
+    revision_description: str = "",
+    release_date: str = "",
+) -> RevisionHistoryPlan:
+    """Plan every drawing's revision rows against the previous release."""
+
+    base = latest_baseline(config.root)
+    proposed = proposed_identities(config, drawing_revision)
+    documents = ("schematic", "fabrication", "assembly")
+    previous = {name: getattr(base, f"{name}_revision", "") if base else "" for name in documents}
+    return plan_revision_history(
+        config,
+        previous_version=base.version if base else "",
+        previous=previous,
+        proposed={name: getattr(proposed, f"{name}_revision") for name in documents},
+        description=revision_description,
+        date=release_date or date.today().isoformat(),
+    )
 
 
 def assess_plan_impact(

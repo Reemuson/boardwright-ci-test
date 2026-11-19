@@ -126,7 +126,7 @@ def docker_command(
     argv = ["docker", "run", "--rm", "--init", "--pull", "missing"]
     argv += ["-it"] if interactive else []
     if user is None:
-        # BOARDWRIGHT_CONTAINER_USER=1001:121 reproduces the GitHub runner uid on Docker Desktop.
+        # BOARDWRIGHT_CONTAINER_USER=1001:1001 reproduces the GitHub runner uid:gid on Docker Desktop.
         user = os.environ.get("BOARDWRIGHT_CONTAINER_USER")
     if user is None and hasattr(os, "getuid"):
         user = f"{os.getuid()}:{os.getgid()}"
