@@ -295,7 +295,35 @@ def build_update_plan(root: Path, *, to_version: str = "") -> dict[str, Any]:
             for operation in operations
             if operation.action == "conflict"
         ],
+        "notices": _drawing_sheet_notices(project_root, operations),
     }
+
+
+def _drawing_sheet_notices(root: Path, operations: list[UpdateOperation]) -> list[str]:
+    """What an update means for the project's controlled drawings."""
+    from .drawing_sheets import active_sheet_refs
+
+    notices: list[str] = []
+    refs = active_sheet_refs(root)
+    for section in sorted({ref.section for ref in refs.values() if ref.kind == "embedded"}):
+        notices.append(
+            f"The {section} drawings render a worksheet embedded in the design file; this update cannot "
+            "change it. Run `boardwright worksheet adopt` to use the managed Templates/ file."
+        )
+    active = {ref.path for ref in refs.values() if ref.kind == "file"}
+    touched = sorted(
+        operation.path.as_posix()
+        for operation in operations
+        if operation.path.suffix == ".kicad_wks"
+        and operation.path.as_posix() in active
+        and operation.action in ("replace", "merge", "remove")
+    )
+    if touched:
+        notices.append(
+            "Active drawing sheets change (" + ", ".join(touched) + "). The next release detects this and "
+            "requires a new revision of every affected drawing; previously approved drawings are not altered."
+        )
+    return notices
 
 
 def write_plan(path: Path, plan: dict[str, Any]) -> Path:
@@ -425,6 +453,8 @@ def _merge_text(
     try:
         merged = temporary / "local"
         shutil.copy2(local, merged)
+        if local.suffix == ".kicad_wks":
+            merged, base, incoming = _with_project_logo(local, base, incoming, temporary)
         completed = subprocess.run(
             ["git", "merge-file", "-p", str(merged), str(base), str(incoming)],
             text=True,
@@ -435,6 +465,35 @@ def _merge_text(
         return completed.stdout if completed.returncode == 0 else None
     finally:
         shutil.rmtree(temporary, ignore_errors=True)
+
+
+def _with_project_logo(local: Path, base: Path, incoming: Path, temporary: Path) -> tuple[Path, Path, Path]:
+    """Local, base and incoming worksheets prepared for a layout-only merge.
+
+    The worksheet logo belongs to the project (`boardwright worksheet-logo`),
+    so the project's images are carried into base and incoming: a project logo
+    is never replaced by Boardwright's, and a change to Boardwright's own image
+    never conflicts. Line endings are normalised to LF (KiCad accepts both,
+    and a Windows checkout or a logo rewrite must not turn every line into a
+    conflict).
+    """
+    from .worksheet_logo import transplant_bitmaps
+
+    def read(path: Path) -> str:
+        # Universal-newline decoding: CRLF and LF read alike.
+        with path.open(encoding="utf-8", newline=None) as handle:
+            return handle.read()
+
+    donor = read(local)
+    paths = []
+    for name, source in (("local", local), ("base", base), ("incoming", incoming)):
+        text = read(source)
+        if name != "local":
+            text = transplant_bitmaps(donor, text) or text
+        target = temporary / f"{name}.kicad_wks"
+        target.write_text(text, encoding="utf-8", newline="\n")
+        paths.append(target)
+    return paths[0], paths[1], paths[2]
 
 
 def _plan_config_migrations(root: Path) -> tuple[list[str], dict[str, str]]:

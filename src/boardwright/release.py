@@ -130,7 +130,7 @@ def prepare_release(
         )
         from .config import load_config
 
-        write_revision_variables(load_config(config.root), document_key)
+        write_revision_variables(load_config(config.root, local=False), document_key)
 
     return plan
 

@@ -199,3 +199,134 @@ def _find_matching_paren(text: str, start: int) -> int:
             if depth == 0:
                 return index
     raise BoardwrightError("Worksheet contains an unterminated s-expression.")
+
+
+def git_tracked(root: Path, paths: list[Path]) -> list[Path]:
+    """The subset of ``paths`` tracked by Git in ``root`` (none outside a repository)."""
+    import subprocess
+
+    tracked: list[Path] = []
+    for path in paths:
+        try:
+            relative = path.resolve().relative_to(root.resolve()).as_posix()
+        except ValueError:
+            continue
+        completed = subprocess.run(
+            ["git", "ls-files", "--error-unmatch", "--", relative],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if completed.returncode == 0:
+            tracked.append(path)
+    return tracked
+
+
+def select_logo_targets(
+    config,
+    logo: Path,
+    *,
+    explicit: list[Path] | None = None,
+    all_templates: bool = False,
+    output: Path | None = None,
+) -> list[Path]:
+    """Worksheets a logo is written into, shared by the CLI and the TUI.
+
+    By default these are the external worksheets the project's drawings
+    actually render with. An embedded (``kicad-embed://``) active sheet is an
+    error: writing Templates/ would not change the drawings. In the Boardwright
+    A logo taken from the untracked ``.boardwright/local.yaml`` is never
+    written into Git-tracked worksheets; use ``output`` for personal copies.
+    """
+    import shutil
+
+    from .drawing_sheets import active_sheet_files, active_sheet_refs
+
+    root = config.root
+    template_worksheet = str(config.template.get("worksheet") or "")
+    if explicit:
+        targets = list(explicit)
+    elif all_templates:
+        targets = sorted((root / "Templates").glob("*.kicad_wks"))
+    else:
+        embedded = [
+            f"{document} ({ref.setting})"
+            for document, ref in active_sheet_refs(root, template_worksheet).items()
+            if ref.kind == "embedded"
+        ]
+        if embedded:
+            raise BoardwrightError(
+                "These drawings render a worksheet embedded in the design file, so a logo written to "
+                "Templates/ would not reach them: " + ", ".join(sorted(set(embedded)))
+                + ". Run `boardwright worksheet adopt` first, or pass --worksheet explicitly."
+            )
+        targets = active_sheet_files(root, template_worksheet)
+    if not targets:
+        raise BoardwrightError("No worksheet files selected.")
+    missing = [path for path in targets if not path.is_file()]
+    if missing:
+        raise BoardwrightError("Missing worksheet: " + ", ".join(str(path) for path in missing))
+    if not logo.is_file():
+        raise BoardwrightError(f"Missing logo PNG: {logo}")
+
+    if output is not None:
+        output.mkdir(parents=True, exist_ok=True)
+        copies = []
+        for path in targets:
+            copy = output / path.name
+            if copy.resolve() != path.resolve():
+                shutil.copyfile(path, copy)
+            copies.append(copy)
+        return copies
+
+    if "template.sheet_image" in tuple(getattr(config, "local_overrides", ()) or ()) and logo.resolve() == _configured_path(config):
+        tracked = git_tracked(root, targets)
+        if tracked:
+            raise BoardwrightError(
+                "Refusing to write the logo from .boardwright/local.yaml (a personal, untracked override) into "
+                "tracked worksheets: " + ", ".join(path.name for path in tracked)
+                + ". Use --output <untracked dir> for branded copies, or declare the logo in project.yaml."
+            )
+    return targets
+
+
+def bitmap_payloads(text: str) -> list[tuple[int, int]]:
+    """(start, end) of every bitmap ``(data ...)`` block, in order."""
+    spans: list[tuple[int, int]] = []
+    index = 0
+    while True:
+        start = text.find("(bitmap", index)
+        if start == -1:
+            return spans
+        end = _find_matching_paren(text, start)
+        block = text[start : end + 1]
+        try:
+            data_start, data_end = _data_block_bounds(block)
+        except BoardwrightError:
+            index = end + 1
+            continue
+        spans.append((start + data_start, start + data_end + 1))
+        index = end + 1
+
+
+def transplant_bitmaps(donor: str, recipient: str) -> str | None:
+    """``recipient`` with each bitmap payload replaced by ``donor``'s.
+
+    Used by `boardwright update`: the worksheet logo is project-owned, so the
+    project's images are carried into the upstream texts before a three-way
+    merge, and only the layout is merged. None when the bitmap counts differ.
+    """
+    donor_spans = bitmap_payloads(donor)
+    recipient_spans = bitmap_payloads(recipient)
+    if len(donor_spans) != len(recipient_spans):
+        return None
+    result = recipient
+    for (d_start, d_end), (r_start, r_end) in reversed(list(zip(donor_spans, recipient_spans))):
+        result = result[:r_start] + donor[d_start:d_end] + result[r_end:]
+    return result
+
+
+def _configured_path(config) -> Path:
+    value = Path(str(getattr(config, "template_sheet_image", "") or ""))
+    return (value if value.is_absolute() else Path(config.root) / value).resolve()
