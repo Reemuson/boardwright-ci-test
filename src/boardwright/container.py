@@ -223,7 +223,34 @@ def run_in_container(kicad: str, workdir: Path, command: list[str], *, environme
     environment = {"BOARDWRIGHT_IMAGE_ID": resolve_image(image), **(environment or {})}
     argv = docker_command(image, workdir, command, cache_dir=default_cache_dir(kicad), environment=environment, interactive=interactive)
     print(f"[container] KiCad {kicad} image {image.reference} ({environment['BOARDWRIGHT_IMAGE_ID']})", flush=True)
-    return subprocess.run(argv).returncode
+    status = subprocess.run(argv).returncode
+    foreign = foreign_owned(workdir)
+    if foreign:
+        shown = "\n  ".join(foreign[:10])
+        print(f"error: the container left files not owned by this user ({len(foreign)}):\n  {shown}", file=sys.stderr)
+        return status or 1
+    return status
+
+
+def foreign_owned(workdir: Path) -> list[str]:
+    """Files in the work tree not owned by the calling user (POSIX hosts only).
+
+    The container runs as the caller's uid:gid, so every output must belong to
+    the caller; anything else would need the ``sudo chown`` the workflows no
+    longer have. Docker Desktop on Windows maps ownership itself.
+    """
+
+    if not hasattr(os, "getuid"):
+        return []
+    uid = os.getuid()
+    found = []
+    for path in [workdir, *workdir.rglob("*")]:
+        try:
+            if path.lstat().st_uid != uid:
+                found.append(path.relative_to(workdir).as_posix() or ".")
+        except OSError:
+            continue
+    return found
 
 
 # --- staging -----------------------------------------------------------------
@@ -444,6 +471,7 @@ def candidate_steps(args: argparse.Namespace) -> list[list[str]]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    sys.stdout.reconfigure(line_buffering=True)
     parser = argparse.ArgumentParser(prog="python -m boardwright container", description=__doc__.split("\n\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
 

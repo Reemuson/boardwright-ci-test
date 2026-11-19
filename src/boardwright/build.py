@@ -290,6 +290,7 @@ def write_evidence(root: Path, plan: BuildPlan, source: dict[str, object]) -> Pa
         "steps": [{"name": step.name, "argv": _portable_argv(step.argv)} for step in plan.steps],
         "stage": _stage_marker(root),
         "github_run": {key: os.environ[key] for key in ("GITHUB_REPOSITORY", "GITHUB_RUN_ID") if key in os.environ},
+        "container_user": f"{os.getuid()}:{os.getgid()}" if hasattr(os, "getuid") else "",
     }
     (out / "record.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
     return out
@@ -370,6 +371,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--root", type=Path, default=Path("."))
     parser.add_argument("--plan", action="store_true", help="Print the steps and exit.")
     args = parser.parse_args(argv)
+    # Keep this process's messages (and ::group:: markers) in order with the
+    # output of the tools it runs.
+    sys.stdout.reconfigure(line_buffering=True)
     try:
         if args.plan:
             for step in plan_build(args.variant, args.kicad or "9", args.log_prefix).steps:
