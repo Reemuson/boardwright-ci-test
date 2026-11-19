@@ -1,12 +1,12 @@
 {
   "inputs": {
-    "IN_CHANGE_CLASSES": "documentation",
+    "IN_CHANGE_CLASSES": "tooling",
     "IN_DRAWING_REVISION": "C",
-    "IN_JUSTIFICATION": "Documentation-only: the schematic revision note now reads SCH REV so it is not mistaken for the PCB revision. Circuit, BOM and PCB unchanged; PCB revision A, fabrication baseline A/2 and assembly baseline A reused; fabrication and assembly drawing revisions A unchanged.",
+    "IN_JUSTIFICATION": "Tooling-only: shared Docker build (pinned KiCad 9.0.7 image), AS 1100 sheet templates added but not active, ${KIPRJMOD} worksheet paths, assembly/fabrication revision variables. PCB A, schematic C, fabrication A/2 and assembly A unchanged and reused.",
     "IN_RELEASE_KIND": "draft",
     "IN_REVISION_DESCRIPTION": "Revision note labelled SCH REV",
     "IN_VARIANT": "RELEASED",
-    "IN_VERSION": "0.1.5"
+    "IN_VERSION": "0.1.6"
   },
   "ledger_entry": {
     "assembly_baseline": {
@@ -14,7 +14,7 @@
       "status": "reused"
     },
     "change_classes": [
-      "documentation"
+      "tooling"
     ],
     "fabrication_baseline": {
       "id": "A/2",
@@ -22,15 +22,17 @@
     },
     "fingerprint": {
       "assembly": "89a8491b157028b5f4c1700a6fcb5e4e1ef1c61e5586e9c7399f030acdf631b5",
+      "assembly_sheet": "9c62dfb80d5a1497fde73009471f26637dd27a5ae739aefce28ee2b62f2b13f0",
       "fab_volatile_variables": [],
       "fabrication_outputs": "7e2fc9913b1c057cdd86a08d0fe540aff2f3578f0b240df854322244444ec060",
+      "fabrication_sheet": "5f8952fe73ca402227d701de96c59fe0e27438e2842b8ff6a110a128198e6a85",
       "fabrication_spec": "ffaa578d11f0e0187106cc4f35e53d8c457e6248fa1394e1e9705c2c9ed2e20d",
       "pcb_drawings": "dcd68097fd2881351b661cff99a9db7bbe4b436c723493236a6e7609320b020c",
       "pcb_file": "FIC-100A.kicad_pcb",
       "pcb_format": "20241229/9.0",
       "pcb_geometry": "0c2657665e927b6c96f75994341e747df5bc02d0772a4cfd12c97804083619a0",
       "pcb_netnames": "d7e4fea1ea99d1307647752df4acc74aaf93ebc1d044edac3bffe3f28f5a2d16",
-      "schema": 2,
+      "schema": 3,
       "schematic": "cc336623bb8bcdb41a8c92a4fc3db64ef6a4d23ef0992a015c1ef957fa15a766",
       "schematic_files": [
         "Block Diagram.kicad_sch",
@@ -39,8 +41,9 @@
         "Revision History.kicad_sch"
       ],
       "schematic_format": "20250114/9.0",
+      "schematic_sheet": "94b30f15b555ec57cd7bd716ba2ec1f779f12ca3c38cd956f817501cee3371ea",
       "source": "working tree",
-      "tooling": "213ea760534d95b6814fd329269ccc425105bcb7365abfe9071d9f1494fd4a18"
+      "tooling": "1d60578d5645812f20ced82d6fc54d16ad1d9a0e8f062a76434d49e41dc4ef75"
     },
     "identities": {
       "assembly_revision": "A",
@@ -48,13 +51,13 @@
       "pcb_revision": "A",
       "schematic_revision": "C"
     },
-    "justification": "Documentation-only: the schematic revision note now reads SCH REV so it is not mistaken for the PCB revision. Circuit, BOM and PCB unchanged; PCB revision A, fabrication baseline A/2 and assembly baseline A reused; fabrication and assembly drawing revisions A unchanged.",
-    "previous_version": "0.1.4",
-    "source_commit": "c0cabc2471e342f7f833b11f021dcd4c4bb0912b",
+    "justification": "Tooling-only: shared Docker build (pinned KiCad 9.0.7 image), AS 1100 sheet templates added but not active, ${KIPRJMOD} worksheet paths, assembly/fabrication revision variables. PCB A, schematic C, fabrication A/2 and assembly A unchanged and reused.",
+    "previous_version": "0.1.5",
+    "source_commit": "d22180bb047358aa3063992fbdd35a4996b6bc94",
     "variant": "RELEASED",
-    "version": "0.1.5"
+    "version": "0.1.6"
   },
-  "manifest_sha256": "535121bee6457b0c4bc7f8b371b542c6c74ab2579ed122eed8fc1db010b033de",
+  "manifest_sha256": "4a91467598adad94f76e20fe41af57ec32d7562899e567c428a3e6ec1c7435b4",
   "schema": 1,
-  "source_sha": "c0cabc2471e342f7f833b11f021dcd4c4bb0912b"
+  "source_sha": "d22180bb047358aa3063992fbdd35a4996b6bc94"
 }

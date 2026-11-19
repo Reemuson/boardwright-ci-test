@@ -93,3 +93,48 @@ releases:
       fab_volatile_variables: []
       tooling: 213ea760534d95b6814fd329269ccc425105bcb7365abfe9071d9f1494fd4a18
       fabrication_outputs: 7e2fc9913b1c057cdd86a08d0fe540aff2f3578f0b240df854322244444ec060
+  - version: 0.1.6
+    date: '2026-11-19'
+    source_commit: d22180bb047358aa3063992fbdd35a4996b6bc94
+    previous_version: 0.1.5
+    variant: RELEASED
+    identities:
+      pcb_revision: A
+      schematic_revision: C
+      assembly_revision: A
+      fabrication_revision: A
+    change_classes:
+    - tooling
+    justification: 'Tooling-only: shared Docker build (pinned KiCad 9.0.7 image), AS
+      1100 sheet templates added but not active, ${KIPRJMOD} worksheet paths, assembly/fabrication
+      revision variables. PCB A, schematic C, fabrication A/2 and assembly A unchanged
+      and reused.'
+    fabrication_baseline:
+      id: A/2
+      status: reused
+    assembly_baseline:
+      id: A
+      status: reused
+    fingerprint:
+      schema: 3
+      source: working tree
+      pcb_geometry: 0c2657665e927b6c96f75994341e747df5bc02d0772a4cfd12c97804083619a0
+      pcb_netnames: d7e4fea1ea99d1307647752df4acc74aaf93ebc1d044edac3bffe3f28f5a2d16
+      fabrication_spec: ffaa578d11f0e0187106cc4f35e53d8c457e6248fa1394e1e9705c2c9ed2e20d
+      assembly: 89a8491b157028b5f4c1700a6fcb5e4e1ef1c61e5586e9c7399f030acdf631b5
+      schematic: cc336623bb8bcdb41a8c92a4fc3db64ef6a4d23ef0992a015c1ef957fa15a766
+      pcb_format: 20241229/9.0
+      schematic_format: 20250114/9.0
+      pcb_file: FIC-100A.kicad_pcb
+      schematic_files:
+      - Block Diagram.kicad_sch
+      - FIC-100A.kicad_sch
+      - Project Architecture.kicad_sch
+      - Revision History.kicad_sch
+      pcb_drawings: dcd68097fd2881351b661cff99a9db7bbe4b436c723493236a6e7609320b020c
+      fab_volatile_variables: []
+      tooling: 1d60578d5645812f20ced82d6fc54d16ad1d9a0e8f062a76434d49e41dc4ef75
+      fabrication_outputs: 7e2fc9913b1c057cdd86a08d0fe540aff2f3578f0b240df854322244444ec060
+      schematic_sheet: 94b30f15b555ec57cd7bd716ba2ec1f779f12ca3c38cd956f817501cee3371ea
+      fabrication_sheet: 5f8952fe73ca402227d701de96c59fe0e27438e2842b8ff6a110a128198e6a85
+      assembly_sheet: 9c62dfb80d5a1497fde73009471f26637dd27a5ae739aefce28ee2b62f2b13f0
