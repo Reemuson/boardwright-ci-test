@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Outputs are built with Boardwright's shared Docker build: the same pinned KiCad 9.0.7 / KiBot 1.9.1 image locally and in GitHub Actions, with a build record of image digest, tool versions and source. Tooling only: circuit, BOM, PCB and drawings unchanged; PCB A, schematic C, fabrication A/2 and assembly A reused.
+
+### Notes
+
+- Project worksheet paths now use ${KIPRJMOD}; AS 1100 drawing-sheet templates are available but not active. Drawing revision tables are unchanged.
+
 ## [0.1.5] - 2026-11-18
 ### Changed
 
