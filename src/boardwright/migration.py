@@ -129,8 +129,10 @@ def build_migration_plan(root: Path, project: Path | None = None) -> dict[str, A
             "target": logo_target,
         },
         "worksheet_rewrites": {
-            "schematic": "Templates/Boardwright_Template_GIT.kicad_wks",
-            "pcbnew": "Templates/Boardwright_Template_PCB_GIT_A4.kicad_wks",
+            # ${KIPRJMOD} is required: KiCad PCB exports do not resolve a bare
+            # relative worksheet path (verified with kicad-cli 9.0.6 and 10.0.1).
+            "schematic": "${KIPRJMOD}/Templates/Boardwright_Template_GIT.kicad_wks",
+            "pcbnew": "${KIPRJMOD}/Templates/Boardwright_Template_PCB_GIT_A4.kicad_wks",
         },
         "reference_rewrites": {
             "${REVISION}": "${DRAWING_REVISION}",
@@ -212,7 +214,8 @@ def apply_migration_plan(plan_path: Path) -> list[Path]:
         rewritten, _manual = _rewrite_deprecated_design_references(root)
         written.extend(rewritten)
         _ensure_unreleased_changelog(root / "CHANGELOG.md")
-        _sync_kibot_project_metadata(root, load_config(root))
+        _sync_kibot_project_metadata(root, load_config(root, local=False))
+        written.extend(_embed_migrated_logo(root))
 
         errors = [
             issue.message
@@ -410,7 +413,10 @@ def _write_migrated_config(root: Path, values: dict[str, Any], logo: str) -> Non
     )
     if logo:
         project["assets"]["logo"] = logo
-        project["template"]["sheet_image"] = logo
+        # Only a PNG can be embedded in a KiCad worksheet; any other format
+        # stays the README logo and the worksheets keep their own image.
+        if _is_png(config_root.parent / logo):
+            project["template"]["sheet_image"] = logo
     _write_yaml(config_root / "project.yaml", project)
 
     for filename in (
@@ -433,6 +439,30 @@ def _write_migrated_config(root: Path, values: dict[str, Any], logo: str) -> Non
     defaults["hardware_design_license"] = "MIT"
     defaults["copyright_holder"] = str(values["company"]).strip()
     _write_yaml(config_root / "legal.yaml", legal)
+
+
+def _is_png(path: Path) -> bool:
+    from .worksheet_logo import PNG_SIGNATURE
+
+    try:
+        with path.open("rb") as handle:
+            return handle.read(8) == PNG_SIGNATURE
+    except OSError:
+        return False
+
+
+def _embed_migrated_logo(root: Path) -> list[Path]:
+    """Carry the project's logo into the Boardwright worksheets it now renders."""
+    from .worksheet_logo import embed_logo_in_worksheets, select_logo_targets
+
+    from .drawing_sheets import configured_logo
+
+    config = load_config(root, local=False)
+    image = configured_logo(config) if str(config.template.get("sheet_image") or "").strip() else ""
+    if not image:
+        return []
+    logo = root / image
+    return [result.worksheet for result in embed_logo_in_worksheets(select_logo_targets(config, logo), logo)]
 
 
 def _rewrite_project_worksheets(path: Path, rewrites: dict[str, str]) -> None:

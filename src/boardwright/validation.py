@@ -86,36 +86,16 @@ def _validate_fabrication_requirements(config: BoardwrightConfig, issues: list[V
 
 
 def _validate_worksheet_logo(config: BoardwrightConfig, issues: list[ValidationIssue]) -> None:
-    """A project logo must not be replaced by Boardwright's placeholder logo.
+    """Active drawing sheets must resolve, and render the configured logo.
 
-    Managed Boardwright worksheets ship with Boardwright's own bitmap. A project
-    that declares its own logo (template.sheet_image, template.logo or
-    assets.logo) must embed it with `boardwright worksheet-logo`; otherwise its
-    drawings silently carry Boardwright branding.
+    Shared with `python -m boardwright.drawing_sheets check` (run in CI). A
+    configured logo that is missing, unreadable or not what an active sheet
+    renders is an error: Boardwright never falls back to its own logo.
     """
-    import hashlib
+    from .drawing_sheets import branding_issues, sheet_issues
 
-    from .deprecated_variables import active_worksheets
-    from .worksheet_logo import BOARDWRIGHT_PLACEHOLDER_LOGO_SHA256, embedded_png
-
-    declared = str(config.template_sheet_image or "").strip()
-    if not declared:
-        return
-    declared_path = config.root / declared
-    declared_png = declared_path.read_bytes() if declared_path.is_file() else None
-    for worksheet in active_worksheets(config.root):
-        embedded = embedded_png(worksheet.read_text(encoding="utf-8"))
-        if not embedded or embedded == declared_png:
-            continue
-        if hashlib.sha256(embedded).hexdigest() == BOARDWRIGHT_PLACEHOLDER_LOGO_SHA256:
-            issues.append(
-                ValidationIssue(
-                    "warning",
-                    f"{worksheet.relative_to(config.root).as_posix()} still embeds the Boardwright "
-                    f"placeholder logo although the project declares {declared}. Run "
-                    "`boardwright worksheet-logo --worksheet <file>` to embed the project logo.",
-                )
-            )
+    found = sheet_issues(config.root, str(config.template.get("worksheet") or "")) + branding_issues(config)
+    issues.extend(ValidationIssue(issue.level, issue.message) for issue in found)
 
 
 def _validate_silkscreen_plotting(

@@ -751,7 +751,7 @@
       "svg": "",
       "vrml": ""
     },
-    "page_layout_descr_file": "Templates/Boardwright_Template_PCB_GIT_A4.kicad_wks"
+    "page_layout_descr_file": "${KIPRJMOD}/Templates/Boardwright_Template_PCB_GIT_A4.kicad_wks"
   },
   "schematic": {
     "annotate_start_num": 0,
@@ -992,7 +992,7 @@
       "version": 1
     },
     "net_format_name": "KiCad",
-    "page_layout_descr_file": "Templates/Boardwright_Template_GIT.kicad_wks",
+    "page_layout_descr_file": "${KIPRJMOD}/Templates/Boardwright_Template_GIT.kicad_wks",
     "plot_directory": "Schematic/",
     "space_save_all_events": true,
     "spice_current_sheet_as_root": false,

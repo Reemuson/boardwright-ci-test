@@ -22,8 +22,6 @@ concurrency:
 
 env:
   PYTHONPATH: ${{ github.workspace }}/src
-  KIBOT_CONFIG: boardwright_resources/kibot/yaml/kibot_main.yaml
-  KIBOT_LOG: kibot_release.log
   KICAD_VERSION: "9"
   RELEASE_DIR: boardwright-release
   RELEASE_KIND: release
@@ -38,6 +36,7 @@ jobs:
       - name: Checkout tag
         uses: actions/checkout@v4
         with:
+          persist-credentials: false
           ref: ${{ github.ref }}
           fetch-depth: 0
 
@@ -59,9 +58,6 @@ jobs:
         shell: bash
         run: echo "BOARDWRIGHT_JOB_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
 
-      - name: Ensure 3D cache directory
-        run: mkdir -p ~/cache_3d
-
       - name: Cache 3D models
         uses: actions/cache@v4
         with:
@@ -69,13 +65,6 @@ jobs:
           key: ${{ runner.os }}-kicad-${{ env.KICAD_VERSION }}-3d
           restore-keys: |
             ${{ runner.os }}-kicad-${{ env.KICAD_VERSION }}-3d-
-
-      - name: Install bundled KiCad/PDF fonts
-        shell: bash
-        run: |
-          mkdir -p ~/.local/share/fonts
-          cp boardwright_resources/kibot/resources/fonts/*.ttf ~/.local/share/fonts/
-          fc-cache -f ~/.local/share/fonts || true
 
       - name: Load release metadata
         shell: bash
@@ -94,15 +83,7 @@ jobs:
           variant="${RELEASE_VARIANT:-RELEASED}"
 
           case "$variant" in
-            DRAFT)
-              additional_args="--skip-pre draw_fancy_stackup,erc,drc --log $KIBOT_LOG draft_group md_readme"
-              ;;
-            PRELIMINARY)
-              additional_args="--skip-pre erc,drc --log $KIBOT_LOG all_group_k9"
-              ;;
-            CHECKED|RELEASED)
-              additional_args="--log $KIBOT_LOG all_group_k9"
-              ;;
+            DRAFT|PRELIMINARY|CHECKED|RELEASED) ;;
             *)
               echo "Unsupported release variant: $variant" >&2
               exit 1
@@ -110,7 +91,6 @@ jobs:
           esac
 
           echo "KIBOT_VARIANT=$variant" >> "$GITHUB_ENV"
-          echo "KIBOT_ADDITIONAL_ARGS=$additional_args" >> "$GITHUB_ENV"
 
           {
             echo "## Boardwright Publish Release"
@@ -125,88 +105,28 @@ jobs:
         shell: bash
         run: python -m pip install -e .
 
-      - name: Generate revision table variables
-        if: env.KIBOT_VARIANT != 'DRAFT'
+      - name: Build release outputs in the pinned container
         shell: bash
-        run: python -m boardwright revision-history
+        env:
+          BOARDWRIGHT_3D_CACHE: ~/cache_3d
+        run: |
+          # Same command as a local build: python -m boardwright container build.
+          # Image, KiBot steps, sheet/logo check, silkscreen check and the
+          # source side-effect check are defined in src/boardwright/build.py.
+          python -m boardwright.container build --workdir . --kicad "$KICAD_VERSION" \
+            --variant "$KIBOT_VARIANT" --log-prefix release
 
-      - name: Prepare Boardwright PDF table placeholders
-        if: env.KIBOT_VARIANT != 'DRAFT'
-        shell: bash
-        run: python boardwright_resources/kibot/resources/scripts/prepare_pcb_tables.py .
-
-      - name: Generate KiBot PDF table CSV sources
-        if: env.KIBOT_VARIANT != 'DRAFT'
-        uses: INTI-CMNB/KiBot@v2_dk9
-        with:
-          additional_args: --skip-pre draw_fancy_stackup,erc,drc --log kibot_release_tables.log table_sources
-          variant: ${{ env.KIBOT_VARIANT }}
-          config: ${{ env.KIBOT_CONFIG }}
-          cache3D: YES
-
-      - name: Prune empty conditional PDF pages
-        if: env.KIBOT_VARIANT != 'DRAFT'
-        shell: bash
-        run: python boardwright_resources/kibot/resources/scripts/prune_pdf_pages.py .
-
-      - name: Normalize project ownership before combined PDF prep
-        if: env.KIBOT_VARIANT != 'DRAFT'
-        shell: bash
-        run: sudo chown -R "$USER:$USER" . 2>/dev/null || true
-
-      - name: Prepare native combined PDF contents
-        if: env.KIBOT_VARIANT != 'DRAFT'
-        shell: bash
-        run: python boardwright_resources/kibot/resources/scripts/prepare_combined_pdf_native.py .
-
-      - name: Generate release output package
-        uses: INTI-CMNB/KiBot@v2_dk9
-        with:
-          additional_args: ${{ env.KIBOT_ADDITIONAL_ARGS }}
-          variant: ${{ env.KIBOT_VARIANT }}
-          config: ${{ env.KIBOT_CONFIG }}
-          cache3D: YES
-
-      - name: Regenerate fabrication PDF metadata
-        if: env.KIBOT_VARIANT != 'DRAFT'
-        uses: INTI-CMNB/KiBot@v2_dk9
-        with:
-          additional_args: --skip-pre draw_fancy_stackup,erc,drc --log kibot_release_fabrication_document.log pdf_fabrication zip_compress_fab
-          variant: ${{ env.KIBOT_VARIANT }}
-          config: boardwright_resources/kibot/yaml/kibot_document_fabrication.generated.yaml
-          cache3D: YES
-
-      - name: Regenerate assembly PDF metadata
-        if: env.KIBOT_VARIANT != 'DRAFT'
-        uses: INTI-CMNB/KiBot@v2_dk9
-        with:
-          additional_args: --skip-pre draw_fancy_stackup,erc,drc --log kibot_release_assembly_document.log pdf_assembly
-          variant: ${{ env.KIBOT_VARIANT }}
-          config: boardwright_resources/kibot/yaml/kibot_document_assembly.generated.yaml
-          cache3D: YES
-
-      - name: Normalize generated output ownership
-        shell: bash
-        run: sudo chown -R "$USER:$USER" Schematic Manufacturing assets HTML KiRI Testing Reports README.md 2>/dev/null || true
-      - name: Install optional PDF combiner dependency
-        shell: bash
-        run: python -m pip install "pypdf>=4.0"
-
-      - name: Create optional combined review PDF
-        shell: bash
-        run: python boardwright_resources/kibot/resources/scripts/combine_review_pdf.py .
-
-      - name: Clean generated outputs
-        shell: bash
-        run: python boardwright_resources/kibot/resources/scripts/clean_generated_outputs.py .
-
-      - name: Check generated README
+      - name: Summarize build identity
+        if: always()
         shell: bash
         run: |
-          if [[ ! -s README.md ]]; then
-            echo "README.md was not generated by KiBot." >&2
-            exit 1
-          fi
+          {
+            echo "## Build identity"
+            echo
+            echo '```json'
+            cat boardwright-build/record.json 2>/dev/null || echo '"no build record"'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Verify outputs match the accepted release state
         shell: bash
@@ -339,6 +259,7 @@ jobs:
           name: boardwright-release-logs
           path: |
             kibot_release*.log
+            boardwright-build/
 
       - name: Summarize job timing
         if: always()
@@ -351,7 +272,7 @@ jobs:
             echo "## CI Timing"
             echo
             echo "- Job elapsed: ${elapsed}s"
-            echo "- Cache note: 3D assets are cached with actions/cache@v4."
+            echo "- Cache note: 3D assets are cached with actions/cache@v4 and mounted into the build container."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish GitHub Release

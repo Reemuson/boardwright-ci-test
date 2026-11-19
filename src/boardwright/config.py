@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 from pathlib import Path
 from typing import Any
@@ -248,6 +248,8 @@ class BoardwrightConfig:
     legal: dict[str, Any]
     revision_history: dict[str, Any]
     document_revisions: dict[str, Any] | None = None
+    # Keys taken from the untracked .boardwright/local.yaml (``template.*`` only).
+    local_overrides: tuple[str, ...] = field(default_factory=tuple)
 
     @property
     def project_id(self) -> str:
@@ -315,6 +317,10 @@ class BoardwrightConfig:
             "BOARD_REVISION": self.board_revision,
             "PCB_REVISION": self.board_revision,
             "SCHEMATIC_REVISION": str(schematic.get("revision") or "").strip(),
+            # Independent document identities, shown on every drawing's
+            # identity line; ${DRAWING_REVISION} stays the current document's.
+            "ASSEMBLY_REVISION": str(self.document_settings("assembly").get("revision") or "").strip(),
+            "FABRICATION_REVISION": str(self.document_settings("fabrication").get("revision") or "").strip(),
             "DOCUMENT_TYPE": str(document.get("type") or "").strip(),
             "DRAWING_TITLE": str(document.get("title") or "").strip().upper(),
             "DRAWING_NUMBER": number,
@@ -523,15 +529,61 @@ def find_project_root(start: Path | None = None) -> Path:
     raise BoardwrightError("Could not find a Boardwright project root.")
 
 
-def load_config(root: Path | None = None) -> BoardwrightConfig:
+LOCAL_CONFIG_NAME = "local.yaml"
+LOCAL_OVERRIDE_SECTIONS = ("template",)
+
+
+def apply_local_overrides(project: dict[str, Any], path: Path) -> tuple[dict[str, Any], tuple[str, ...]]:
+    """Overlay the untracked ``.boardwright/local.yaml`` on project metadata.
+
+    Only ``template.*`` keys (for example a personal ``template.sheet_image``)
+    may be overridden, so local branding can never change release identities
+    or manufacturing requirements. Release fingerprints read project.yaml from
+    Git and ignore this file.
+    """
+    if not path.is_file():
+        return project, ()
+    local = _read_yaml(path)
+    unknown = sorted(set(local) - set(LOCAL_OVERRIDE_SECTIONS))
+    if unknown:
+        raise BoardwrightError(
+            f"{path.name} may only override {', '.join(LOCAL_OVERRIDE_SECTIONS)}; found: {', '.join(unknown)}."
+        )
+    merged = dict(project)
+    keys: list[str] = []
+    for section in LOCAL_OVERRIDE_SECTIONS:
+        values = local.get(section)
+        if values is None:
+            continue
+        if not isinstance(values, dict):
+            raise BoardwrightError(f"{path.name}: `{section}` must be a mapping.")
+        current = dict(merged.get(section) or {})
+        current.update(values)
+        merged[section] = current
+        keys.extend(f"{section}.{key}" for key in values)
+    return merged, tuple(keys)
+
+
+def load_config(root: Path | None = None, *, local: bool = True) -> BoardwrightConfig:
+    """Load project metadata.
+
+    ``local=False`` ignores ``.boardwright/local.yaml``. Every code path that
+    writes Git-tracked files, release evidence or controlled outputs uses it,
+    so an untracked override can only affect local previews.
+    """
     project_root = find_project_root(root)
     config_root = project_root / CONFIG_DIR
     if not config_root.is_dir():
         raise BoardwrightError(f"Missing config directory: {config_root}")
 
+    project: dict[str, Any] = _read_yaml(config_root / "project.yaml")
+    overrides: tuple[str, ...] = ()
+    if local:
+        project, overrides = apply_local_overrides(project, config_root / LOCAL_CONFIG_NAME)
     return BoardwrightConfig(
         root=project_root,
-        project=_read_yaml(config_root / "project.yaml"),
+        project=project,
+        local_overrides=overrides,
         branches=_read_yaml(config_root / "branches.yaml"),
         legal=_read_yaml(config_root / "legal.yaml"),
         revision_history=_read_yaml(config_root / "revision_history.yaml"),
@@ -621,7 +673,12 @@ def update_project_config(
     template = data.setdefault("template", {})
     if not isinstance(template, dict):
         raise BoardwrightError("project.yaml field `template` must be a mapping.")
+    local_keys = set(getattr(config, "local_overrides", ()) or ())
+    local_template = config.template if local_keys else {}
     for key, value in (template_fields or {}).items():
+        if f"template.{key}" in local_keys and value == local_template.get(key):
+            # Echo of an untracked local.yaml value: never persist it.
+            continue
         template[key] = value
 
     sheet = data.setdefault("sheet", {})

@@ -79,7 +79,7 @@ def prepare_pcb_tables(root: Path) -> ComponentCountResult:
 
 def _load_project_config(root: Path):
     try:
-        return load_config(root)
+        return load_config(root, local=False)
     except BoardwrightError:
         return None
 

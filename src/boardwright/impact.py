@@ -53,6 +53,9 @@ DOMAIN_LABELS = {
     "release_marking": "Release-dependent text on fabrication layers",
     "fabrication_outputs": "Fabrication output options (Gerber, drill, ODB++ plot settings)",
     "schematic": "Schematic content",
+    "schematic_sheet": "Schematic drawing sheet (worksheet, logo, title-block variables)",
+    "fabrication_sheet": "Fabrication drawing sheet (worksheet, logo, title-block variables)",
+    "assembly_sheet": "Assembly drawing sheet (worksheet, logo, title-block variables)",
 }
 FABRICATION_DATA_DOMAINS = {"pcb_netnames", "fabrication_spec", "release_marking", "fabrication_outputs"}
 
@@ -348,6 +351,40 @@ def assess_release_impact(
         reviews.append(
             "PCB drawing-layer content changed. If notes, dimensions or tolerances on the fabrication "
             "drawing changed a requirement, declare `fabrication` so the package is re-issued."
+        )
+
+    # --- Drawing sheets ----------------------------------------------------
+    # The worksheet, its embedded logo and the title-block variables are part
+    # of each controlled drawing. A Boardwright update or a branding change
+    # must not silently re-issue approved documentation under the same
+    # revision.
+    sheet_revision_changed = {
+        "schematic_sheet": ("schematic", sch_rev_changed),
+        "fabrication_sheet": (
+            "fabrication drawing",
+            proposed.fabrication_revision != previous.fabrication_revision,
+        ),
+        "assembly_sheet": ("assembly drawing", proposed.assembly_revision != previous.assembly_revision),
+    }
+    changed_sheets = [domain for domain in sheet_revision_changed if domain in detected]
+    if changed_sheets:
+        if not ({"documentation", "fabrication", "assembly", "electrical"} & set(declared)):
+            problems.append(
+                "Drawing sheet presentation changed ("
+                + ", ".join(DOMAIN_LABELS[domain] for domain in changed_sheets)
+                + "); declare the `documentation` change class."
+            )
+        for domain in changed_sheets:
+            label, revised = sheet_revision_changed[domain]
+            if not revised and not pcb_changed:
+                problems.append(
+                    f"The {label} sheet (worksheet, logo or title-block variables) changed since "
+                    f"{base.version}; the {label} revision must change."
+                )
+        reviews.append(
+            "Drawing sheets changed ("
+            + ", ".join(domain.removesuffix("_sheet") for domain in changed_sheets)
+            + "): review the rendered title blocks and branding before approval."
         )
 
     # --- Schematic ---------------------------------------------------------

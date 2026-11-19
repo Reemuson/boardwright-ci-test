@@ -233,12 +233,18 @@ def _run_console_fallback() -> None:
 
 
 def _embed_template_sheet_image(config: "BoardwrightConfig") -> None:
+    """Embed the configured logo into the worksheets the drawings render with.
+
+    Same target rules as `boardwright worksheet-logo` (active sheets only,
+    embedded sheets and tracked Boardwright payload sheets refused).
+    """
+    from .worksheet_logo import select_logo_targets
+
+    if not str(config.template_sheet_image or "").strip():
+        return
     image = Path(config.template_sheet_image)
     image = image if image.is_absolute() else config.root / image
-    worksheets = sorted((config.root / "Templates").glob("*.kicad_wks"))
-    if not worksheets:
-        return
-    embed_logo_in_worksheets(worksheets, image)
+    embed_logo_in_worksheets(select_logo_targets(config, image), image)
 
 
 def _semantic_style(kind: str, *, bold: bool = True) -> str:

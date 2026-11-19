@@ -55,7 +55,7 @@ from typing import Any, Protocol
 from .errors import BoardwrightError
 from .sexpr import Node, SList, canonical, parse, unquote
 
-FINGERPRINT_SCHEMA = 2
+FINGERPRINT_SCHEMA = 3
 
 # Variables whose value differs per release/build by design.
 RELEASE_VOLATILE_VARIABLES = {
@@ -214,6 +214,11 @@ class DesignFingerprint:
     # Effective Gerber/drill/ODB++ output options (audit F20). Empty in
     # records written before it existed: then it is not compared.
     fabrication_outputs: str = ""
+    # Effective drawing sheet (worksheet file or embedded copy, logo included)
+    # and the stable drawing variables it draws, per document (schema 3).
+    schematic_sheet: str = ""
+    fabrication_sheet: str = ""
+    assembly_sheet: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -244,6 +249,9 @@ class DesignFingerprint:
                 ),
                 tooling=str(data.get("tooling", "")),
                 fabrication_outputs=str(data.get("fabrication_outputs", "")),
+                schematic_sheet=str(data.get("schematic_sheet", "")),
+                fabrication_sheet=str(data.get("fabrication_sheet", "")),
+                assembly_sheet=str(data.get("assembly_sheet", "")),
             )
         except KeyError as exc:
             raise BoardwrightError(f"Fingerprint record is missing `{exc.args[0]}`.") from exc
@@ -280,8 +288,11 @@ def compute_fingerprint(reader: SourceReader) -> DesignFingerprint:
             key: manufacturing.get(key, "") for key in sorted(ASSEMBLY_EXCLUDED_MANUFACTURING_KEYS)
         },
     }
+    from .drawing_sheets import document_sheet_fingerprints
+
+    sheets = document_sheet_fingerprints(reader.read_text, files, project_yaml)
     schematic_canonical = [
-        (name, canonical(_strip(tree, SCH_DROP_HEADS))) for name, tree in schematics
+        (name, canonical(_strip(_without_embedded_worksheets(tree), SCH_DROP_HEADS))) for name, tree in schematics
     ]
 
     return DesignFingerprint(
@@ -300,6 +311,9 @@ def compute_fingerprint(reader: SourceReader) -> DesignFingerprint:
         fab_volatile_variables=tuple(sorted(resolver.volatile_used)),
         tooling=_tooling_hash(reader),
         fabrication_outputs=_fabrication_outputs_hash(reader),
+        schematic_sheet=sheets["schematic"],
+        fabrication_sheet=sheets["fabrication"],
+        assembly_sheet=sheets["assembly"],
     )
 
 
@@ -358,8 +372,32 @@ def _normalise_pcb(pcb: SList, net_labels: dict[str, str], resolver: "_TextResol
     for item in pcb.items:
         if isinstance(item, SList) and item.head in PCB_TOP_DROP_HEADS:
             continue
+        if isinstance(item, SList) and item.head == "embedded_files":
+            # Embedded drawing sheets are presentation, tracked by the sheet
+            # domains (schema 3); embedded fonts can shape silkscreen and stay.
+            item = SList([child for child in item.items if not _is_embedded_worksheet(child)])
+            if len(item.items) == 1:
+                continue
         kept.append(item)
     return _normalise_pcb_node(SList(kept), net_labels, numbers, resolver or _TextResolver({}), {})
+
+
+def _without_embedded_worksheets(tree: SList) -> SList:
+    items: list[Node] = []
+    for item in tree.items:
+        if isinstance(item, SList) and item.head == "embedded_files":
+            item = SList([child for child in item.items if not _is_embedded_worksheet(child)])
+            if len(item.items) == 1:
+                continue
+        items.append(item)
+    return SList(items)
+
+
+def _is_embedded_worksheet(node: Node) -> bool:
+    if not isinstance(node, SList) or node.head != "file":
+        return False
+    kind = node.child("type")
+    return kind is not None and kind.value(1) == "worksheet"
 
 
 def _normalise_pcb_node(
@@ -761,7 +799,15 @@ def changed_domains(old: DesignFingerprint, new: DesignFingerprint) -> tuple[str
     # source change (audit F20). Only compared when both sides recorded it.
     if old.fabrication_outputs and new.fabrication_outputs and old.fabrication_outputs != new.fabrication_outputs:
         changed += ("fabrication_outputs",)
+    # Drawing sheets (schema 3). Only compared when both sides recorded them.
+    for name in SHEET_DOMAINS:
+        before, after = getattr(old, name), getattr(new, name)
+        if before and after and before != after:
+            changed += (name,)
     return changed
+
+
+SHEET_DOMAINS = ("schematic_sheet", "fabrication_sheet", "assembly_sheet")
 
 
 def schematic_pcb_parity(reader: SourceReader) -> list[str]:

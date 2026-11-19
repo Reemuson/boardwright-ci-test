@@ -67,6 +67,16 @@ from .git_ops import remote_url
 
 
 def main(argv: list[str] | None = None) -> int:
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    # build and container own their argument parsing (shared with CI).
+    if arguments[:1] == ["build"]:
+        from .build import main as build_main
+
+        return build_main(arguments[1:])
+    if arguments[:1] == ["container"]:
+        from .container import main as container_main
+
+        return container_main(arguments[1:])
     parser = _build_parser()
     args = parser.parse_args(argv)
 
@@ -119,6 +129,8 @@ def main(argv: list[str] | None = None) -> int:
             return _sheet_title(args)
         if args.command == "worksheet-logo":
             return _worksheet_logo(args)
+        if args.command == "worksheet":
+            return _worksheet(args)
         if args.command == "source-package":
             return _source_package(args)
         if args.command == "docker-kibot":
@@ -272,6 +284,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--justification",
         default="",
         help="Why this release is needed; recorded in .boardwright/releases.yaml.",
+    )
+    release.add_argument(
+        "--release-env",
+        action="store_true",
+        help="With --prepare: also write .boardwright/release.env (version, variant, kind) for the publish workflow.",
     )
     release.add_argument(
         "--source-sha",
@@ -579,6 +596,31 @@ def _build_parser() -> argparse.ArgumentParser:
         default=0,
         help="Zero-based bitmap block to replace. Defaults to the first bitmap.",
     )
+    worksheet_logo.add_argument(
+        "--output",
+        type=Path,
+        help="Write branded copies into this directory instead of editing the worksheets in place.",
+    )
+
+    worksheet = subparsers.add_parser(
+        "worksheet",
+        help="Inspect or adopt the project's active KiCad drawing sheets.",
+    )
+    worksheet.add_argument(
+        "action",
+        choices=("status", "adopt", "extract"),
+        help=(
+            "status: show the sheet each drawing renders and any problems; adopt: switch embedded "
+            "sheets to their identical Templates/ file; extract: write embedded sheets for review."
+        ),
+    )
+    worksheet.add_argument("--apply", action="store_true", help="adopt: write the .kicad_pro change.")
+    worksheet.add_argument(
+        "--out",
+        type=Path,
+        default=Path(".boardwright-checks/embedded-worksheets"),
+        help="extract: output directory (default .boardwright-checks/embedded-worksheets).",
+    )
 
     source_package = subparsers.add_parser(
         "source-package",
@@ -602,13 +644,24 @@ def _build_parser() -> argparse.ArgumentParser:
 
     docker_kibot = subparsers.add_parser(
         "docker-kibot",
-        help="Launch the bundled local KiBot Docker helper script.",
+        help="Alias for 'container shell': interactive shell in the pinned KiBot image.",
     )
     docker_kibot.add_argument(
         "--version",
         "-v",
+        choices=("9", "10"),
         default="9",
-        help="KiCad major version for the Docker image tag. Defaults to 9.",
+        help="KiCad major version. Defaults to 9.",
+    )
+    subparsers.add_parser(
+        "build",
+        add_help=False,
+        help="Run the output build in this checkout (inside the container); see 'build --help'.",
+    )
+    subparsers.add_parser(
+        "container",
+        add_help=False,
+        help="Run builds and checks in the pinned KiBot container; see 'container --help'.",
     )
 
     return parser
@@ -789,6 +842,8 @@ def _update(args: argparse.Namespace) -> int:
         target = write_plan(args.output, plan)
         print(f"Wrote update plan: {target}")
         print(f"Blockers: {len(plan.get('blockers', []))}")
+        for notice in plan.get("notices", []):
+            print(f"note: {notice}")
         return 1 if plan.get("blockers") else 0
     if args.update_command == "apply":
         written = apply_update_plan(args.plan)
@@ -901,24 +956,20 @@ def _sheet_title(args: argparse.Namespace) -> int:
 
 
 def _worksheet_logo(args: argparse.Namespace) -> int:
+    from .worksheet_logo import select_logo_targets
+
     config = load_config()
     logo = args.logo or Path(config.template_sheet_image)
+    if not str(logo):
+        raise BoardwrightError("No logo given and template.sheet_image is not configured.")
     logo = logo if logo.is_absolute() else config.root / logo
-
-    if args.all_templates:
-        worksheets = sorted((config.root / "Templates").glob("*.kicad_wks"))
-    elif args.worksheet:
-        worksheets = [
-            path if path.is_absolute() else config.root / path
-            for path in args.worksheet
-        ]
-    else:
-        worksheet = Path(config.worksheet)
-        worksheets = [worksheet if worksheet.is_absolute() else config.root / worksheet]
-
-    if not worksheets:
-        raise BoardwrightError("No worksheet files selected.")
-
+    worksheets = select_logo_targets(
+        config,
+        logo,
+        explicit=[path if path.is_absolute() else config.root / path for path in args.worksheet or []],
+        all_templates=args.all_templates,
+        output=(args.output if args.output is None or args.output.is_absolute() else config.root / args.output),
+    )
     results = embed_logo_in_worksheets(
         worksheets,
         logo,
@@ -931,6 +982,46 @@ def _worksheet_logo(args: argparse.Namespace) -> int:
             f"updated {worksheet_label} with {logo_label} "
             f"({result.png_width}x{result.png_height}, bitmap {result.bitmap_index})"
         )
+    if config.local_overrides:
+        print("note: using .boardwright/local.yaml overrides: " + ", ".join(config.local_overrides))
+    return 0
+
+
+def _worksheet(args: argparse.Namespace) -> int:
+    from . import drawing_sheets
+
+    config = load_config()
+    template_worksheet = str(config.template.get("worksheet") or "")
+    if args.action == "status":
+        for document, ref in drawing_sheets.active_sheet_refs(config.root, template_worksheet).items():
+            where = ref.path if ref.kind in ("file", "relative", "absolute") else ref.setting or "(KiCad default)"
+            print(f"{document:12} {ref.kind:9} {where}")
+        logo = config.template_sheet_image or "(none)"
+        suffix = " (local override)" if "template.sheet_image" in config.local_overrides else ""
+        print(f"{'logo':12} {'':9} {logo}{suffix}")
+        issues = drawing_sheets.sheet_issues(config.root, template_worksheet) + drawing_sheets.branding_issues(config)
+        for issue in issues:
+            print(f"- {issue.level}: {issue.message}")
+        return 1 if any(issue.level == "error" for issue in issues) else 0
+    if args.action == "adopt":
+        results = drawing_sheets.plan_adoption(config.root)
+        for result in results:
+            print(f"{result.section:10} {result.action:13} {result.detail}")
+        if not args.apply:
+            if any(result.action == "adopted" for result in results):
+                print("Dry run: re-run with --apply to update the .kicad_pro.")
+            return 0
+        written = drawing_sheets.apply_adoption(config.root, results)
+        for path in written:
+            print(f"updated {_display_path(path, config.root)}")
+        blocked = [result for result in results if result.action in ("diverged", "missing", "unverifiable")]
+        return 1 if blocked else 0
+    out = args.out if args.out.is_absolute() else config.root / args.out
+    written = drawing_sheets.extract_embedded(config.root, out)
+    for path in written:
+        print(f"wrote {_display_path(path, config.root)}")
+    if not written:
+        print("No embedded worksheets.")
     return 0
 
 
@@ -947,35 +1038,12 @@ def _source_package(args: argparse.Namespace) -> int:
 
 
 def _docker_kibot(args: argparse.Namespace) -> int:
-    config = load_config()
-    if shutil.which("docker") is None:
-        raise BoardwrightError("Docker is not installed. Install Docker Desktop or Docker Engine to use the local KiBot runner.")
+    # Compatibility alias: the old helper scripts mounted /etc/shadow and used a
+    # moving KiCad 8 image (audit M7). The pinned container replaces them.
+    from .container import main as container_main
 
-    if os.name == "nt":
-        script = config.root / "boardwright_resources" / "kibot" / "resources" / "scripts" / "docker_kibot_windows.bat"
-        command = ["cmd", "/c", str(script), "-v", str(args.version)]
-    else:
-        script = config.root / "boardwright_resources" / "kibot" / "resources" / "scripts" / "docker_kibot_linux.sh"
-        command = ["/bin/sh", str(script), "-v", str(args.version)]
-
-    if not script.exists():
-        raise BoardwrightError(f"Missing local KiBot helper script: {script}")
-
-    completed = subprocess.run(
-        command,
-        cwd=config.root,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-    if completed.returncode != 0:
-        message = completed.stderr.strip() or completed.stdout.strip()
-        raise BoardwrightError(f"Local KiBot runner failed: {message}")
-
-    output = completed.stdout.strip()
-    if output:
-        print(output)
-    return 0
+    print("note: docker-kibot is now 'boardwright container shell'.", file=sys.stderr)
+    return container_main(["shell", "--kicad", str(args.version)])
 
 
 def _display_path(path: Path, root: Path) -> str:
@@ -1104,6 +1172,19 @@ def _promote(args: argparse.Namespace) -> int:
     return 0
 
 
+def _write_release_env(config, version: str, variant: str, kind: str) -> None:
+    # Read by release.yaml; the include flag comes from tracked configuration only.
+    tracked = load_config(config.root, local=False)
+    lines = [
+        f"RELEASE_VERSION={version}",
+        f"RELEASE_VARIANT={variant}",
+        f"RELEASE_KIND={kind}",
+        f"RELEASE_INCLUDE_SOURCE_ARCHIVE={str(tracked.release_include_source_archive).lower()}",
+    ]
+    target = config.root / ".boardwright" / "release.env"
+    target.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+
+
 def _release(args: argparse.Namespace) -> int:
     config = load_config()
     if args.dispatch:
@@ -1158,6 +1239,9 @@ def _release(args: argparse.Namespace) -> int:
             variant=args.variant,
         )
         print(f"Prepared release {plan.version}.")
+        if args.release_env:
+            _write_release_env(config, args.version, args.variant, args.kind)
+            print("Wrote .boardwright/release.env.")
         print("Recorded release identities in .boardwright/releases.yaml.")
         print("Updated CHANGELOG.md, .boardwright/document_revisions.yaml, and revision-history variables.")
         print(f"Suggested commit: release: prepare {plan.version}")

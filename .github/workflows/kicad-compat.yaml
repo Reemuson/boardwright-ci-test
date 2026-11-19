@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: LicenseRef-Boardwright-Source-Available
 # Copyright (c) Ryan Hicks
 
-# Manual KiCad 9 -> 10 comparison. Builds one commit with both KiBot images,
-# never commits or publishes, and reports output differences and any source
-# files the newer KiCad rewrote. Use it before switching project CI to KiCad 10.
+# Manual KiCad 9 -> 10 comparison. Builds one commit in both pinned images,
+# never commits or publishes, and compares the controlled outputs. A KiCad 10
+# build that rewrites tracked source files fails (the build restores them and
+# lists them in its log). Use it before switching project CI to KiCad 10.
 
 name: Boardwright KiCad Compatibility
 run-name: KiCad 9 vs 10 on ${{ inputs.ref || github.ref_name }}
@@ -31,116 +32,47 @@ permissions:
 
 env:
   PYTHONPATH: ${{ github.workspace }}/src
-  KIBOT_CONFIG: boardwright_resources/kibot/yaml/kibot_main.yaml
-  IN_REF: ${{ inputs.ref }}
   IN_VARIANT: ${{ inputs.variant }}
 
 jobs:
-  kicad9:
-    name: Build with KiCad 9
+  build:
+    name: Build with KiCad ${{ matrix.kicad }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        kicad: ["9", "10"]
+    env:
+      KICAD_VERSION: ${{ matrix.kicad }}
     steps:
       - uses: actions/checkout@v4
         with:
+          persist-credentials: false
           ref: ${{ inputs.ref || github.ref }}
           fetch-depth: 0
-      - name: Prepare Boardwright inputs
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m pip install -e .
-          mkdir -p ~/.local/share/fonts && cp boardwright_resources/kibot/resources/fonts/*.ttf ~/.local/share/fonts/ && fc-cache -f ~/.local/share/fonts
-          git rev-parse HEAD > compat-source-sha.txt
-          python -m boardwright revision-history
-          python boardwright_resources/kibot/resources/scripts/prepare_pcb_tables.py .
-          git status --porcelain > compat-before.txt
-      - name: KiBot table sources
-        uses: INTI-CMNB/KiBot@v2_dk9
-        with:
-          additional_args: --skip-pre draw_fancy_stackup,erc,drc --log kibot_compat_tables.log table_sources
-          variant: ${{ inputs.variant }}
-          config: ${{ env.KIBOT_CONFIG }}
-      - name: Prepare PDF contents
-        shell: bash
-        run: |
-          python boardwright_resources/kibot/resources/scripts/prune_pdf_pages.py .
-          sudo chown -R "$USER:$USER" . 2>/dev/null || true
-          python boardwright_resources/kibot/resources/scripts/prepare_combined_pdf_native.py .
-      - name: KiBot outputs
-        uses: INTI-CMNB/KiBot@v2_dk9
-        with:
-          additional_args: --log kibot_compat.log all_group_k9
-          variant: ${{ inputs.variant }}
-          config: ${{ env.KIBOT_CONFIG }}
-      - name: Record manifest and source side effects
-        if: always()
-        shell: bash
-        run: |
-          sudo chown -R "$USER:$USER" . 2>/dev/null || true
-          python -m boardwright.output_manifest write --out compat-manifest.json
-          git status --porcelain -- '*.kicad_pcb' '*.kicad_sch' '*.kicad_pro' '*.kicad_wks' > compat-source-changes.txt || true
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: compat-kicad9
-          path: |
-            compat-*.json
-            compat-*.txt
-            kibot_compat*.log
-            Manufacturing
-            Schematic
-            Reports
 
-  kicad10:
-    name: Build with KiCad 10
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - name: Cache 3D models
+        uses: actions/cache@v4
         with:
-          ref: ${{ inputs.ref || github.ref }}
-          fetch-depth: 0
-      - name: Prepare Boardwright inputs
+          path: ~/cache_3d
+          key: ${{ runner.os }}-kicad-${{ matrix.kicad }}-3d
+          restore-keys: |
+            ${{ runner.os }}-kicad-${{ matrix.kicad }}-3d-
+
+      - name: Build outputs in the pinned container
         shell: bash
+        env:
+          BOARDWRIGHT_3D_CACHE: ~/cache_3d
         run: |
-          set -euo pipefail
-          python -m pip install -e .
-          mkdir -p ~/.local/share/fonts && cp boardwright_resources/kibot/resources/fonts/*.ttf ~/.local/share/fonts/ && fc-cache -f ~/.local/share/fonts
-          git rev-parse HEAD > compat-source-sha.txt
-          python -m boardwright revision-history
-          python boardwright_resources/kibot/resources/scripts/prepare_pcb_tables.py .
-          git status --porcelain > compat-before.txt
-      - name: KiBot table sources
-        uses: INTI-CMNB/KiBot@v2_dk10
-        with:
-          additional_args: --skip-pre draw_fancy_stackup,erc,drc --log kibot_compat_tables.log table_sources
-          variant: ${{ inputs.variant }}
-          config: ${{ env.KIBOT_CONFIG }}
-      - name: Prepare PDF contents
-        shell: bash
-        run: |
-          python boardwright_resources/kibot/resources/scripts/prune_pdf_pages.py .
-          sudo chown -R "$USER:$USER" . 2>/dev/null || true
-          python boardwright_resources/kibot/resources/scripts/prepare_combined_pdf_native.py .
-      - name: KiBot outputs
-        uses: INTI-CMNB/KiBot@v2_dk10
-        with:
-          additional_args: --log kibot_compat.log all_group_k10
-          variant: ${{ inputs.variant }}
-          config: ${{ env.KIBOT_CONFIG }}
-      - name: Record manifest and source side effects
-        if: always()
-        shell: bash
-        run: |
-          sudo chown -R "$USER:$USER" . 2>/dev/null || true
-          python -m boardwright.output_manifest write --out compat-manifest.json
-          git status --porcelain -- '*.kicad_pcb' '*.kicad_sch' '*.kicad_pro' '*.kicad_wks' > compat-source-changes.txt || true
+          python -m boardwright.container build --workdir . --kicad "$KICAD_VERSION" \
+            --variant "$IN_VARIANT" --log-prefix compat
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: compat-kicad10
+          name: compat-kicad${{ matrix.kicad }}
           path: |
-            compat-*.json
-            compat-*.txt
+            boardwright-build/
             kibot_compat*.log
             Manufacturing
             Schematic
@@ -149,10 +81,11 @@ jobs:
   compare:
     name: Compare KiCad 9 and 10 outputs
     runs-on: ubuntu-latest
-    needs: [kicad9, kicad10]
+    needs: build
     steps:
       - uses: actions/checkout@v4
         with:
+          persist-credentials: false
           ref: ${{ inputs.ref || github.ref }}
       - uses: actions/download-artifact@v4
         with:
@@ -162,18 +95,14 @@ jobs:
         run: |
           set -uo pipefail
           {
-            echo "## KiCad 9 vs 10 ($(cat compat/compat-kicad9/compat-source-sha.txt))"
+            echo "## KiCad 9 vs 10"
             echo
-            echo "### Source files rewritten by KiCad 10 during the build"
-            echo '```'
-            cat compat/compat-kicad10/compat-source-changes.txt || echo "(none recorded)"
-            echo '```'
-            echo "### Controlled output comparison (fabrication + assembly)"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          # Images differ by design, so compare the manifests, not the build records.
           python -m boardwright.output_manifest compare \
-            compat/compat-kicad9/compat-manifest.json \
-            compat/compat-kicad10/compat-manifest.json | tee -a "$GITHUB_STEP_SUMMARY"
+            compat/compat-kicad9/boardwright-build/manifest.json \
+            compat/compat-kicad10/boardwright-build/manifest.json | tee -a "$GITHUB_STEP_SUMMARY"
           status=${PIPESTATUS[0]}
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           echo "Inspect PDFs, renders and ERC/DRC reports in the compat-kicad9/compat-kicad10 artifacts." >> "$GITHUB_STEP_SUMMARY"
