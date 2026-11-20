@@ -66,7 +66,10 @@ class Harness:
         self.checkout = checkout
         self.temp = temp
         self.project = temp / "preview é project" / "FIC board"
+        # No bytecode caches: Boardwright is imported from the checkout's src/,
+        # and the checkout must stay byte-for-byte unchanged.
         self.env = {**os.environ, "PYTHONPATH": str(checkout / "src"), "PYTHONIOENCODING": "utf-8",
+                    "PYTHONDONTWRITEBYTECODE": "1",
                     "BOARDWRIGHT_STAGE_ROOT": str(temp / "stages é"),
                     "BOARDWRIGHT_PREVIEW_INDEX": str(temp / "preview index"),
                     "BOARDWRIGHT_3D_CACHE": str(temp / "cache 3d")}
@@ -406,6 +409,7 @@ def main() -> int:
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--quick", action="store_true", help="DRAFT, markers, lock and approval only (local dry run)")
     args = parser.parse_args()
+    sys.dont_write_bytecode = True  # this process imports boardwright from the checkout too
     harness = Harness(Path.cwd(), args.temp)
     harness.setup()
     harness.tracked_credentials()
