@@ -111,10 +111,34 @@ def ahead_behind(root: Path) -> tuple[int, int]:
 
 
 def changed_paths(root: Path) -> list[str]:
+    """Changed, staged and untracked paths, exactly as Git names them.
+
+    Parsed from NUL-separated porcelain output: ``_git`` strips its output,
+    which would cut the leading status space of the first ``--short`` line
+    (and with it the first character of the path), and ``--short`` quotes
+    paths containing spaces.
+    """
+
+    completed = subprocess.run(
+        ["git", "status", "--porcelain=v1", "-z", "--untracked-files=all"],
+        cwd=root,
+        capture_output=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        return []
+    entries = completed.stdout.decode("utf-8", errors="replace").split("\0")
     paths: list[str] = []
-    for line in dirty_files(root):
-        if len(line) > 3:
-            paths.append(line[3:])
+    index = 0
+    while index < len(entries):
+        entry = entries[index]
+        index += 1
+        if len(entry) < 4:
+            continue
+        status, path = entry[:2], entry[3:]
+        paths.append(path)
+        if "R" in status or "C" in status:
+            index += 1  # the rename/copy source follows; report the new path only
     return paths
 
 
