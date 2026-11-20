@@ -10,6 +10,9 @@ this checkout (under a path with spaces and non-ASCII characters):
 - a preview refused while another process holds the stage lock;
 - the dirty CHECKED preview against a direct ``container build`` of the same
   inputs;
+- the tracked-credential source policy through the real CLI in a separate
+  disposable repository: refused without an exact allow-list entry, staged
+  with one, and the generated test credential never printed or logged;
 - local preview evidence refused by compare, the review gate and the
   reviewed-preview marker; no workflow reads local preview evidence;
 - the existing release preparation (``container candidate``, a local
@@ -26,6 +29,7 @@ import argparse
 import hashlib
 import json
 import os
+import secrets
 import shutil
 import subprocess
 import sys
@@ -201,6 +205,97 @@ class Harness:
         check("status lists both previews as current",
               "CHECKED (KiCad 9): current" in done.stdout and "DRAFT (KiCad 9): current" in done.stdout, done.stdout[:300])
 
+    def tracked_credentials(self) -> None:
+        """Audit C1 follow-up: tracked credential-like files fail closed unless allow-listed."""
+        repo = self.temp / "credential é repo"
+        stage_root = self.temp / "credential stages"
+        logs: list[Path] = []
+        # Generated per run, never committed to this checkout or written to results.
+        secret = "bw-testcred-" + secrets.token_hex(16)
+        before = snapshot(self.checkout)
+        head = git(self.checkout, "rev-parse", "HEAD")
+        status = git(self.checkout, "status", "--porcelain", "--untracked-files=all")
+        subprocess.run(["git", "clone", "--quiet", "--no-hardlinks", str(self.checkout), str(repo)], check=True)
+        git(repo, "remote", "set-url", "--push", "origin", "DISABLED-no-push")
+        git(repo, "remote", "remove", "origin")  # nothing to push, fetch tags from or publish to
+        for key, value in (("user.name", "integration"), ("user.email", "integration@example.invalid")):
+            git(repo, "config", key, value)
+        check("credential repo is disposable and has no remote", repo != self.checkout and git(repo, "remote").strip() == "")
+        (repo / "deploy").mkdir()
+        (repo / "deploy" / ".env").write_text(f"API_TOKEN={secret}\n", encoding="utf-8", newline="\n")
+        git(repo, "add", "-f", "deploy/.env")
+        git(repo, "commit", "-q", "-m", "test: commit a credential-like file")
+        tags_before = git(repo, "tag", "--list")
+        env = {**self.env, "BOARDWRIGHT_STAGE_ROOT": str(stage_root)}
+
+        def stage(label: str, dest: Path) -> subprocess.CompletedProcess:
+            done = subprocess.run([sys.executable, "-m", "boardwright", "container", "stage", "--worktree", "--dest", str(dest)],
+                                  cwd=repo, env=env, capture_output=True, text=True, encoding="utf-8", errors="replace")
+            log = self.temp / f"{label}.log"
+            log.write_text(done.stdout + "\n--- stderr ---\n" + done.stderr, encoding="utf-8")
+            logs.append(log)
+            return done
+
+        def edit(text: str) -> None:  # a saved change, so a worktree stage has something to stage
+            path = repo / SCHEMATIC
+            path.write_bytes(path.read_bytes() + text.encode("utf-8"))
+
+        edit("\n")
+        refused_dest = self.temp / "credential refused stage"
+        done = stage("credential-refused", refused_dest)
+        output = done.stdout + done.stderr
+        check("tracked deploy/.env refuses a worktree stage without an allow-list entry",
+              done.returncode != 0 and "deploy/.env" in output and "nothing was built" in output,
+              f"exit {done.returncode}")
+        check("the refusal names the path and never the credential", secret not in output and "API_TOKEN" not in output)
+        check("the refused stage created no source tree", not (refused_dest / ".git").exists()
+              and not any(stage_root.glob("**/deploy/.env")))
+
+        # A near-miss entry must not admit the file: the allow list is exact paths.
+        project_yaml = repo / ".boardwright" / "project.yaml"
+        original = project_yaml.read_text(encoding="utf-8")
+        project_yaml.write_text(original + "source_policy:\n  allow_tracked: [deploy/.env.example, .env]\n",
+                                encoding="utf-8", newline="\n")
+        git(repo, "commit", "-q", "-am", "test: a near-miss allow-list entry")
+        edit("\n")
+        near = stage("credential-near-miss", self.temp / "credential near-miss stage")
+        check("a near-miss allow-list entry still refuses deploy/.env",
+              near.returncode != 0 and "deploy/.env" in near.stdout + near.stderr, f"exit {near.returncode}")
+
+        project_yaml.write_text(original + "source_policy:\n  allow_tracked: [deploy/.env]\n", encoding="utf-8", newline="\n")
+        git(repo, "commit", "-q", "-am", "test: allow-list deploy/.env exactly")
+        edit("\n")
+        allowed_dest = self.temp / "credential allowed stage"
+        done = stage("credential-allowed", allowed_dest)
+        output = done.stdout + done.stderr
+        tracked = set(git(allowed_dest, "ls-files", "-z").split("\0")) if (allowed_dest / ".git").exists() else set()
+        check("an exact allow_tracked entry stages deploy/.env", done.returncode == 0 and "deploy/.env" in tracked,
+              f"exit {done.returncode}")  # exact path, not a substring
+        marker = allowed_dest / ".git" / "boardwright-stage"
+        check("the allowed stage is a non-release worktree build",
+              marker.exists() and json.loads(marker.read_text(encoding="utf-8")).get("purpose") == "worktree-build")
+        check("the allowed stage printed no credential", secret not in output and "API_TOKEN" not in output)
+        metadata = [p for p in (allowed_dest / ".git").glob("boardwright-*") if p.is_file()]
+        check("stage metadata holds no credential",
+              bool(metadata) and not any(secret.encode() in p.read_bytes() for p in metadata), [p.name for p in metadata])
+
+        # Containment: logs that would be uploaded, the real checkout, the
+        # preview clone, and the repository's refs.
+        uploaded = list(self.temp.glob("*.log"))
+        check("no uploaded log contains the credential", not any(secret.encode() in p.read_bytes() for p in uploaded),
+              f"{len(uploaded)} logs")
+        leaked = [str(p.relative_to(root)) for root in (self.checkout, self.project) if root.exists()
+                  for p in root.rglob("*") if p.is_file() and ".git" not in p.parts and secret.encode() in p.read_bytes()]
+        check("the credential never reached the checkout or the preview clone", not leaked, leaked[:3])
+        check("the real checkout is unchanged (tree, HEAD, status)",
+              snapshot(self.checkout) == before and git(self.checkout, "rev-parse", "HEAD") == head
+              and git(self.checkout, "status", "--porcelain", "--untracked-files=all") == status)
+        check("the credential repo has no new tags and no remote",
+              git(repo, "tag", "--list") == tags_before and git(repo, "remote").strip() == "")
+        check("no result detail contains the credential", not any(secret in json.dumps(r) for r in results))
+        for path in (p for p in (repo, refused_dest, allowed_dest, self.temp / "credential near-miss stage", stage_root) if p.exists()):
+            shutil.rmtree(path, onerror=lambda func, item, _exc: (os.chmod(item, 0o700), func(item)))
+
     def direct_build(self, preview_record: dict) -> None:
         sys.path.insert(0, str(self.checkout / "src"))
         from boardwright.output_manifest import blocking, compare_manifests, load_manifest
@@ -313,6 +408,7 @@ def main() -> int:
     args = parser.parse_args()
     harness = Harness(Path.cwd(), args.temp)
     harness.setup()
+    harness.tracked_credentials()
     harness.preview("clean-draft", "DRAFT", dirty=False)
     if not args.quick:
         harness.preview("clean-checked", "CHECKED", dirty=False)

@@ -4,7 +4,8 @@
 # Testbench only (not part of the Boardwright template). Exercises local-first
 # previews with real Docker in a disposable clone, and rehearses release
 # preparation, without publishing: read-only token, no persisted credentials,
-# the clone's push URL disabled. See ci/preview_integration/check.py.
+# the clone's push URL disabled. The tracked-credential policy check uses a
+# credential generated per run in a separate disposable repository with no remote. See ci/preview_integration/check.py.
 
 name: Preview integration (non-publishing)
 run-name: Preview integration on ${{ github.sha }}
