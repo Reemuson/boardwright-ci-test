@@ -375,7 +375,13 @@ jobs:
             exit 1
           fi
 
-          git commit -m "release: prepare ${version} (${variant})" -m "Source: ${BOARDWRIGHT_SOURCE_SHA}"
+          # Trailers (docs/COMMITS.md): the reviewed source and, for an approved
+          # release, the held run whose candidate it matched.
+          trailers="Source-Commit: ${BOARDWRIGHT_SOURCE_SHA}"
+          if [[ -n "$IN_APPROVED_REVIEW_RUN" ]]; then
+            trailers+=$'\n'"Reviewed-Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${IN_APPROVED_REVIEW_RUN}"
+          fi
+          git commit -m "release: prepare ${version} (${variant})" -m "$trailers"
           # Non-forced push: fails if main moved after checkout.
           git push origin HEAD:main
 

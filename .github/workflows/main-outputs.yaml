@@ -241,7 +241,12 @@ jobs:
 
           git fetch origin "$target_branch"
           git switch -C "boardwright-accepted-${target_branch}" "origin/${target_branch}"
-          git merge --no-ff --no-edit -X theirs "$source_sha"
+          # An explicit message (docs/COMMITS.md) instead of Git's default, which
+          # names the workflow's temporary branch.
+          git merge --no-ff -X theirs \
+            -m "chore(outputs): accept ${source_sha:0:12} from ${IN_SOURCE_REF_OR_GH_REF_NAME}" \
+            -m "Source-Commit: ${source_sha}"$'\n'"Variant: ${IN_VARIANT_OR_CHECKED}" \
+            "$source_sha"
 
           cp "$snapshot_dir/README.md" README.md
           rm -rf assets/renders
@@ -259,5 +264,5 @@ jobs:
             exit 0
           fi
 
-          git commit -m "chore(outputs): update README snapshot"
+          git commit -m "chore(outputs): update README snapshot" -m "Source-Commit: ${source_sha}"
           git push origin HEAD:"$target_branch"

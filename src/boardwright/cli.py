@@ -18,7 +18,7 @@ from .actions import (
     dispatch_workflow_action,
 )
 from .changelog import SUPPORTED_SECTIONS, add_unreleased_entry
-from .commit_messages import suggest_commit_message
+from .commit_messages import subject_warnings, suggest_commit_message
 from .config import find_project_root, init_config, load_config
 from .doctor import doctor_exit_code, format_doctor_report, run_doctor
 from .errors import BoardwrightError
@@ -1091,7 +1091,11 @@ def _change(args: argparse.Namespace) -> int:
 
 def _suggest_commit(args: argparse.Namespace) -> int:
     config = load_config()
-    print(suggest_commit_message(config.root, args.message))
+    message = suggest_commit_message(config.root, args.message)
+    print(message)
+    # Advisory only (docs/COMMITS.md); a suggestion is never refused.
+    for note in subject_warnings(message):
+        print(f"note: {note}", file=sys.stderr)
     return 0
 
 

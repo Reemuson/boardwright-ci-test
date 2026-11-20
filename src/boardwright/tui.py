@@ -27,7 +27,7 @@ from .actions import (
     list_recent_workflow_runs,
 )
 from .changelog import SUPPORTED_SECTIONS, add_unreleased_entry
-from .commit_messages import suggest_commit_message
+from .commit_messages import subject_warnings, suggest_commit_message
 from .config import load_config, update_project_config
 from .errors import BoardwrightError
 from .git_ops import commit_all, dirty_files, push_branch
@@ -2132,6 +2132,9 @@ def _build_textual_app():
             if not message:
                 self.notify("Commit message is empty.", severity="error")
                 return
+            # Advisory only (docs/COMMITS.md): the commit goes ahead regardless.
+            for note in subject_warnings(message):
+                self.notify(f"Commit message: {note}", severity="warning")
             self.ci_status = f"{_action_display_name('Commit')} running..."
             self._render_state()
             self.notify("Committing...")
