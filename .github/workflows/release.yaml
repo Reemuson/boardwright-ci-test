@@ -147,104 +147,19 @@ jobs:
       - name: Generate GitHub release markdown
         shell: bash
         run: |
-          tag="${GITHUB_REF_NAME}"
-          repo="${GITHUB_REPOSITORY}"
-          release_url="https://github.com/${repo}/releases/download/${tag}"
-
-          top_image=""
-          bottom_image=""
-          if [[ -d assets/renders ]]; then
-            top_image="$(find assets/renders -maxdepth 1 -type f \( -iname '*angled_top*.png' -o -iname '*top*.png' \) | sort | head -n 1 || true)"
-            bottom_image="$(find assets/renders -maxdepth 1 -type f \( -iname '*angled_bottom*.png' -o -iname '*bottom*.png' \) | sort | head -n 1 || true)"
-          fi
-
-          {
-            echo "Generated \`${RELEASE_VARIANT}\` package for \`${repo}\`."
-            echo
-            if [[ -n "$top_image" || -n "$bottom_image" ]]; then
-              echo "## Board Images"
-              echo
-              echo '<p align="center">'
-              if [[ -n "$top_image" ]]; then
-                echo "  <img alt=\"Top board render\" src=\"${release_url}/$(basename "$top_image")\" width=\"45%\">"
-              fi
-              if [[ -n "$bottom_image" ]]; then
-                if [[ -n "$top_image" ]]; then
-                  echo '&nbsp; &nbsp; &nbsp; &nbsp;'
-                fi
-                echo "  <img alt=\"Bottom board render\" src=\"${release_url}/$(basename "$bottom_image")\" width=\"45%\">"
-              fi
-              echo '</p>'
-              echo
-            fi
-            python - <<'PY'
-          import sys
-          sys.path.insert(0, "src")
-          from pathlib import Path
-          from boardwright.release_ledger import load_ledger
-          import os
-          tag = os.environ["GITHUB_REF_NAME"]
-          record = next((r for r in load_ledger(Path(".")) if r.version == tag), None)
-          if record is None:
-              print("## Identities\n\nNo release ledger entry (legacy release).\n")
-          else:
-              print("## Identities\n")
-              print("| Item | Value |\n|---|---|")
-              print(f"| Project release | {record.version} |")
-              print(f"| PCB revision | {record.pcb_revision} |")
-              print(f"| Schematic revision | {record.schematic_revision} |")
-              print(f"| Assembly drawing revision | {record.assembly_revision} |")
-              print(f"| Fabrication drawing revision | {record.fabrication_revision} |")
-              print(f"| Fabrication baseline | {record.fabrication_baseline.id} ({record.fabrication_baseline.status}) |")
-              print(f"| Assembly baseline | {record.assembly_baseline.id} ({record.assembly_baseline.status}) |")
-              print(f"| Change classes | {', '.join(record.change_classes) or 'initial'} |")
-              print(f"| Source commit | {record.source_commit} |")
-              print(f"\n{record.justification}\n")
-          PY
-            echo "## Changes"
-            echo
-            awk -v tag="$tag" '
-              $0 == "## [" tag "]" || $0 ~ "^## \\[" tag "\\] - " { capture=1; next }
-              capture && /^## \[/ { exit }
-              capture { print }
-            ' CHANGELOG.md
-            echo
-            echo "## Assets"
-            echo
-            echo "- Full release package: \`boardwright-${tag}-release.zip\`"
-            if [[ -f "boardwright-${tag}-source.zip" ]]; then
-              echo "- Curated source package: \`boardwright-${tag}-source.zip\`"
-            fi
-            echo "- Generated README: included in the release package and generated from \`boardwright_resources/kibot/resources/templates/readme.txt\`"
-          } > RELEASE_NOTES.md
-
-          if [[ -n "$top_image" ]]; then
-            cp "$top_image" "$(basename "$top_image")"
-          fi
-          if [[ -n "$bottom_image" ]]; then
-            cp "$bottom_image" "$(basename "$bottom_image")"
-          fi
+          # Shared with local publication: src/boardwright/release_package.py
+          # (docs/LOCAL_FIRST.md section 6). Writes RELEASE_NOTES.md and copies
+          # the chosen board renders next to it as release assets.
+          python -m boardwright.release_package notes --tag "$GITHUB_REF_NAME" \
+            --variant "$RELEASE_VARIANT" --repository "$GITHUB_REPOSITORY" \
+            --asset-base-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}"
 
       - name: Collect release assets
         shell: bash
         run: |
-          rm -rf "$RELEASE_DIR"
-          mkdir -p "$RELEASE_DIR"
-
-          for path in Schematic Manufacturing assets HTML KiRI Testing Reports README.md NOTICE.md THIRD_PARTY_NOTICES.md LICENSE boardwright-${{ github.ref_name }}-source.zip; do
-            if [[ -e "$path" ]]; then
-              cp -a "$path" "$RELEASE_DIR/"
-            fi
-          done
-
-          if [[ -f .boardwright/releases.yaml ]]; then
-            python -c "import json,os,sys; sys.path.insert(0,'src'); from pathlib import Path; from boardwright.release_ledger import load_ledger; r=[x for x in load_ledger(Path('.')) if x.version==os.environ['GITHUB_REF_NAME']]; print(json.dumps(r[0].as_dict(), indent=2) if r else '{}')" > "$RELEASE_DIR/RELEASE_IDENTITY.json"
-          fi
-          if [[ -f .boardwright/accepted_manifest.json ]]; then
-            cp .boardwright/accepted_manifest.json "$RELEASE_DIR/ACCEPTED_OUTPUT_MANIFEST.json"
-          fi
-          (cd "$RELEASE_DIR" && find . -type f ! -name MANIFEST.txt -print0 | sort -z | xargs -0 sha256sum) > "$RELEASE_DIR/MANIFEST.txt"
-          zip -r "boardwright-${{ github.ref_name }}-release.zip" "$RELEASE_DIR"
+          # Copy set, RELEASE_IDENTITY.json, ACCEPTED_OUTPUT_MANIFEST.json,
+          # MANIFEST.txt and the zip: src/boardwright/release_package.py.
+          python -m boardwright.release_package collect --tag "$GITHUB_REF_NAME" --release-dir "$RELEASE_DIR"
 
       - name: Upload release package artifact
         uses: actions/upload-artifact@v4

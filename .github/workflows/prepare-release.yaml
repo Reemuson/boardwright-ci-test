@@ -364,24 +364,15 @@ jobs:
           version="$IN_VERSION"
           variant="$IN_VARIANT"
 
-          git rm -r --ignore-unmatch HTML KiRI Manufacturing Reports Schematic Testing
-          git add CHANGELOG.md .boardwright/project.yaml .boardwright/document_revisions.yaml
-          git add -f .boardwright/revision_history_variables.env .boardwright/release.env
-          git add -f .boardwright/releases.yaml .boardwright/accepted_manifest.json .boardwright/review_candidate.json
-          git add README.md assets/renders/*.png || true
-
-          if git diff --cached --quiet; then
-            echo "No release changes to commit." >&2
-            exit 1
-          fi
-
-          # Trailers (docs/COMMITS.md): the reviewed source and, for an approved
-          # release, the held run whose candidate it matched.
-          trailers="Source-Commit: ${BOARDWRIGHT_SOURCE_SHA}"
+          # Staging, message and trailers (docs/COMMITS.md) are shared with the
+          # local release backend: src/boardwright/release_commit.py. An
+          # approved release names the held run whose candidate it matched.
+          reviewed_run_url=""
           if [[ -n "$IN_APPROVED_REVIEW_RUN" ]]; then
-            trailers+=$'\n'"Reviewed-Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${IN_APPROVED_REVIEW_RUN}"
+            reviewed_run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${IN_APPROVED_REVIEW_RUN}"
           fi
-          git commit -m "release: prepare ${version} (${variant})" -m "$trailers"
+          python -m boardwright.release_commit --version "$version" --variant "$variant" \
+            --source-sha "$BOARDWRIGHT_SOURCE_SHA" --reviewed-run-url "$reviewed_run_url"
           # Non-forced push: fails if main moved after checkout.
           git push origin HEAD:main
 
@@ -398,9 +389,21 @@ jobs:
           echo "::add-mask::$auth"
           export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth"
           version="$IN_VERSION"
+          release_commit="$(git rev-parse HEAD)"
           git tag -a "$version" -m "Release $version"
-          if ! git push origin "refs/tags/$version"; then
-            echo "::error::Release commit $(git rev-parse HEAD) is on main but tag $version was not pushed. Recover: git tag -a $version $(git rev-parse HEAD) -m 'Release $version' && git push origin $version, then dispatch release.yaml on the tag." >&2
+          # Bounded, verified retry (audit R1): transient push failures are
+          # retried after re-reading the remote; a tag already pointing at the
+          # release commit counts as pushed; conflicts and authentication
+          # failures stop at once. Never forced.
+          status=0
+          python -m boardwright.tag_push --tag "$version" --commit "$release_commit" --remote origin --branch main || status=$?
+          if (( status != 0 )); then
+            case "$status" in
+              3) reason="the remote already has a different tag $version" ;;
+              4) reason="authentication or permission failure" ;;
+              *) reason="the tag push did not succeed" ;;
+            esac
+            echo "::error::Release commit $release_commit is on main but tag $version was not pushed ($reason). Recover: git tag -a $version $release_commit -m 'Release $version' && git push origin refs/tags/$version, then dispatch release.yaml on the tag." >&2
             exit 1
           fi
 
