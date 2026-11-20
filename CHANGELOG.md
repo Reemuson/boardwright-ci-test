@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Release tooling only: the release date is fixed once at preparation and shown on the drawings from the release record, an approved release must carry the reviewed date and release files, and prepared sources are verified before building. Circuit, BOM, PCB and drawings unchanged; PCB A, schematic C, fabrication A/2 and assembly A reused.
+
 ## [0.1.6] - 2026-11-19
 ### Changed
 
