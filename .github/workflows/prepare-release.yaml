@@ -63,6 +63,11 @@ on:
         required: false
         default: ""
         type: string
+      release_date:
+        description: "Release date YYYY-MM-DD for a held run (default: today's UTC date). An approved run always uses the reviewed date; a different value here fails"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: write
@@ -87,6 +92,7 @@ env:
   IN_SOURCE_SHA: ${{ inputs.source_sha }}
   IN_REVIEW_HOLD: ${{ inputs.review_hold }}
   IN_APPROVED_REVIEW_RUN: ${{ inputs.approved_review_run }}
+  IN_RELEASE_DATE_INPUT: ${{ inputs.release_date }}
 
 jobs:
   prepare:
@@ -229,8 +235,23 @@ jobs:
           # candidate, so ledger, CHANGELOG and drawings show the reviewed date.
           set -euo pipefail
           reviewed_date="$(python -m boardwright.review_gate release-date --candidate "$REVIEWED_CANDIDATE")"
+          if [[ -n "$IN_RELEASE_DATE_INPUT" && "$IN_RELEASE_DATE_INPUT" != "$reviewed_date" ]]; then
+            echo "release_date $IN_RELEASE_DATE_INPUT differs from the reviewed date $reviewed_date." >&2
+            exit 1
+          fi
           echo "IN_RELEASE_DATE=$reviewed_date" >> "$GITHUB_ENV"
           echo "Release date (reviewed): $reviewed_date" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Use the requested release date
+        if: ${{ inputs.approved_review_run == '' && inputs.release_date != '' }}
+        shell: bash
+        run: |
+          # A held (or unreviewed) run may fix the date explicitly, so a run
+          # that starts on a later UTC day keeps the intended release date.
+          set -euo pipefail
+          python -c "import sys; from boardwright.release_date import parse_release_date; parse_release_date(sys.argv[1])" "$IN_RELEASE_DATE_INPUT"
+          echo "IN_RELEASE_DATE=$IN_RELEASE_DATE_INPUT" >> "$GITHUB_ENV"
+          echo "Release date (requested): $IN_RELEASE_DATE_INPUT" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build release candidate in the pinned container
         shell: bash
@@ -291,6 +312,7 @@ jobs:
             .boardwright/releases.yaml
             .boardwright/release.env
             .boardwright/revision_history_variables.env
+            .boardwright/revision_history_*.csv
             .boardwright/document_revisions.yaml
             .boardwright/project.yaml
             CHANGELOG.md
