@@ -2,11 +2,11 @@
   "inputs": {
     "IN_CHANGE_CLASSES": "tooling",
     "IN_DRAWING_REVISION": "C",
-    "IN_JUSTIFICATION": "Tooling-only: shared Docker build (pinned KiCad 9.0.7 image), AS 1100 sheet templates added but not active, ${KIPRJMOD} worksheet paths, assembly/fabrication revision variables. PCB A, schematic C, fabrication A/2 and assembly A unchanged and reused.",
+    "IN_JUSTIFICATION": "Tooling-only: authoritative release date, verified release preparation and stage release references. PCB A, schematic C, fabrication A/2 and assembly A unchanged and reused.",
     "IN_RELEASE_KIND": "draft",
     "IN_REVISION_DESCRIPTION": "Revision note labelled SCH REV",
     "IN_VARIANT": "RELEASED",
-    "IN_VERSION": "0.1.6"
+    "IN_VERSION": "0.1.7"
   },
   "ledger_entry": {
     "assembly_baseline": {
@@ -16,6 +16,7 @@
     "change_classes": [
       "tooling"
     ],
+    "date": "2026-11-20",
     "fabrication_baseline": {
       "id": "A/2",
       "status": "reused"
@@ -51,13 +52,23 @@
       "pcb_revision": "A",
       "schematic_revision": "C"
     },
-    "justification": "Tooling-only: shared Docker build (pinned KiCad 9.0.7 image), AS 1100 sheet templates added but not active, ${KIPRJMOD} worksheet paths, assembly/fabrication revision variables. PCB A, schematic C, fabrication A/2 and assembly A unchanged and reused.",
-    "previous_version": "0.1.5",
-    "source_commit": "d22180bb047358aa3063992fbdd35a4996b6bc94",
+    "justification": "Tooling-only: authoritative release date, verified release preparation and stage release references. PCB A, schematic C, fabrication A/2 and assembly A unchanged and reused.",
+    "previous_version": "0.1.6",
+    "source_commit": "349e1741348019544245259feb1813761eb07d02",
     "variant": "RELEASED",
-    "version": "0.1.6"
+    "version": "0.1.7"
   },
-  "manifest_sha256": "4a91467598adad94f76e20fe41af57ec32d7562899e567c428a3e6ec1c7435b4",
-  "schema": 1,
-  "source_sha": "d22180bb047358aa3063992fbdd35a4996b6bc94"
+  "manifest_sha256": "af02ed1b572ec8a282171b6b4e83b2056ad454dfff4a2af1eaad72e0ef9d293c",
+  "release_date": "2026-11-20",
+  "release_metadata": {
+    ".boardwright/document_revisions.yaml": "e0710a95a5a3f3d8accdc5dcd0c19786b5ac05bd930ee2c16e48fb4f1e4323d5",
+    ".boardwright/project.yaml": "3c92b8a8a0c2c82950aec276cdaab41d266a2ff6b2721468d1792e770c1583c2",
+    ".boardwright/release.env": "b8177b7405343026aa51d19702adfc235a82d56a15c238849c0d65432cc16164",
+    ".boardwright/releases.yaml": "b90731adeb45afaa2cc9cfa23b0fb25dc58a78652e242bd5267083097de11e8d",
+    ".boardwright/revision_history_schematic.csv": "dfc6ccfd219eabf3a355a140b8e4e48d3f4fe60b8531928f88dbcd426a9205d1",
+    ".boardwright/revision_history_variables.env": "271bcaf96ce4c9c538ad54af0ff54a16e74a7cbfd87bb406b1cc6e0b9fda7a80",
+    "CHANGELOG.md": "a1d170166aa386fed53203c9c3c7ec226f8dc87876e698217f748f15a5bc4fa7"
+  },
+  "schema": 2,
+  "source_sha": "349e1741348019544245259feb1813761eb07d02"
 }
