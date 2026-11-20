@@ -93,6 +93,8 @@ def main(argv: list[str] | None = None) -> int:
             return _legal(args)
         if args.command == "preview":
             return _preview(args)
+        if args.command == "backends":
+            return _backends(args)
         if args.command == "promote":
             return _promote(args)
         if args.command == "release":
@@ -203,17 +205,36 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("validate", help="Validate core Boardwright project files.")
     subparsers.add_parser("tui", help="Launch the Boardwright TUI.")
 
-    preview = subparsers.add_parser("preview", help="Plan or dispatch preview outputs.")
+    preview = subparsers.add_parser(
+        "preview",
+        help="Build a preview (local Docker by default) or dispatch it on GitHub.",
+        description=(
+            "Build preview outputs. Every variant builds locally in the pinned container by default, "
+            "including saved uncommitted changes, without touching the working tree. Local previews "
+            "are never release evidence. The backend is chosen once and never switched after a failure."
+        ),
+    )
     preview.add_argument(
         "--variant",
         "-v",
         help="Preview variant. Defaults to variants.preview_default from project.yaml.",
     )
     preview.add_argument(
+        "--backend",
+        choices=("auto", "local", "github"),
+        default="",
+        help="Override backends.preview from project.yaml (default auto: local Docker).",
+    )
+    preview.add_argument(
         "--dispatch",
         action="store_true",
-        help="Dispatch the configured GitHub Actions preview workflow.",
+        help="Same as --backend github: dispatch the GitHub Actions preview workflow.",
     )
+    preview.add_argument("--kicad", choices=("9", "10"), default="9", help="KiCad major (10 is experimental).")
+    preview.add_argument("--plan", action="store_true", help="Show the backend selection and source plan; build nothing.")
+    preview.add_argument("--status", action="store_true", help="Show recorded local previews and whether they are current.")
+
+    subparsers.add_parser("backends", help="Show which backend previews and releases would use, and why.")
 
     promote = subparsers.add_parser(
         "promote",
@@ -1133,27 +1154,62 @@ def _tui() -> int:
 
 
 def _preview(args: argparse.Namespace) -> int:
-    config = load_config()
-    plan = build_preview_plan(config, args.variant)
-    print(f"Engine: {plan.engine}")
-    print(f"Workflow: {plan.workflow}")
-    print(f"Branch: {plan.branch}")
-    print(f"Preview branch: {plan.preview_branch}")
-    print(f"Variant: {plan.variant}")
-    print(f"GitHub CLI: {'available' if plan.gh_available else 'not found'}")
-    if not plan.gh_available:
-        print()
-        print(preview_manual_fallback(plan))
-    print("Expected output paths:")
-    for path in plan.output_paths:
-        exists = "exists" if path.exists() else "missing"
-        print(f"- {path} ({exists})")
+    from . import local_preview
+    from .variants import normalize_variant
 
-    if args.dispatch:
-        dispatch_preview(plan, config.root)
-        print("Preview workflow dispatched.")
-    else:
-        print("Preview dispatch skipped. Use --dispatch to run the workflow.")
+    config = load_config()
+    if args.dispatch and args.backend not in ("", "github"):
+        raise BoardwrightError("--dispatch means --backend github; do not combine it with --backend " + args.backend)
+    override = "github" if args.dispatch else args.backend
+    if args.status:
+        print(local_preview.format_status(local_preview.preview_status(config.root)))
+        return 0
+    if args.plan:
+        variant = normalize_variant(args.variant or config.preview_variant)
+        selection = local_preview.select_preview_backend(
+            config.root, variant, project_setting=config.preview_backend, override=override)
+        print(backends_format(selection))
+        plan = local_preview.plan_source(config.root)
+        print(f"Base commit: {plan.base_commit} ({plan.branch})")
+        print(f"Staged source digest: {plan.source_digest}" + (" (uncommitted changes)" if plan.dirty else " (clean)"))
+        for change in plan.included:
+            print(f"  include {change.kind}: {change.path}")
+        for path in plan.deleted:
+            print(f"  delete: {path}")
+        for path, reason in plan.excluded:
+            print(f"  exclude: {path} ({reason})")
+        print("Nothing was built.")
+        return 0 if selection.ok else 1
+    outcome = local_preview.run_preview(config, args.variant, override=override, kicad=args.kicad)
+    if outcome.record:
+        print("\n".join(local_preview.format_record(outcome.record)))
+    print(outcome.message, file=sys.stdout if outcome.ok else sys.stderr)
+    return 0 if outcome.ok else 1
+
+
+def backends_format(selection) -> str:
+    from .backends import format_selection
+
+    return format_selection(selection)
+
+
+def _backends(args: argparse.Namespace) -> int:
+    from . import backends
+
+    config = load_config()
+    remote = backends.inspect_remote(config.root)
+    docker = backends.inspect_docker(root=config.root)
+    release_setting = ""
+    settings = config.project.get("backends")
+    if isinstance(settings, dict):
+        release_setting = str(settings.get("release", "auto") or "auto")
+    print(f"Remote: {remote.kind}" + (f" {remote.url}" if remote.url else ""))
+    print(f"Docker: {'available' if docker.available else 'unavailable'} ({docker.detail})")
+    for operation, setting in ((backends.Operation.PREVIEW, config.preview_backend),
+                               (backends.Operation.RELEASE, release_setting or "auto")):
+        print(backends.format_selection(backends.select_backend(
+            operation, remote=remote, docker=docker, variant=config.preview_variant, project_setting=setting)))
+    print("Selection only; nothing was run. Local releases are not implemented yet.")
     return 0
 
 

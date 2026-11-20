@@ -31,6 +31,7 @@ from .commit_messages import subject_warnings, suggest_commit_message
 from .config import load_config, update_project_config
 from .errors import BoardwrightError
 from .git_ops import commit_all, dirty_files, push_branch
+from . import local_preview
 from .preview import fetch_latest_preview_artifact
 from .preview import build_preview_plan, build_preview_state, dispatch_preview, format_preview_state
 from .preview import latest_preview_variant, list_preview_runs
@@ -63,6 +64,53 @@ STATUS_ERROR = "#d46a66"
 STATUS_UNSET = "#80919a"
 STATUS_INFO = "#6fa5c8"
 
+
+
+PREVIEW_BACKEND_OPTIONS = [
+    ("Default (local Docker)", "auto"),
+    ("Local Docker", "local"),
+    ("GitHub Actions", "github"),
+]
+
+
+def preview_dialog_text(config) -> str:
+    """Explains the default; the decision itself is local_preview.select_preview_backend."""
+
+    lines = [
+        "Default: builds locally in the pinned KiCad container, including saved",
+        "uncommitted changes. The working tree is not modified.",
+        "Local previews are never release evidence.",
+        f"GitHub runs {config.preview_workflow} on a pushed {config.dev_branch} commit.",
+        "A failed preview is never retried on the other backend.",
+    ]
+    if config.preview_backend != "auto":
+        lines.insert(0, f"Project setting: backends.preview = {config.preview_backend}")
+    return "\n".join(lines)
+
+
+def run_shared_preview(config, variant: str, backend: str, echo):
+    """The TUI entry point: exactly the CLI's ``local_preview.run_preview``."""
+
+    return local_preview.run_preview(config, variant, override="" if backend == "auto" else backend, echo=echo)
+
+
+def local_preview_summary(root) -> str:
+    """One line per recorded local preview for the dashboard."""
+
+    try:
+        statuses = local_preview.preview_status(root)
+    except Exception as exc:  # status must never break the dashboard
+        return f"local previews unavailable: {exc}"
+    if not statuses:
+        return "no local previews"
+    from . import design_rules
+
+    return "; ".join(
+        f"{s.variant} {s.state} ({s.record.get('identity', '?')}"
+        + (f"; {design_rules.headline(s.record.get('design_rules'))}" if s.record.get("status") == "succeeded" else "")
+        + ")"
+        for s in statuses
+    )
 
 def _legal_profile_options(
     profiles: dict[str, object],
@@ -164,6 +212,7 @@ def collect_dashboard_state(
     release_problems = validate_release_plan(release_plan, allow_dirty=True)
 
     preview_summary = (
+        f"local: {local_preview_summary(config.root)} | GitHub: "
         f"{preview_action.workflow} | "
         f"{_field_value(preview_action.fields, 'variant')} | "
         f"{preview_action.ref} -> {config.preview_branch}"
@@ -556,22 +605,22 @@ def _build_textual_app():
             variant = self.query_one("#review_variant", Select).value
             self.dismiss(str(variant))
 
-    class PreviewDispatchScreen(ModalScreen[str | None]):
+    class PreviewDispatchScreen(ModalScreen[tuple[str, str] | None]):
+        """Variant and backend for ``local_preview.run_preview`` (shared with the CLI)."""
+
         CSS = ChangelogEntryScreen.CSS
 
         def compose(self) -> ComposeResult:
             config = load_config()
             with Vertical(id="dialog"):
                 yield Label("Preview", classes="section-title")
-                yield Static(
-                    f"Runs {config.preview_workflow} from {config.dev_branch}.",
-                    classes="muted",
-                )
+                yield Static(preview_dialog_text(config), classes="muted")
                 yield Select(
                     [(variant, variant) for variant in ("DRAFT", "PRELIMINARY", "CHECKED", "RELEASED")],
                     value=config.preview_variant,
                     id="preview_variant",
                 )
+                yield Select(PREVIEW_BACKEND_OPTIONS, value="auto", id="preview_backend")
                 yield Button("Run", id="dispatch_preview")
                 yield Button("Cancel", id="cancel_preview")
 
@@ -580,7 +629,8 @@ def _build_textual_app():
                 self.dismiss(None)
                 return
             variant = self.query_one("#preview_variant", Select).value
-            self.dismiss(str(variant))
+            backend = self.query_one("#preview_backend", Select).value
+            self.dismiss((str(variant), str(backend)))
 
     class ProjectInfoScreen(ModalScreen[dict[str, object] | None]):
         CSS = ChangelogEntryScreen.CSS
@@ -1828,53 +1878,58 @@ def _build_textual_app():
         def action_generate_preview(self) -> None:
             if not self._require_action("Preview"):
                 return
+            if getattr(self, "_preview_running", False):
+                self.notify("A preview is already running; wait for it to finish.", severity="warning")
+                return
             self.push_screen(PreviewDispatchScreen(), self._generate_preview)
 
-        def _generate_preview(self, variant: str | None) -> None:
-            if variant is None:
+        def _generate_preview(self, choice: tuple[str, str] | None) -> None:
+            if choice is None:
                 return
-            try:
-                config = load_config()
-                if self.state.status.branch != config.dev_branch:
-                    self.notify(
-                        f"Switch to {config.dev_branch} to preview.",
-                        severity="error",
-                    )
-                    return
-                if self.state.status.dirty_count:
-                    self.notify("Commit local changes before preview.", severity="error")
-                    return
-                if self.state.status.ahead:
-                    self.notify("Push commits before preview.", severity="error")
-                    return
-                plan = build_preview_plan(config, variant)
-            except BoardwrightError as exc:
-                self.notify(str(exc), severity="error")
+            variant, backend = choice
+            if getattr(self, "_preview_running", False):
+                self.notify("A preview is already running; wait for it to finish.", severity="warning")
                 return
-            self.ci_status = f"Preview {plan.variant} dispatching..."
+            # Cleared in _finish_preview_dispatch. The stage lock refuses a
+            # second run from another process (CLI or another TUI) as well.
+            self._preview_running = True
+            self.ci_status = f"Preview {variant}: selecting backend..."
             self._render_state()
-            Thread(target=self._dispatch_preview, args=(plan.variant,), daemon=True).start()
+            Thread(target=self._run_preview, args=(variant, backend), daemon=True).start()
 
-        def _dispatch_preview(self, variant: str) -> None:
+        def _run_preview(self, variant: str, backend: str) -> None:
+            # Same entry point as `boardwright preview`: selection, policy and
+            # the no-silent-switch rule live in local_preview, not here.
+            def progress(line: str) -> None:
+                self.call_from_thread(self._preview_progress, line)
+
             try:
-                config = load_config()
-                plan = build_preview_plan(config, variant)
-                dispatch_preview(plan, config.root)
-            except BoardwrightError as exc:
-                self.call_from_thread(self._finish_preview_dispatch, variant, str(exc))
+                outcome = run_shared_preview(load_config(), variant, backend, progress)
+            except Exception as exc:  # always release the in-app guard
+                self.call_from_thread(self._finish_preview_dispatch, variant, str(exc) or type(exc).__name__)
                 return
-            self.call_from_thread(self._finish_preview_dispatch, variant, None)
+            # A completed build with design-rule errors, or unknown results,
+            # is a warning, never a plain success.
+            severity = "information" if outcome.rule_errors is False or outcome.record is None else "warning"
+            self.call_from_thread(self._finish_preview_dispatch, variant, None if outcome.ok else outcome.message,
+                                  outcome.message, severity)
 
-        def _finish_preview_dispatch(self, variant: str, error: str | None) -> None:
+        def _preview_progress(self, line: str) -> None:
+            self.ci_status = line.splitlines()[0][:160] if line else self.ci_status
+            self._render_state()
+
+        def _finish_preview_dispatch(self, variant: str, error: str | None, message: str = "",
+                                     severity: str = "information") -> None:
+            self._preview_running = False
             if error:
                 self.ci_status = error
                 self._render_state()
                 self.notify(error, severity="error")
                 return
             self.state = collect_dashboard_state()
-            self.ci_status = f"Preview {variant} dispatched."
+            self.ci_status = message or f"Preview {variant} finished."
             self._render_state()
-            self.notify(f"Preview {variant} dispatched.")
+            self.notify(self.ci_status, severity=severity)
 
         def action_project_info(self) -> None:
             self.push_screen(ProjectInfoScreen(), self._save_project_info)
@@ -2044,11 +2099,14 @@ def _build_textual_app():
                 self.notify(result or "Preview fetched.")
 
         def action_open_preview_folder(self) -> None:
-            if self.review_destination is None or not self.review_destination.exists():
-                self.notify("Fetch a preview artifact first.", severity="warning")
+            target = self.review_destination
+            if target is None or not target.exists():
+                target = local_preview.latest_outputs(load_config().root)
+            if target is None or not target.exists():
+                self.notify("Run a preview or fetch a preview artifact first.", severity="warning")
                 return
             try:
-                message = _open_path(self.review_destination)
+                message = _open_path(target)
             except BoardwrightError as exc:
                 self.notify(str(exc), severity="error")
                 return

@@ -384,6 +384,14 @@ class BoardwrightConfig:
         return str(outputs.get("preview_workflow", "dev-preview.yaml"))
 
     @property
+    def preview_backend(self) -> str:
+        """``backends.preview`` in project.yaml: auto (default), local or github."""
+
+        backends = self.project.get("backends")
+        value = backends.get("preview", "auto") if isinstance(backends, dict) else "auto"
+        return str(value or "auto").strip().lower()
+
+    @property
     def preview_engine(self) -> str:
         outputs = self.project.get("outputs", {})
         return str(outputs.get("preview_engine", "github-actions"))

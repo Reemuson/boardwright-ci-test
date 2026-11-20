@@ -236,19 +236,31 @@ def load_manifest(path: Path) -> dict[str, Any]:
     return data
 
 
-def compare_manifests(
+def controlled_paths(
     accepted: dict[str, Any],
     current: dict[str, Any],
     categories: tuple[str, ...] = CONTROLLED_CATEGORIES,
-) -> list[Difference]:
-    # A path is controlled if either manifest classifies it as controlled, so
-    # re-classifying a file between Boardwright versions cannot hide it.
-    controlled = {
+) -> set[str]:
+    """Paths either manifest classifies as controlled in ``categories``.
+
+    Either side counts, so re-classifying a file between Boardwright versions
+    cannot hide it.
+    """
+
+    return {
         path
         for manifest in (accepted, current)
         for path, entry in manifest["files"].items()
         if entry.get("category") in categories
     }
+
+
+def compare_manifests(
+    accepted: dict[str, Any],
+    current: dict[str, Any],
+    categories: tuple[str, ...] = CONTROLLED_CATEGORIES,
+) -> list[Difference]:
+    controlled = controlled_paths(accepted, current, categories)
     old = {path: entry for path, entry in accepted["files"].items() if path in controlled}
     new = {path: entry for path, entry in current["files"].items() if path in controlled}
     same_normaliser = accepted.get("normaliser", 1) == current.get("normaliser", 1)
@@ -430,7 +442,7 @@ def _check_baseline(root: Path, repository: str = "") -> int:
     current = build_manifest(root)
     if reissue:
         reissued = compare_manifests(previous, current, reissue)
-        _report_reissue(record, reissued)
+        _report_reissue(record, reissued, len(controlled_paths(previous, current, reissue)))
         notes_hard = _reissue_notes_must_match(root, record, reissued)
         if notes_hard:
             for item in notes_hard:
@@ -482,7 +494,7 @@ def _reissue_notes_must_match(root: Path, record: Any, differences: list[Differe
     ]
 
 
-def _report_reissue(record: Any, differences: list[Difference]) -> None:
+def _report_reissue(record: Any, differences: list[Difference], compared: int) -> None:
     """Informational: what the fabrication re-issue changes against the previous release."""
     changed = [item for item in differences if item.kind != "regenerated"]
     print(
@@ -496,7 +508,9 @@ def _report_reissue(record: Any, differences: list[Difference]) -> None:
             f"warning: no controlled fabrication file differs from {record.previous_version}; "
             "the re-issue changes nothing in the fabrication data. Confirm the classification."
         )
-    unchanged = len(differences) - len(changed)
+    # Every compared file that did not change: byte-identical files are not in
+    # ``differences`` at all, only files regenerated with equal content are.
+    unchanged = compared - len(changed)
     if unchanged:
         print(f"{unchanged} other controlled fabrication file(s) are identical after normalisation.")
 

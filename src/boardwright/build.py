@@ -352,7 +352,11 @@ def _stage_marker(root: Path) -> dict[str, object]:
         data = json.loads((root / ".git" / "boardwright-stage").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
-    return {"head": data.get("head", ""), "worktree": bool(data.get("worktree"))}
+    marker: dict[str, object] = {"head": data.get("head", ""), "worktree": bool(data.get("worktree"))}
+    if data.get("purpose"):
+        # "preview": a local preview build, never release evidence.
+        marker["purpose"] = str(data["purpose"])
+    return marker
 
 
 def build(root: Path, variant: str, kicad: str | None, log_prefix: str, keep: tuple[str, ...], echo=print) -> Path:

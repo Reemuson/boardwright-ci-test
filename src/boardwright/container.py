@@ -198,7 +198,7 @@ def repository_credentials(workdir: Path) -> list[str]:
     build step. Returns the offending config keys (never their values).
     """
 
-    completed = subprocess.run(["git", "config", "--local", "--list"], cwd=workdir, capture_output=True, text=True)
+    completed = subprocess.run(["git", "config", "--local", "--list"], cwd=workdir, capture_output=True, text=True, encoding="utf-8", errors="surrogateescape")
     found = []
     for line in completed.stdout.splitlines():
         key, _, value = line.partition("=")
@@ -257,7 +257,7 @@ def foreign_owned(workdir: Path) -> list[str]:
 
 
 def _git(root: Path, *args: str, check: bool = True) -> str:
-    completed = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True)
+    completed = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="surrogateescape")
     if check and completed.returncode != 0:
         raise ContainerError(f"git {' '.join(args)} failed: {completed.stderr.strip()}")
     return completed.stdout
@@ -290,7 +290,16 @@ def worktree_changes(repo: Path) -> tuple[list[str], list[str]]:
     return sorted(set(changed) - set(deleted)), sorted(set(deleted))
 
 
-def stage(repo: Path, *, worktree: bool = False, dest: Path | None = None, label: str = "") -> Path:
+def stage(
+    repo: Path,
+    *,
+    worktree: bool = False,
+    dest: Path | None = None,
+    label: str = "",
+    changes: tuple[list[str], list[str]] | None = None,
+    purpose: str = "build",
+    copy_from: Path | None = None,
+) -> Path:
     """Clone ``HEAD`` (plus, with ``worktree``, uncommitted changes) into a fresh LF tree.
 
     The clone has ``core.autocrlf=false`` and ``core.eol=lf``, so text files have
@@ -298,6 +307,14 @@ def stage(repo: Path, *, worktree: bool = False, dest: Path | None = None, label
     other ignored file stay behind. With ``worktree`` the uncommitted changes
     are committed inside the stage (normalised by Git) and the stage records
     that the build is not of a pushed commit.
+
+    ``changes`` replaces the default change set (every modified and
+    untracked, non-ignored file) with an explicit ``(copy, delete)`` list, as
+    chosen by the local-preview source policy. ``purpose`` is written to the
+    stage marker and from there into the build record; ``"preview"`` marks
+    the build as never release evidence. ``copy_from`` reads the changed
+    files from a snapshot directory instead of the working tree, so the
+    staged bytes are exactly the ones the caller hashed.
     """
 
     repo = repository_root(repo)
@@ -318,9 +335,9 @@ def stage(repo: Path, *, worktree: bool = False, dest: Path | None = None, label
     checkout = ["checkout", "--quiet", "-B", branch, head] if branch != "detached" else ["checkout", "--quiet", "--detach", head]
     _git(target, *checkout)
     if worktree:
-        changed, deleted = worktree_changes(repo)
+        changed, deleted = changes if changes is not None else worktree_changes(repo)
         for relative in changed:
-            source = repo / relative
+            source = (copy_from or repo) / relative
             if source.is_file():
                 (target / relative).parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(source, target / relative)
@@ -335,12 +352,14 @@ def stage(repo: Path, *, worktree: bool = False, dest: Path | None = None, label
             _git(target, "reset", "--hard", "--quiet")
     # Read by the build and copied into its record: a worktree build is never
     # evidence for a commit. Also identifies the directory as a stage.
-    marker = {"source": str(repo), "head": head, "worktree": worktree}
+    marker = {"source": str(repo), "head": head, "worktree": worktree, "purpose": purpose}
     (target / ".git" / STAGE_MARKER).write_text(json.dumps(marker) + "\n", encoding="utf-8")
     return target
 
 
 REMOTE_REFS_FILE = "boardwright-remote-refs.json"
+# Host-written beside record.json by a local preview (local_preview.py).
+PREVIEW_EVIDENCE_MARKER = "preview.json"
 
 
 def pin_release_refs(repo: Path, target: Path) -> Path:
@@ -368,7 +387,7 @@ def pin_release_refs(repo: Path, target: Path) -> Path:
         )
     if _URL_USERINFO.search(url):
         raise ContainerError("The `origin` URL embeds credentials; refusing to copy it into the stage.")
-    listing = subprocess.run(["git", "ls-remote", "--tags", url], cwd=repo, capture_output=True, text=True, timeout=120)
+    listing = subprocess.run(["git", "ls-remote", "--tags", url], cwd=repo, capture_output=True, text=True, encoding="utf-8", errors="surrogateescape", timeout=120)
     if listing.returncode != 0:
         raise ContainerError(f"Cannot list the upstream's tags ({url}): {listing.stderr.strip()}")
     tags = {}
@@ -378,7 +397,7 @@ def pin_release_refs(repo: Path, target: Path) -> Path:
             tags[ref[len("refs/tags/"):]] = sha
     fetched = subprocess.run(
         ["git", "fetch", "--no-tags", url, "refs/tags/*:refs/tags/*"],
-        cwd=target, capture_output=True, text=True, timeout=600,
+        cwd=target, capture_output=True, text=True, encoding="utf-8", errors="surrogateescape", timeout=600,
     )
     if fetched.returncode != 0:
         detail = [line.strip() for line in fetched.stderr.splitlines() if "rejected" in line or line.startswith(("error", "fatal"))]
@@ -415,6 +434,18 @@ def compare_builds(local: Path, remote: Path) -> tuple[list[str], list[str]]:
 
     def load(directory: Path) -> tuple[dict, dict]:
         base = directory / BUILD_DIR if (directory / BUILD_DIR / "record.json").is_file() else directory
+        # Three independent preview markers, any of which refuses the side:
+        # the host-written evidence marker (before Docker starts), the
+        # host-written stage marker in the stage's .git (written when the
+        # stage is created), and the record's stage purpose (newer payloads).
+        stage_root = base.parent if base.name == Path(BUILD_DIR).name else base
+        stage_marker = stage_root / ".git" / STAGE_MARKER
+        try:
+            stage_purpose = json.loads(stage_marker.read_text(encoding="utf-8")).get("purpose") if stage_marker.is_file() else None
+        except (OSError, ValueError):
+            stage_purpose = "unreadable"
+        if (base / PREVIEW_EVIDENCE_MARKER).is_file() or stage_purpose in ("preview", "unreadable"):
+            preview_sides.append(str(directory))
         try:
             record = json.loads((base / "record.json").read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
@@ -425,8 +456,9 @@ def compare_builds(local: Path, remote: Path) -> tuple[list[str], list[str]]:
             raise ContainerError(str(exc)) from exc
         return record, manifest
 
+    preview_sides: list[str] = []
     (a_record, a_manifest), (b_record, b_manifest) = load(local), load(remote)
-    problems: list[str] = []
+    problems: list[str] = [f"{side} is local preview evidence (never release evidence)" for side in preview_sides]
     notes: list[str] = []
     for key, label in (("source_commit", "source commit"), ("variant", "variant"), ("image", "container image"), ("normaliser", "manifest normaliser")):
         if a_record.get(key) != b_record.get(key):
@@ -434,6 +466,8 @@ def compare_builds(local: Path, remote: Path) -> tuple[list[str], list[str]]:
     for record, side in ((a_record, "first"), (b_record, "second")):
         if (record.get("stage") or {}).get("worktree"):
             problems.append(f"{side} build was staged from an uncommitted working tree")
+        if (record.get("stage") or {}).get("purpose") == "preview":
+            problems.append(f"{side} build is a local preview (never release evidence)")
         if record.get("source_modified"):
             unexplained = _unprepared_modifications(record)
             if unexplained:
