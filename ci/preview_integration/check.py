@@ -210,6 +210,12 @@ class Harness:
         check("direct container build completed", done.returncode == 0, done.stderr.strip()[-300:])
         direct = next(Path(self.env["BOARDWRIGHT_STAGE_ROOT"]).glob("*-checked-k9-worktree"))
         preview = Path(preview_record["outputs"])
+        check("direct worktree build excluded .env and notes.txt (C1)",
+              not (direct / ".env").exists() and not (direct / "notes.txt").exists()
+              and ".env" not in git(direct, "ls-files") and "notes.txt" not in git(direct, "ls-files"))
+        check("direct worktree build is marked as a non-release worktree build",
+              json.loads((direct / ".git" / "boardwright-stage").read_text(encoding="utf-8")).get("purpose") == "worktree-build"
+              and not (direct / "boardwright-build" / "preview.json").exists())
         pm = load_manifest(preview / "boardwright-build" / "manifest.json")
         dm = load_manifest(direct / "boardwright-build" / "manifest.json")
         differences = compare_manifests(dm, pm)
@@ -227,14 +233,34 @@ class Harness:
         sys.path.insert(0, str(self.checkout / "src"))
         from boardwright.errors import BoardwrightError
         from boardwright.preview import PreviewState, mark_preview_reviewed
-        from boardwright.review_gate import verify_candidate
 
+        # Structural boundary: an approved run accepts only a successful
+        # prepare-release review-hold run of the current main, and takes the
+        # candidate artifact from that run. Run the approved path's own gate
+        # script against the only GitHub run this exercise has: this one.
+        import yaml
+
+        prepare_yaml = yaml.safe_load((self.checkout / ".github" / "workflows" / "prepare-release.yaml").read_text(encoding="utf-8"))
+        gate = next(s["run"] for j in prepare_yaml["jobs"].values() for s in j["steps"]
+                    if s.get("name") == "Check approved review run")
+        run_id = os.environ.get("GITHUB_RUN_ID", "")
+        if run_id:
+            env = {**os.environ, "IN_APPROVED_REVIEW_RUN": run_id,
+                   "BOARDWRIGHT_SOURCE_SHA": git(self.checkout, "rev-parse", "HEAD").strip()}
+            done = subprocess.run(["bash", "-c", gate], env=env, capture_output=True, text=True)
+            check("approval gate refuses this preview run as approved_review_run",
+                  done.returncode != 0 and "is not a prepare-release run" in done.stderr, done.stderr.strip()[-200:])
+            artifacts = subprocess.run(["gh", "api", f"repos/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{run_id}/artifacts",
+                                        "--jq", "[.artifacts[].name]"], env=os.environ, capture_output=True, text=True)
+            names = json.loads(artifacts.stdout or "[]")
+            check("this run holds no release-candidate artifact", artifacts.returncode == 0
+                  and not any(n.startswith("boardwright-release-candidate-") for n in names), names)
+        else:
+            check("approval gate check needs GITHUB_RUN_ID (GitHub only)", False, "not running on GitHub Actions")
         stage = Path(preview_record["outputs"])
-        try:
-            problems = verify_candidate(stage, stage, environ={})
-        except Exception as exc:  # no review_candidate.json at all
-            problems = [f"refused: {type(exc).__name__}"]
-        check("review gate refuses a local preview as a held candidate", bool(problems), problems[:1])
+        check("a preview stage has no review candidate of its own",
+              not (stage / "boardwright-build" / "review_candidate.json").exists()
+              and json.loads((stage / ".git" / "boardwright-stage").read_text(encoding="utf-8")).get("purpose") == "preview")
         try:
             mark_preview_reviewed(type("C", (), {"root": self.project})(),
                                   PreviewState("ready", "boardwright-preview-CHECKED", "x", run=None))

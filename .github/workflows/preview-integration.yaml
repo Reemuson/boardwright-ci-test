@@ -45,6 +45,10 @@ jobs:
 
       - name: Run the preview integration checks
         shell: bash
+        env:
+          # Read-only (contents: read, actions: read): used only to read this
+          # run's own metadata and artifacts for the approval-boundary check.
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git config --global user.name "preview-integration"
