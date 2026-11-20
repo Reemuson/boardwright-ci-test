@@ -46,218 +46,26 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Callable
 
-from . import backends
+from . import backends, source_policy
 from .backends import Backend, Operation, Selection
 from .errors import BoardwrightError
+from .source_policy import (  # noqa: F401  (the shared policy; re-exported for callers)
+    ALWAYS_EXCLUDED,
+    CREDENTIAL_PATTERNS,
+    IMAGE_PATTERNS,
+    LOCAL_OVERRIDES,
+    UNTRACKED_PROJECT_PATTERNS,
+    SourceChange,
+    SourcePlan,
+    _git,
+    plan_source,
+    submodule_paths,
+    worktree_fingerprint,
+)
+from .staging import is_owned_temporary, owned_temporary  # noqa: F401
 
 PREVIEW_SCHEMA = 1
 PREVIEW_RECORD = "boardwright-preview.json"  # in the stage's .git directory
-LOCAL_OVERRIDES = ".boardwright/local.yaml"
-
-# Tracked or untracked: per-user state and private configuration.
-ALWAYS_EXCLUDED = (
-    LOCAL_OVERRIDES,
-    "*.kicad_prl",          # KiCad per-user view state
-    "*-backups/*",          # KiCad automatic backups
-    "*.lck",                # KiCad lock files
-    "fp-info-cache",
-    "_autosave-*",
-    "*.bak",
-    "*~",
-)
-# Untracked files that are project sources and may be included.
-UNTRACKED_PROJECT_PATTERNS = (
-    "*.kicad_sch", "*.kicad_pcb", "*.kicad_pro", "*.kicad_sym", "*.kicad_mod", "*.kicad_wks", "*.kicad_dru",
-    "*.kicad_dbl", "*.kicad_httplib", "fp-lib-table", "sym-lib-table",
-    "*.step", "*.stp", "*.stpz", "*.wrl", "*.wrz", "*.igs", "*.iges",
-)
-# Untracked images are included only when a project file names their path
-# (a worksheet or title-block logo, a render, a documentation figure).
-IMAGE_PATTERNS = ("*.png", "*.jpg", "*.jpeg", "*.svg", "*.bmp")
-REFERENCE_SOURCES = ("*.kicad_sch", "*.kicad_pcb", "*.kicad_pro", "*.kicad_wks", "*.md",
-                     ".boardwright/project.yaml", "boardwright_resources/*.yaml")
-# Never included when untracked, whatever the extension (matched on the file name, case-insensitively).
-CREDENTIAL_PATTERNS = (
-    ".env", ".env.*", "*.pem", "*.key", "*.p12", "*.pfx", "id_rsa*", "id_ed25519*", "id_ecdsa*",
-    ".netrc", ".git-credentials", "*credential*", "*secret*", "*token*", "*.kdbx",
-)
-
-
-# ---------------------------------------------------------------- source plan
-
-
-@dataclass(frozen=True)
-class SourceChange:
-    path: str
-    kind: str  # "modified" | "untracked"
-    sha256: str
-
-
-@dataclass(frozen=True)
-class SourcePlan:
-    """What a local preview stages from the working tree."""
-
-    repository: Path
-    base_commit: str
-    branch: str
-    included: tuple[SourceChange, ...]
-    deleted: tuple[str, ...]
-    excluded: tuple[tuple[str, str], ...]  # (path, reason)
-
-    @property
-    def dirty(self) -> bool:
-        return bool(self.included or self.deleted)
-
-    @property
-    def source_digest(self) -> str:
-        """Content identity of the staged source: base commit plus every staged change."""
-
-        digest = hashlib.sha256(f"base {self.base_commit}\n".encode())
-        for change in self.included:
-            digest.update(f"file {change.path}\0{change.sha256}\n".encode())
-        for path in self.deleted:
-            digest.update(f"delete {path}\n".encode())
-        return digest.hexdigest()
-
-
-def _git(repo: Path, *args: str, check: bool = True) -> str:
-    done = subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, encoding="utf-8")
-    if check and done.returncode != 0:
-        raise BoardwrightError(f"git {' '.join(args)} failed: {done.stderr.strip()}")
-    return done.stdout
-
-
-def _matches(path: str, patterns: tuple[str, ...]) -> bool:
-    name = PurePosixPath(path).name.lower()
-    lowered = path.lower()
-    return any(fnmatch.fnmatchcase(name, p.lower()) or fnmatch.fnmatchcase(lowered, p.lower()) for p in patterns)
-
-
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
-def _read_once(repo: Path, path: str, snapshot: Path | None) -> str:
-    """Hash a file; with ``snapshot``, also write exactly the hashed bytes there.
-
-    The working tree is read once per file, so the recorded hash and the staged
-    bytes cannot differ even if the file is saved again meanwhile.
-    """
-
-    if snapshot is None:
-        return _sha256(repo / path)
-    data = _read_bytes(repo / path)
-    target = snapshot / path
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_bytes(data)
-    return hashlib.sha256(data).hexdigest()
-
-
-def _read_bytes(path: Path) -> bytes:
-    return path.read_bytes()
-
-
-def _reference_texts(repo: Path, untracked: set[str]) -> list[tuple[str, str]]:
-    """(path, text) of every file that may name an image: tracked or eligible untracked."""
-
-    tracked = [p for p in _git(repo, "ls-files", "-z").split("\0") if p]
-    candidates = [p for p in tracked + sorted(untracked)
-                  if _matches(p, REFERENCE_SOURCES) and not _matches(p, CREDENTIAL_PATTERNS + ALWAYS_EXCLUDED)]
-    texts = []
-    for path in candidates:
-        try:
-            texts.append((path, (repo / path).read_text(encoding="utf-8", errors="replace")))
-        except OSError:
-            continue
-    return texts
-
-
-def _referenced(repo: Path, image: str, references: list[tuple[str, str]]) -> bool:
-    """Whether some project file names ``image`` by its repository path or by a path relative to itself."""
-
-    for source, text in references:
-        if source == image:
-            continue
-        relative = os.path.relpath(image, start=str(PurePosixPath(source).parent) or ".").replace(os.sep, "/")
-        for form in {image, relative, "./" + relative, "${KIPRJMOD}/" + image}:
-            if form in text:
-                return True
-    return False
-
-
-def plan_source(repo: Path, snapshot: Path | None = None) -> SourcePlan:
-    """Apply the source policy to the working tree (read-only).
-
-    With ``snapshot``, the included files' bytes are also copied there (read
-    once); the stage is then built from the snapshot, not the live tree.
-    """
-
-    repo = Path(_git(repo, "rev-parse", "--show-toplevel").strip())
-    base = _git(repo, "rev-parse", "HEAD").strip()
-    branch = _git(repo, "symbolic-ref", "--quiet", "--short", "HEAD", check=False).strip() or "detached"
-    modified = {p for p in _git(repo, "ls-files", "-z", "--modified").split("\0") if p}
-    deleted = {p for p in _git(repo, "ls-files", "-z", "--deleted").split("\0") if p}
-    untracked = {p for p in _git(repo, "ls-files", "-z", "--others", "--exclude-standard").split("\0") if p}
-    included: list[SourceChange] = []
-    excluded: list[tuple[str, str]] = []
-    references = _reference_texts(repo, untracked)
-    for path in sorted(modified - deleted):
-        if _matches(path, ALWAYS_EXCLUDED):
-            excluded.append((path, "per-user or private file"))
-        elif not (repo / path).is_file() or (repo / path).is_symlink():
-            excluded.append((path, "not a regular file"))
-        else:
-            included.append(SourceChange(path, "modified", _read_once(repo, path, snapshot)))
-    for path in sorted(untracked):
-        if _matches(path, ALWAYS_EXCLUDED):
-            excluded.append((path, "per-user or private file"))
-        elif _matches(path, CREDENTIAL_PATTERNS):
-            excluded.append((path, "looks like a credential"))
-        elif _matches(path, IMAGE_PATTERNS):
-            if not _referenced(repo, path, references):
-                excluded.append((path, "untracked image not referenced by a KiCad or project file"))
-            elif (repo / path).is_symlink() or not (repo / path).is_file():
-                excluded.append((path, "not a regular file"))
-            else:
-                included.append(SourceChange(path, "untracked", _read_once(repo, path, snapshot)))
-        elif not _matches(path, UNTRACKED_PROJECT_PATTERNS):
-            excluded.append((path, "untracked and not a KiCad project file"))
-        elif (repo / path).is_symlink() or not (repo / path).is_file():
-            excluded.append((path, "not a regular file"))
-        else:
-            included.append(SourceChange(path, "untracked", _read_once(repo, path, snapshot)))
-    kept_deleted = []
-    for path in sorted(deleted):
-        if _matches(path, ALWAYS_EXCLUDED):
-            excluded.append((path, "per-user or private file"))
-        else:
-            kept_deleted.append(path)
-    return SourcePlan(repo, base, branch, tuple(included), tuple(kept_deleted), tuple(excluded))
-
-
-def worktree_fingerprint(repo: Path) -> str:
-    """Hash of every non-ignored file's bytes, ``local.yaml``, HEAD and the index.
-
-    Compared before and after a preview: Boardwright never writes to the
-    working tree, so any difference is reported.
-    """
-
-    digest = hashlib.sha256()
-    digest.update(_git(repo, "rev-parse", "HEAD").encode())
-    digest.update(_git(repo, "status", "--porcelain=v1", "-z", "--untracked-files=all").encode())
-    files = sorted({p for p in _git(repo, "ls-files", "-z", "--cached", "--others", "--exclude-standard").split("\0") if p})
-    for path in files + [LOCAL_OVERRIDES]:
-        target = repo / path
-        digest.update(path.encode() + b"\0")
-        if target.is_file():
-            digest.update(_sha256(target).encode())
-    return digest.hexdigest()
-
-
 # ---------------------------------------------------------------- locations
 
 
@@ -342,54 +150,21 @@ def run_local_preview(
 
 def _run_locked(repo: Path, variant: str, kicad: str, workdir: Path, runner: Runner,
                 echo: Callable[[str], None], clock: Callable[[], float]) -> dict:
+    from . import container
     from .build import BUILD_DIR
-    from .container import ContainerError, image_for, stage
+    from .container import ContainerError, image_for
 
-    if _git(repo, "ls-files", "--", LOCAL_OVERRIDES).strip():
-        raise BoardwrightError(f"{LOCAL_OVERRIDES} is tracked by Git; it must stay local (untrack it) before previewing.")
-    submodules = submodule_paths(repo)
-    if submodules:
-        raise BoardwrightError(
-            "This project uses Git submodules (" + ", ".join(submodules) + "). A local preview cannot reproduce "
-            "submodule content in its stage, and building without it would silently omit those libraries; "
-            "nothing was built. Vendor the library into the project, or build where submodules are checked out.")
     started, start = _now(), clock()
     index = index_path(repo, variant, kicad)
-    # Everything up to the swap works in Boardwright-owned temporary
-    # directories beside the stage; a failure leaves the previous completed
-    # preview (stage and index entry) exactly as it was.
-    _remove_abandoned_temporaries(workdir)
-    snapshot = _owned_temporary(workdir, "snapshot")
-    staging = _owned_temporary(workdir, "staging")
-    try:
-        # Snapshot integrity (the stage is the source of truth): 1. fingerprint
-        # the tree; 2. read every included file once into the snapshot,
-        # hashing those bytes; 3. fingerprint again. A difference means the
-        # tree changed while it was read (for example a KiCad save writing
-        # several files), so nothing is staged.
-        before = worktree_fingerprint(repo)
-        plan = plan_source(repo, snapshot=snapshot)
-        if worktree_fingerprint(repo) != before:
-            raise BoardwrightError("The working tree changed while the preview was reading it (a save in KiCad?). "
-                                   "Nothing was built and the previous preview is unchanged; run the preview again.")
-        new_stage = staging / "s"
-        stage(repo, worktree=plan.dirty, dest=new_stage, purpose="preview",
-              changes=([c.path for c in plan.included], list(plan.deleted)), copy_from=snapshot)
-        marker = json.loads((new_stage / ".git" / "boardwright-stage").read_text(encoding="utf-8"))
-        if marker.get("head") != plan.base_commit:
-            # A commit or checkout happened while staging: the stage would not
-            # be the planned base plus the snapshot.
-            raise BoardwrightError(f"HEAD moved while staging ({plan.base_commit[:12]} -> "
-                                   f"{str(marker.get('head'))[:12]}); nothing was built and the previous preview "
-                                   "is unchanged; run the preview again.")
-        cleared = clear_generated_outputs(new_stage)
-        dependencies = scan_dependencies(new_stage, kicad)
-        _swap_into_place(new_stage, workdir)
-    except (ContainerError, subprocess.CalledProcessError, OSError) as exc:
-        raise BoardwrightError(f"Staging failed: {exc}. Nothing was built and the previous preview is unchanged.") from exc
-    finally:
-        _remove_owned(snapshot, workdir)
-        _remove_owned(staging, workdir)
+    # The shared worktree staging (container.stage_worktree): source policy,
+    # fail-closed preconditions, verified read-once snapshot, owned
+    # temporaries, swap only on success. The preview adds clearing generated
+    # outputs and the dependency scan before the swap.
+    staged = container.stage_worktree(
+        repo, workdir, purpose="preview",
+        prepare=lambda new_stage: (clear_generated_outputs(new_stage), scan_dependencies(new_stage, kicad)))
+    plan, before = staged.plan, staged.fingerprint
+    cleared, dependencies = staged.prepared
     record: dict = {
         "schema": PREVIEW_SCHEMA,
         "purpose": "preview",
@@ -474,21 +249,6 @@ def _run_locked(repo: Path, variant: str, kicad: str, workdir: Path, runner: Run
         _write_json(workdir / ".git" / PREVIEW_RECORD, record)
     _write_json(index, record)
     return record
-
-
-def submodule_paths(repo: Path) -> list[str]:
-    """Gitlinks in the index, plus any path declared in .gitmodules."""
-
-    paths = []
-    for entry in _git(repo, "ls-files", "-s", "-z").split("\0"):
-        if entry.startswith("160000 "):
-            paths.append(entry.split("\t", 1)[1])
-    if (repo / ".gitmodules").is_file():
-        listed = _git(repo, "config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$", check=False)
-        paths += [line.split(" ", 1)[1] for line in listed.splitlines() if " " in line]
-        if not paths:
-            paths.append(".gitmodules")
-    return sorted(set(paths))
 
 
 _MODEL = re.compile(r'\(model\s+"((?:[^"\\]|\\.)*)"')
@@ -612,84 +372,6 @@ def _write_evidence_marker(record: dict) -> None:
         "variant": record["variant"], "source_digest": record["source"].get("source_digest", ""),
         "staged_tree": record["source"].get("staged_tree", ""),
     })
-
-
-TEMP_OWNER = ".boardwright-temporary"
-
-
-def _owned_temporary(workdir: Path, kind: str) -> Path:
-    """A new, uniquely named directory beside the stage, marked as Boardwright's.
-
-    ``mkdtemp`` creates it atomically and never reuses an existing path, so a
-    run never adopts another run's (or anyone's) directory.
-    """
-
-    import tempfile
-
-    workdir.parent.mkdir(parents=True, exist_ok=True)
-    # Short names: a nested stage under a name repeating the stage name
-    # doubled the path length and broke clones on Windows (MAX_PATH).
-    # Ownership comes from the marker's stage name, never from the name.
-    path = Path(tempfile.mkdtemp(prefix=f".bw-{kind}-", dir=workdir.parent))
-    (path / TEMP_OWNER).write_text(json.dumps({"stage": workdir.name, "kind": kind, "pid": os.getpid()}) + "\n",
-                                   encoding="utf-8")
-    return path
-
-
-def _is_owned_temporary(path: Path, workdir: Path) -> bool:
-    marker = path / TEMP_OWNER
-    if path.is_symlink() or not marker.is_file() or marker.is_symlink():
-        return False
-    try:
-        return json.loads(marker.read_text(encoding="utf-8")).get("stage") == workdir.name
-    except (OSError, ValueError):
-        return False
-
-
-def _remove_owned(path: Path, workdir: Path) -> None:
-    """Remove a temporary directory only when it carries this stage's owner marker."""
-
-    if path.exists() and _is_owned_temporary(path, workdir):
-        from .container import _remove_tree
-
-        _remove_tree(path)
-
-
-def _remove_abandoned_temporaries(workdir: Path) -> None:
-    """Temporaries left by a killed run of this stage (the stage lock is held)."""
-
-    from .container import _remove_tree
-
-    for kind in ("snapshot", "staging", "retired"):
-        for path in workdir.parent.glob(f".bw-{kind}-*"):
-            if _is_owned_temporary(path, workdir):
-                _remove_tree(path)
-
-
-def _swap_into_place(new_stage: Path, workdir: Path) -> None:
-    """Replace the previous stage with the new one; refuse anything not a stage."""
-
-    from .container import STAGE_MARKER, _remove_tree
-
-    if workdir.exists() or workdir.is_symlink():
-        if workdir.is_symlink() or not (workdir / ".git" / STAGE_MARKER).is_file():
-            raise BoardwrightError(f"{workdir} exists and is not a Boardwright stage; refusing to replace it.")
-        retired = _owned_temporary(workdir, "retired")
-        old = retired / "s"
-        try:
-            os.replace(workdir, old)
-        except OSError as exc:
-            _remove_tree(retired)
-            raise BoardwrightError(f"Cannot replace the previous preview in {workdir} ({exc}); a file in it may be "
-                                   "open in another program. The previous preview is unchanged.") from exc
-        try:
-            os.replace(new_stage, workdir)
-        except OSError:
-            os.replace(old, workdir)  # put the previous preview back
-            raise
-        _remove_tree(retired)
-    else:
-        os.replace(new_stage, workdir)
 
 
 def preview_identity(record: dict) -> str:

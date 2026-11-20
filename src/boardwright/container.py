@@ -38,6 +38,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .build import BUILD_DIR, SUPPORTED_KICAD, VARIANTS
+from .errors import BoardwrightError
+from .stage_lock import stage_lock
 
 
 @dataclass(frozen=True)
@@ -74,7 +76,7 @@ IMAGES = {
 DEFAULT_KICAD = "9"
 WORKDIR = "/work"
 CACHE_3D = "/cache_3d"
-STAGE_MARKER = "boardwright-stage"
+from .staging import STAGE_MARKER, remove_tree as _remove_tree  # noqa: E402,F401
 
 
 class ContainerError(RuntimeError):
@@ -271,25 +273,6 @@ def default_stage_root() -> Path:
     return Path(os.environ.get("BOARDWRIGHT_STAGE_ROOT") or Path.home() / ".boardwright" / "stages")
 
 
-def _remove_tree(path: Path) -> None:
-    def make_writable(func, target, _exc):
-        os.chmod(target, stat.S_IWRITE)
-        func(target)
-
-    if sys.version_info >= (3, 12):
-        shutil.rmtree(path, onexc=make_writable)
-    else:  # pragma: no cover
-        shutil.rmtree(path, onerror=make_writable)
-
-
-def worktree_changes(repo: Path) -> tuple[list[str], list[str]]:
-    """(changed or new paths to copy, deleted paths) relative to HEAD. Ignored files are excluded."""
-
-    changed = [p for p in _git(repo, "ls-files", "-z", "--modified", "--others", "--exclude-standard").split("\0") if p]
-    deleted = [p for p in _git(repo, "ls-files", "-z", "--deleted").split("\0") if p]
-    return sorted(set(changed) - set(deleted)), sorted(set(deleted))
-
-
 def stage(
     repo: Path,
     *,
@@ -335,7 +318,11 @@ def stage(
     checkout = ["checkout", "--quiet", "-B", branch, head] if branch != "detached" else ["checkout", "--quiet", "--detach", head]
     _git(target, *checkout)
     if worktree:
-        changed, deleted = changes if changes is not None else worktree_changes(repo)
+        if changes is None:
+            # Audit C1: the change set must come from the source policy
+            # (stage_worktree), never from "every untracked file".
+            raise ContainerError("A worktree stage needs an explicit change set; use stage_worktree().")
+        changed, deleted = changes
         for relative in changed:
             source = (copy_from or repo) / relative
             if source.is_file():
@@ -355,6 +342,61 @@ def stage(
     marker = {"source": str(repo), "head": head, "worktree": worktree, "purpose": purpose}
     (target / ".git" / STAGE_MARKER).write_text(json.dumps(marker) + "\n", encoding="utf-8")
     return target
+
+
+SOURCE_RECORD = "boardwright-source.json"  # in a worktree stage's .git: paths and hashes only
+
+
+@dataclass(frozen=True)
+class StagedWorktree:
+    plan: object          # source_policy.SourcePlan
+    fingerprint: str      # working-tree fingerprint the snapshot was verified against
+    prepared: object      # the caller's prepare() result, if any
+
+
+def stage_worktree(repo: Path, workdir: Path, *, purpose: str, prepare=None) -> StagedWorktree:
+    """Stage the working tree under the shared source policy (previews and worktree builds).
+
+    The caller holds ``stage_lock(workdir)``. In order: fail-closed
+    preconditions; read every included file once into an owned snapshot,
+    hashing those bytes, between two working-tree fingerprints (refused if the
+    tree changed); stage from the snapshot into an owned temporary; check HEAD
+    did not move; run ``prepare(new_stage)``; swap into place. Any failure
+    before the swap leaves the previous stage untouched. Records only paths
+    and hashes (``.git/boardwright-source.json``).
+    """
+
+    from . import source_policy, staging
+
+    source_policy.check_preconditions(repo)
+    staging.remove_abandoned_temporaries(workdir)
+    snapshot = staging.owned_temporary(workdir, "snapshot")
+    temporary = staging.owned_temporary(workdir, "staging")
+    try:
+        before = source_policy.worktree_fingerprint(repo)
+        plan = source_policy.plan_source(repo, snapshot=snapshot)
+        if source_policy.worktree_fingerprint(repo) != before:
+            raise BoardwrightError("The working tree changed while it was being read (a save in KiCad?). "
+                                   "Nothing was built and the previous stage is unchanged; run again.")
+        new_stage = temporary / "s"
+        try:
+            stage(repo, worktree=plan.dirty, dest=new_stage, purpose=purpose,
+                  changes=([c.path for c in plan.included], list(plan.deleted)), copy_from=snapshot)
+        except (ContainerError, subprocess.CalledProcessError, OSError) as exc:
+            raise BoardwrightError(f"Staging failed: {exc}. Nothing was built and the previous stage is unchanged.") from exc
+        marker = json.loads((new_stage / ".git" / STAGE_MARKER).read_text(encoding="utf-8"))
+        if marker.get("head") != plan.base_commit:
+            raise BoardwrightError(f"HEAD moved while staging ({plan.base_commit[:12]} -> {str(marker.get('head'))[:12]}); "
+                                   "nothing was built and the previous stage is unchanged; run again.")
+        record = {"purpose": purpose, "release_evidence": False, **source_policy.plan_summary(plan)}
+        (new_stage / ".git" / SOURCE_RECORD).write_text(json.dumps(record, indent=2, sort_keys=True) + "\n",
+                                                        encoding="utf-8", newline="\n")
+        prepared = prepare(new_stage) if prepare else None
+        staging.swap_into_place(new_stage, workdir)
+    finally:
+        staging.remove_owned(snapshot, workdir)
+        staging.remove_owned(temporary, workdir)
+    return StagedWorktree(plan, before, prepared)
 
 
 REMOTE_REFS_FILE = "boardwright-remote-refs.json"
@@ -657,7 +699,15 @@ def main(argv: list[str] | None = None) -> int:
             print(image_for(args.kicad).reference)
             return 0
         if args.command == "stage":
-            print(stage(Path.cwd(), worktree=args.worktree, dest=args.dest))
+            if not args.worktree:
+                print(stage(Path.cwd(), dest=args.dest))
+                return 0
+            repo = repository_root(Path.cwd())
+            target = (args.dest or default_stage_root() / f"{repo.name}-worktree").resolve()
+            with stage_lock(target, purpose="container stage --worktree"):
+                staged = stage_worktree(repo, target, purpose="worktree-build")
+            _print_source(staged.plan)
+            print(target)
             return 0
         if args.command == "run":
             cmd = args.cmd[1:] if args.cmd[:1] == ["--"] else args.cmd
@@ -678,7 +728,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"ERROR {line}")
             print("Builds match." if not problems else f"{len(problems)} problem(s).")
             return 1 if problems else 0
-    except ContainerError as exc:
+    except (ContainerError, BoardwrightError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
     return 2
@@ -692,17 +742,48 @@ def _build(args: argparse.Namespace) -> int:
     if args.workdir:
         return run_in_container(args.kicad, args.workdir, command)
     repo = repository_root(Path.cwd())
-    before = host_tree_fingerprint(repo)
-    workdir = stage(repo, worktree=args.worktree, label=f"{repo.name}-{args.variant.lower()}-k{args.kicad}{'-worktree' if args.worktree else ''}")
-    print(f"[container] staged {workdir}")
-    status = run_in_container(args.kicad, workdir, command)
-    if host_tree_fingerprint(repo) != before:
-        print("error: the developer working tree changed during the build.", file=sys.stderr)
-        return 1
+    if not args.worktree:
+        before = host_tree_fingerprint(repo)
+        workdir = stage(repo, label=f"{repo.name}-{args.variant.lower()}-k{args.kicad}")
+        print(f"[container] staged {workdir}")
+        status = run_in_container(args.kicad, workdir, command)
+        if host_tree_fingerprint(repo) != before:
+            print("error: the developer working tree changed during the build.", file=sys.stderr)
+            return 1
+    else:
+        # A non-release worktree build: the shared source policy, a verified
+        # snapshot and the stage lock, as for previews (audit C1). Marked
+        # worktree=True and purpose "worktree-build"; container compare and
+        # the review gate refuse it.
+        from . import source_policy
+
+        workdir = (default_stage_root() / f"{repo.name}-{args.variant.lower()}-k{args.kicad}-worktree").resolve()
+        with stage_lock(workdir, purpose=f"container build --worktree {args.variant}"):
+            staged = stage_worktree(repo, workdir, purpose="worktree-build")
+            _print_source(staged.plan)
+            print(f"[container] staged {workdir} (non-release worktree build)")
+            status = run_in_container(args.kicad, workdir, command)
+            if source_policy.worktree_fingerprint(repo) != staged.fingerprint:
+                print("error: the developer working tree changed during the build; the outputs show the staged "
+                      "snapshot.", file=sys.stderr)
+                return 1
     if status == 0:
         print(f"Outputs: {workdir}")
         print(f"Evidence: {workdir / BUILD_DIR}")
     return status
+
+
+def _print_source(plan) -> None:
+    """Paths and hashes only; file contents are never printed."""
+
+    print(f"[container] worktree source {plan.source_digest[:16]} from {plan.base_commit[:12]}"
+          f" ({len(plan.included)} changed, {len(plan.deleted)} deleted)")
+    for change in plan.included:
+        print(f"[container]   include {change.kind}: {change.path}")
+    for path in plan.deleted:
+        print(f"[container]   delete: {path}")
+    for path, reason in plan.excluded:
+        print(f"[container]   exclude: {path} ({reason})")
 
 
 if __name__ == "__main__":
