@@ -340,6 +340,59 @@ def stage(repo: Path, *, worktree: bool = False, dest: Path | None = None, label
     return target
 
 
+REMOTE_REFS_FILE = "boardwright-remote-refs.json"
+
+
+def pin_release_refs(repo: Path, target: Path) -> Path:
+    """Give a stage the release references of the source repository's upstream.
+
+    Runs on the host, where the developer's Git credentials and paths work. A
+    stage is cloned from the local repository, so its ``origin`` would be a
+    host path (``C:\\...`` on Windows) that the Linux container cannot open.
+    Instead, on the host:
+
+    - the stage's ``origin`` is set to the source repository's own ``origin``
+      URL (refused if that URL embeds credentials);
+    - the upstream's tags are fetched into the stage without ``--force``, so a
+      local tag that differs from the upstream one fails the rehearsal;
+    - ``git ls-remote --tags`` of the upstream is written to
+      ``.git/boardwright-remote-refs.json``. Inside the container, the release
+      plan reads that snapshot for the remote-tag check
+      (``BOARDWRIGHT_REMOTE_REFS``) instead of contacting the remote.
+    """
+
+    url = _git(repo, "remote", "get-url", "origin", check=False).strip()
+    if not url:
+        raise ContainerError(
+            f"{repo} has no `origin` remote; a release candidate needs the upstream's tags to check the version is free."
+        )
+    if _URL_USERINFO.search(url):
+        raise ContainerError("The `origin` URL embeds credentials; refusing to copy it into the stage.")
+    listing = subprocess.run(["git", "ls-remote", "--tags", url], cwd=repo, capture_output=True, text=True, timeout=120)
+    if listing.returncode != 0:
+        raise ContainerError(f"Cannot list the upstream's tags ({url}): {listing.stderr.strip()}")
+    tags = {}
+    for line in listing.stdout.splitlines():
+        sha, _, ref = line.partition("\t")
+        if ref.startswith("refs/tags/") and not ref.endswith("^{}"):
+            tags[ref[len("refs/tags/"):]] = sha
+    fetched = subprocess.run(
+        ["git", "fetch", "--no-tags", url, "refs/tags/*:refs/tags/*"],
+        cwd=target, capture_output=True, text=True, timeout=600,
+    )
+    if fetched.returncode != 0:
+        detail = [line.strip() for line in fetched.stderr.splitlines() if "rejected" in line or line.startswith(("error", "fatal"))]
+        raise ContainerError(
+            "Cannot fetch the upstream's tags into the stage; a local tag differs from the upstream or the "
+            "upstream is unreachable: " + ("; ".join(detail) or fetched.stderr.strip())
+        )
+    _git(target, "remote", "set-url", "origin", url)
+    snapshot = {"schema": 1, "url": url, "tags": dict(sorted(tags.items()))}
+    path = target / ".git" / REMOTE_REFS_FILE
+    path.write_text(json.dumps(snapshot, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
 def host_tree_fingerprint(repo: Path) -> str:
     """``git status`` of the developer's tree; compared before and after a local build."""
 
@@ -382,9 +435,28 @@ def compare_builds(local: Path, remote: Path) -> tuple[list[str], list[str]]:
         if (record.get("stage") or {}).get("worktree"):
             problems.append(f"{side} build was staged from an uncommitted working tree")
         if record.get("source_modified"):
-            problems.append(f"{side} build was made from uncommitted changes: {', '.join(record['source_modified'])}")
+            unexplained = _unprepared_modifications(record)
+            if unexplained:
+                problems.append(f"{side} build was made from uncommitted changes: {', '.join(unexplained)}")
         if not record.get("image") or not record.get("image_id"):
             problems.append(f"{side} build has no verified container image identity (not built with boardwright container)")
+    if a_record.get("source_modified") or b_record.get("source_modified"):
+        # Reached only when both sides' modifications are fully covered by a
+        # verified release-preparation record; then the preparations must be
+        # the same: same commit, version, date and file contents.
+        a_prep, b_prep = a_record.get("release_preparation") or {}, b_record.get("release_preparation") or {}
+        if not _unprepared_modifications(a_record) and not _unprepared_modifications(b_record):
+            mismatched = []
+            if sorted(a_record.get("source_modified") or []) != sorted(b_record.get("source_modified") or []):
+                mismatched.append("modified files")
+            mismatched += [key.replace("_", " ") for key in ("source_commit", "version", "release_date", "files", "project_files") if a_prep.get(key) != b_prep.get(key)]
+            if mismatched:
+                problems.append("release preparation differs between the builds: " + ", ".join(mismatched))
+            else:
+                notes.append(
+                    f"Both builds include the same verified release preparation ({a_prep.get('version')}, "
+                    f"{a_prep.get('release_date')}; {len(a_prep.get('files') or {})} file(s) with identical content)."
+                )
     differences = compare_manifests(a_manifest, b_manifest)
     hard = blocking(differences)
     for item in differences:
@@ -397,6 +469,18 @@ def compare_builds(local: Path, remote: Path) -> tuple[list[str], list[str]]:
     if informational:
         notes.append(f"{len(informational)} informational file(s) differ in bytes (PDFs, renders, reports, ODB++); not compared.")
     return problems, notes
+
+
+def _unprepared_modifications(record: dict) -> list[str]:
+    """``source_modified`` entries not covered by a verified release-preparation record."""
+
+    modified = list(record.get("source_modified") or [])
+    preparation = record.get("release_preparation")
+    if not isinstance(preparation, dict) or preparation.get("problems"):
+        return modified
+    files = preparation.get("files") if isinstance(preparation.get("files"), dict) else {}
+    covered = set(files) | set(preparation.get("project_files") or [])
+    return [path for path in modified if path not in covered]
 
 
 # --- CLI -----------------------------------------------------------------------
@@ -417,12 +501,20 @@ def _candidate(args: argparse.Namespace) -> int:
     """Local release-candidate rehearsal: the same commands prepare-release.yaml runs, in a stage.
 
     Nothing is committed, pushed, tagged or published: the stage is a
-    throw-away clone. The remote-tag check queries the local repository the
-    stage was cloned from, so fetch tags first.
+    throw-away clone. Its release references come from the upstream of the
+    current repository, pinned on the host (``pin_release_refs``); CI
+    (``--workdir``) checks GitHub directly.
     """
 
-    repo = repository_root(Path.cwd())
-    workdir = Path(args.workdir) if args.workdir else stage(repo, label=f"{repo.name}-candidate-{args.version}")
+    extra: dict[str, str] = {}
+    if args.workdir:
+        workdir = Path(args.workdir)
+    else:
+        repo = repository_root(Path.cwd())
+        workdir = stage(repo, label=f"{repo.name}-candidate-{args.version}")
+        snapshot = pin_release_refs(repo, workdir)
+        print(f"[candidate] release references pinned from {json.loads(snapshot.read_text(encoding='utf-8'))['url']}")
+        extra["BOARDWRIGHT_REMOTE_REFS"] = f".git/{REMOTE_REFS_FILE}"
     env = {
         "IN_VERSION": args.version,
         "IN_VARIANT": args.variant,
@@ -432,6 +524,7 @@ def _candidate(args: argparse.Namespace) -> int:
         "IN_CHANGE_CLASSES": args.change_class,
         "IN_JUSTIFICATION": args.justification,
         "BOARDWRIGHT_SOURCE_SHA": _git(workdir, "rev-parse", "HEAD").strip(),
+        **extra,
     }
     for step in candidate_steps(args):
         name, command = step[0], step[1:]
@@ -461,7 +554,8 @@ def candidate_steps(args: argparse.Namespace) -> list[list[str]]:
         ["release-prepare", "python3", "-m", "boardwright", "release", args.version, "--prepare", "--allow-dirty",
          "--release-env", "--variant", args.variant, "--kind", args.kind, "--drawing-revision", args.drawing_revision,
          "--revision-description", args.revision_description, "--change-class", args.change_class,
-         "--justification", args.justification],
+         "--justification", args.justification,
+         *(["--release-date", args.release_date] if args.release_date else [])],
         ["build", "python3", "-m", "boardwright", "build", "--variant", args.variant, "--kicad", args.kicad,
          "--log-prefix", "prepare", "--keep", "CHANGELOG.md", ".boardwright"],
         ["manifest", "python3", "-m", "boardwright.output_manifest", "write"],
@@ -509,6 +603,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--change-class", default="")
     p.add_argument("--justification", default="")
     p.add_argument("--workdir", type=Path)
+    p.add_argument("--release-date", default="", metavar="YYYY-MM-DD",
+                   help="Release date (default: today's UTC date). An approved run passes the reviewed candidate's date.")
     p.add_argument("--skip-baseline", action="store_true", help="Skip check-baseline (needs gh for legacy releases).")
 
     p = sub.add_parser("compare", help="Compare two build-evidence directories (local vs GitHub).")

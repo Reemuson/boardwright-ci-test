@@ -188,7 +188,20 @@ def preflight(root: Path) -> dict[str, object]:
             f"{shown}\nBuild from a staged LF checkout: python -m boardwright container build."
         )
     modified = [p for p in _git(root, "diff", "--name-only", "HEAD").splitlines() if p]
-    return {"commit": _git(root, "rev-parse", "HEAD").strip(), "modified_before_build": modified}
+    preparation = None
+    if modified:
+        from .release_preparation import verify_preparation
+
+        # Edits made by release --prepare carry a content record; a prepared
+        # tree changed afterwards is refused before any tool runs.
+        preparation = verify_preparation(root, modified)
+        if preparation and preparation["problems"]:
+            raise BuildError("Prepared release sources were modified: " + "; ".join(preparation["problems"]))
+    return {
+        "commit": _git(root, "rev-parse", "HEAD").strip(),
+        "modified_before_build": modified,
+        "release_preparation": preparation,
+    }
 
 
 def install_fonts(root: Path) -> None:
@@ -273,6 +286,9 @@ def write_evidence(root: Path, plan: BuildPlan, source: dict[str, object]) -> Pa
         "kicad_major": plan.kicad,
         "source_commit": source["commit"],
         "source_modified": source["modified_before_build"],
+        # Present only when every modification was made by release --prepare
+        # and still has the recorded content (release_preparation.py).
+        "release_preparation": source.get("release_preparation"),
         "image": os.environ.get("BOARDWRIGHT_IMAGE", ""),
         # Local ID of the image that ran; the runner verified it carries the
         # pinned digest. Its form depends on the Docker image store, so builds

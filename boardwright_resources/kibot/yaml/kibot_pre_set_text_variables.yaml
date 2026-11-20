@@ -14,7 +14,7 @@ preflight:
     - variable: 'RELEASE_DATE'
       command: 'if [ -f .boardwright/release.env ]; then . .boardwright/release.env; fi; if [ -n "$RELEASE_DATE" ]; then echo "$RELEASE_DATE"; elif [ -n "@RELEASE_DATE@" ]; then echo "@RELEASE_DATE@"; else git log -1 --format="%ad" --date="format:%d-%b-%Y"; fi'
     - variable: 'RELEASE_DATE_NUM'
-      command: 'git log -1 --format="%ad" --date=short'
+      command: 'if [ -f .boardwright/release.env ]; then . .boardwright/release.env; fi; if [ -n "$RELEASE_DATE_NUM" ]; then echo "$RELEASE_DATE_NUM"; else git log -1 --format="%ad" --date=short; fi'
     - variable: 'GIT_HASH_SCH'
       command: 'git log --no-merges -1 --format="%h" -- "$KIBOT_SCH_NAME"'
     - variable: 'GIT_HASH_PCB'

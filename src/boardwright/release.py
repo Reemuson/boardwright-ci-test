@@ -3,10 +3,13 @@
 
 from __future__ import annotations
 
+import json
+import os
 import re
 import subprocess
-from dataclasses import dataclass
-from datetime import date
+from pathlib import Path
+from dataclasses import dataclass, replace
+from datetime import date, datetime
 
 from .changelog import promote_unreleased_file, read_changelog, unreleased_has_content
 from .config import BoardwrightConfig
@@ -19,6 +22,7 @@ from .drawing_revisions import RevisionHistoryPlan, apply_revision_history, plan
 from .impact import proposed_identities
 from .release_ledger import latest_baseline
 from .revision_history import write_revision_variables
+from .release_date import resolve_release_date, utc_today
 
 
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
@@ -36,6 +40,7 @@ class ReleasePlan:
     remote_tag_state: str = "unchecked"
     remote_error: str = ""
     ledger_has_version: bool = False
+    release_date: str = ""
 
 
 def build_release_plan(
@@ -100,7 +105,15 @@ def prepare_release(
     justification: str = "",
     variant: str = "",
     check_remote: bool = True,
+    release_date: str = "",
+    now: datetime | None = None,
 ) -> ReleasePlan:
+    """Prepare the release state; ``release_date`` (YYYY-MM-DD) defaults to the UTC date now.
+
+    The date is fixed once and used for the ledger, the CHANGELOG heading and
+    the drawings (through ``release.env``); see ``release_date``.
+    """
+    fixed_date = resolve_release_date(release_date, now)
     plan = build_release_plan(config, version, check_remote=check_remote)
     problems = validate_release_plan(plan, allow_dirty=allow_dirty)
     problems.extend(verify_ledger_history(config.root))
@@ -112,7 +125,7 @@ def prepare_release(
         schematic_revision=drawing_revision if document_key == "schematic" else "",
     )
     problems.extend(impact.problems)
-    release_date = date.today()
+    release_date = fixed_date
     history = plan_release_revision_history(
         config,
         drawing_revision=drawing_revision if document_key == "schematic" else "",
@@ -144,7 +157,7 @@ def prepare_release(
 
         write_revision_variables(load_config(config.root, local=False), document_key)
 
-    return plan
+    return replace(plan, release_date=fixed_date.isoformat())
 
 
 def plan_release_revision_history(
@@ -166,7 +179,7 @@ def plan_release_revision_history(
         previous=previous,
         proposed={name: getattr(proposed, f"{name}_revision") for name in documents},
         description=revision_description,
-        date=release_date or date.today().isoformat(),
+        date=release_date or utc_today().isoformat(),
     )
 
 
@@ -238,6 +251,9 @@ def remote_tag_state(config: BoardwrightConfig, version: str) -> tuple[str, str]
         return "unknown", str(exc)
     if configured.returncode != 0:
         return "no-remote", "no `origin` remote is configured"
+    pinned = os.environ.get("BOARDWRIGHT_REMOTE_REFS", "").strip()
+    if pinned:
+        return _pinned_tag_state(config.root / pinned, configured.stdout.strip(), version)
     try:
         completed = subprocess.run(
             ["git", "ls-remote", "--exit-code", "--tags", "origin", f"refs/tags/{version}"],
@@ -257,6 +273,24 @@ def remote_tag_state(config: BoardwrightConfig, version: str) -> tuple[str, str]
         return "absent", ""
     detail = (completed.stderr or completed.stdout).strip() or f"exit code {completed.returncode}"
     return "unknown", detail
+
+
+def _pinned_tag_state(path: Path, origin_url: str, version: str) -> tuple[str, str]:
+    """Remote-tag state from a snapshot taken on the host (``container candidate``).
+
+    The snapshot must be for the configured ``origin``; anything unreadable or
+    inconsistent is "unknown", never "absent".
+    """
+
+    try:
+        snapshot = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return "unknown", f"pinned remote references unreadable: {exc}"
+    if not isinstance(snapshot, dict) or snapshot.get("schema") != 1 or not isinstance(snapshot.get("tags"), dict):
+        return "unknown", "pinned remote references have an unsupported format"
+    if snapshot.get("url") != origin_url:
+        return "unknown", f"pinned remote references are for {snapshot.get('url')!r}, not origin {origin_url!r}"
+    return ("exists", "") if version in snapshot["tags"] else ("absent", "")
 
 
 def _remote_tag_exists(config: BoardwrightConfig, version: str) -> bool:

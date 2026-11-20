@@ -195,6 +195,43 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-kicad-${{ env.KICAD_VERSION }}-3d-
 
+      - name: Check approved review run
+        if: ${{ !inputs.review_hold && inputs.approved_review_run != '' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          info="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$IN_APPROVED_REVIEW_RUN" --jq '[.path, .conclusion, .event, .head_branch, .head_sha] | @tsv')"
+          IFS=$'\t' read -r path conclusion event branch sha <<< "$info"
+          [[ "$path" == ".github/workflows/prepare-release.yaml" ]] || { echo "Run $IN_APPROVED_REVIEW_RUN is not a prepare-release run ($path)." >&2; exit 1; }
+          [[ "$conclusion" == "success" ]] || { echo "Reviewed run concluded '$conclusion'." >&2; exit 1; }
+          [[ "$event" == "workflow_dispatch" && "$branch" == "main" ]] || { echo "Reviewed run was $event on $branch." >&2; exit 1; }
+          [[ "$sha" == "$BOARDWRIGHT_SOURCE_SHA" ]] || { echo "Reviewed run built $sha; main is $BOARDWRIGHT_SOURCE_SHA." >&2; exit 1; }
+
+      - name: Download reviewed candidate
+        if: ${{ !inputs.review_hold && inputs.approved_review_run != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: boardwright-release-candidate-${{ inputs.version }}
+          run-id: ${{ inputs.approved_review_run }}
+          github-token: ${{ github.token }}
+          # Outside the work tree: it must not enter the build or the release commit.
+          path: ${{ runner.temp }}/reviewed-candidate
+
+      - name: Use the reviewed release date
+        if: ${{ !inputs.review_hold && inputs.approved_review_run != '' }}
+        shell: bash
+        env:
+          REVIEWED_CANDIDATE: ${{ runner.temp }}/reviewed-candidate
+        run: |
+          # The approved run is prepared with the date fixed by the reviewed
+          # candidate, so ledger, CHANGELOG and drawings show the reviewed date.
+          set -euo pipefail
+          reviewed_date="$(python -m boardwright.review_gate release-date --candidate "$REVIEWED_CANDIDATE")"
+          echo "IN_RELEASE_DATE=$reviewed_date" >> "$GITHUB_ENV"
+          echo "Release date (reviewed): $reviewed_date" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Build release candidate in the pinned container
         shell: bash
         env:
@@ -214,7 +251,8 @@ jobs:
             --drawing-revision "$IN_DRAWING_REVISION" \
             --revision-description "$IN_REVISION_DESCRIPTION" \
             --change-class "$IN_CHANGE_CLASSES" \
-            --justification "$IN_JUSTIFICATION" | tee boardwright-candidate.log
+            --justification "$IN_JUSTIFICATION" \
+            ${IN_RELEASE_DATE:+--release-date "$IN_RELEASE_DATE"} | tee boardwright-candidate.log
 
       - name: Summarize baseline check
         if: always()
@@ -273,35 +311,14 @@ jobs:
             echo "\`approved_review_run=${GITHUB_RUN_ID}\` and identical inputs."
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Check approved review run
-        if: ${{ !inputs.review_hold && inputs.approved_review_run != '' }}
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          info="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$IN_APPROVED_REVIEW_RUN" --jq '[.path, .conclusion, .event, .head_branch, .head_sha] | @tsv')"
-          IFS=$'\t' read -r path conclusion event branch sha <<< "$info"
-          [[ "$path" == ".github/workflows/prepare-release.yaml" ]] || { echo "Run $IN_APPROVED_REVIEW_RUN is not a prepare-release run ($path)." >&2; exit 1; }
-          [[ "$conclusion" == "success" ]] || { echo "Reviewed run concluded '$conclusion'." >&2; exit 1; }
-          [[ "$event" == "workflow_dispatch" && "$branch" == "main" ]] || { echo "Reviewed run was $event on $branch." >&2; exit 1; }
-          [[ "$sha" == "$BOARDWRIGHT_SOURCE_SHA" ]] || { echo "Reviewed run built $sha; main is $BOARDWRIGHT_SOURCE_SHA." >&2; exit 1; }
-
-      - name: Download reviewed candidate
-        if: ${{ !inputs.review_hold && inputs.approved_review_run != '' }}
-        uses: actions/download-artifact@v4
-        with:
-          name: boardwright-release-candidate-${{ inputs.version }}
-          run-id: ${{ inputs.approved_review_run }}
-          github-token: ${{ github.token }}
-          path: reviewed-candidate
-
       - name: Verify release matches the reviewed candidate
         if: ${{ !inputs.review_hold && inputs.approved_review_run != '' }}
         shell: bash
+        env:
+          REVIEWED_CANDIDATE: ${{ runner.temp }}/reviewed-candidate
         run: |
           set -o pipefail
-          python -m boardwright.review_gate verify --candidate reviewed-candidate | tee -a "$GITHUB_STEP_SUMMARY"
+          python -m boardwright.review_gate verify --candidate "$REVIEWED_CANDIDATE" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Discard generated source side effects
         shell: bash

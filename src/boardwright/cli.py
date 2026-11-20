@@ -41,6 +41,8 @@ from .preview import build_preview_plan, dispatch_preview, preview_manual_fallba
 from .preview import build_preview_state, fetch_latest_preview_artifact, format_preview_state
 from .project_setup import setup_project_repository
 from .impact import format_impact
+from .release_date import parse_release_date, release_env_lines
+from .release_preparation import record_preparation
 from .release import assess_plan_impact, build_release_plan, prepare_release, validate_release_plan
 from .revision_history import write_revision_variables
 from .schematic_generation import (
@@ -288,7 +290,13 @@ def _build_parser() -> argparse.ArgumentParser:
     release.add_argument(
         "--release-env",
         action="store_true",
-        help="With --prepare: also write .boardwright/release.env (version, variant, kind) for the publish workflow.",
+        help="With --prepare: also write .boardwright/release.env (version, variant, kind, release date) for the publish workflow.",
+    )
+    release.add_argument(
+        "--release-date",
+        default="",
+        metavar="YYYY-MM-DD",
+        help="With --prepare: the release date (default: today's UTC date). An approved run passes the reviewed candidate's date.",
     )
     release.add_argument(
         "--source-sha",
@@ -1172,14 +1180,16 @@ def _promote(args: argparse.Namespace) -> int:
     return 0
 
 
-def _write_release_env(config, version: str, variant: str, kind: str) -> None:
-    # Read by release.yaml; the include flag comes from tracked configuration only.
+def _write_release_env(config, version: str, variant: str, kind: str, release_date: str) -> None:
+    # Read by release.yaml and by KiBot's text variables (RELEASE_DATE*); the
+    # include flag comes from tracked configuration only.
     tracked = load_config(config.root, local=False)
     lines = [
         f"RELEASE_VERSION={version}",
         f"RELEASE_VARIANT={variant}",
         f"RELEASE_KIND={kind}",
         f"RELEASE_INCLUDE_SOURCE_ARCHIVE={str(tracked.release_include_source_archive).lower()}",
+        *release_env_lines(parse_release_date(release_date)),
     ]
     target = config.root / ".boardwright" / "release.env"
     target.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
@@ -1237,11 +1247,13 @@ def _release(args: argparse.Namespace) -> int:
             change_classes=args.change_class,
             justification=args.justification,
             variant=args.variant,
+            release_date=args.release_date,
         )
-        print(f"Prepared release {plan.version}.")
+        print(f"Prepared release {plan.version} dated {plan.release_date} (UTC release date).")
         if args.release_env:
-            _write_release_env(config, args.version, args.variant, args.kind)
+            _write_release_env(config, args.version, args.variant, args.kind, plan.release_date)
             print("Wrote .boardwright/release.env.")
+        record_preparation(config.root, version=plan.version, release_date=plan.release_date)
         print("Recorded release identities in .boardwright/releases.yaml.")
         print("Updated CHANGELOG.md, .boardwright/document_revisions.yaml, and revision-history variables.")
         print(f"Suggested commit: release: prepare {plan.version}")
