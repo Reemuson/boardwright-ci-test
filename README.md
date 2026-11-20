@@ -26,7 +26,7 @@
 | Drawing revision | C |
 | Board revision | A |
 | Release version | 0.1.7 |
-| Variant | RELEASED |
+| Variant | CHECKED |
 | Dimensions | 40.0 x 25.0 mm |
 
 ---
