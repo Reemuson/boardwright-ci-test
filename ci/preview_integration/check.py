@@ -212,7 +212,7 @@ class Harness:
         preview = Path(preview_record["outputs"])
         check("direct worktree build excluded .env and notes.txt (C1)",
               not (direct / ".env").exists() and not (direct / "notes.txt").exists()
-              and ".env" not in git(direct, "ls-files") and "notes.txt" not in git(direct, "ls-files"))
+              and not {".env", "notes.txt"} & set(git(direct, "ls-files", "-z").split("\0")))  # exact paths
         check("direct worktree build is marked as a non-release worktree build",
               json.loads((direct / ".git" / "boardwright-stage").read_text(encoding="utf-8")).get("purpose") == "worktree-build"
               and not (direct / "boardwright-build" / "preview.json").exists())
