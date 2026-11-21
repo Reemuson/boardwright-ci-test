@@ -319,10 +319,15 @@ def main(argv: list[str] | None = None) -> int:
         default=os.environ.get("GITHUB_REPOSITORY", ""),
         help="owner/name of the GitHub repository (legacy baselines are fetched from its releases).",
     )
+    check.add_argument(
+        "--local",
+        action="store_true",
+        help="Local release: the previous release's manifest must be committed at its local tag (no GitHub fallback).",
+    )
     args = parser.parse_args(argv)
 
     if args.command == "check-baseline":
-        return _check_baseline(Path(args.root), args.repo)
+        return _check_baseline(Path(args.root), args.repo, local=args.local)
 
     if args.command == "write":
         root = Path(args.root)
@@ -368,7 +373,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def _check_baseline(root: Path, repository: str = "") -> int:
+def _check_baseline(root: Path, repository: str = "", *, local: bool = False) -> int:
     import subprocess
     import tempfile
 
@@ -407,6 +412,15 @@ def _check_baseline(root: Path, repository: str = "") -> int:
         capture_output=True,
         check=False,
     )
+    if completed.returncode != 0 and local:
+        # A local release has no published package to authenticate against.
+        print(
+            f"error: release {record.previous_version} has no committed output manifest at its local tag "
+            f"(missing tag, or a legacy release). A local release cannot verify a reused baseline without it; "
+            "nothing was approved.",
+            file=sys.stderr,
+        )
+        return 1
     if completed.returncode != 0:
         # Legacy release: compare against the authenticated published package.
         # Never a pass by default: an unobtainable or unauthenticated package fails.

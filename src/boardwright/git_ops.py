@@ -37,7 +37,7 @@ def remote_branch_sha(root: Path, remote: str, branch: str) -> str:
 
 
 def dirty_files(root: Path) -> list[str]:
-    output = _git(root, "status", "--short")
+    output = _git(root, "--no-optional-locks", "status", "--short")
     return [line for line in output.splitlines() if line.strip()]
 
 
@@ -120,7 +120,7 @@ def changed_paths(root: Path) -> list[str]:
     """
 
     completed = subprocess.run(
-        ["git", "status", "--porcelain=v1", "-z", "--untracked-files=all"],
+        ["git", "--no-optional-locks", "status", "--porcelain=v1", "-z", "--untracked-files=all"],
         cwd=root,
         capture_output=True,
         check=False,

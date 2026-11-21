@@ -282,6 +282,7 @@ def stage(
     changes: tuple[list[str], list[str]] | None = None,
     purpose: str = "build",
     copy_from: Path | None = None,
+    revision: str = "",
 ) -> Path:
     """Clone ``HEAD`` (plus, with ``worktree``, uncommitted changes) into a fresh LF tree.
 
@@ -297,12 +298,16 @@ def stage(
     stage marker and from there into the build record; ``"preview"`` marks
     the build as never release evidence. ``copy_from`` reads the changed
     files from a snapshot directory instead of the working tree, so the
-    staged bytes are exactly the ones the caller hashed.
+    staged bytes are exactly the ones the caller hashed. ``revision`` stages
+    that commit (detached) instead of ``HEAD``, as a tag build does.
     """
 
     repo = repository_root(repo)
-    head = _git(repo, "rev-parse", "HEAD").strip()
-    branch = _git(repo, "symbolic-ref", "--quiet", "--short", "HEAD", check=False).strip() or "detached"
+    if revision and worktree:
+        raise ContainerError("A worktree stage is always of HEAD.")
+    head = _git(repo, "rev-parse", "--verify", f"{revision or 'HEAD'}^{{commit}}").strip()
+    branch = "detached" if revision else (
+        _git(repo, "symbolic-ref", "--quiet", "--short", "HEAD", check=False).strip() or "detached")
     name = label or f"{repo.name}-{head[:12]}{'-worktree' if worktree else ''}"
     target = (dest or default_stage_root() / name).resolve()
     if target.exists():
@@ -457,7 +462,8 @@ def pin_release_refs(repo: Path, target: Path) -> Path:
 def host_tree_fingerprint(repo: Path) -> str:
     """``git status`` of the developer's tree; compared before and after a local build."""
 
-    return _git(repo, "status", "--porcelain=v1", "--untracked-files=all", "--ignored=no")
+    # --no-optional-locks: never refresh or lock the developer's index (read-only)
+    return _git(repo, "--no-optional-locks", "status", "--porcelain=v1", "--untracked-files=all", "--ignored=no")
 
 
 # --- evidence comparison -------------------------------------------------------
@@ -602,25 +608,41 @@ def _candidate(args: argparse.Namespace) -> int:
         "BOARDWRIGHT_SOURCE_SHA": _git(workdir, "rev-parse", "HEAD").strip(),
         **extra,
     }
+    failed = run_candidate_steps(workdir, args, env, skip_baseline=args.skip_baseline)
+    if failed:
+        print(f"error: candidate step failed: {failed}", file=sys.stderr)
+        return 1
+    print(f"Release candidate {args.version} built in {workdir}")
+    print("Nothing was committed, pushed or tagged. Approval, tagging and publication stay in prepare-release.yaml.")
+    return 0
+
+
+def run_candidate_steps(workdir: Path, args: argparse.Namespace, env: dict[str, str], *, skip_baseline: bool = False,
+                        local: bool = False, runner=None, host_runner=None) -> str:
+    """Run ``candidate_steps`` in order; return the failed step's name, or "".
+
+    Shared by the rehearsal (``container candidate``) and the local release
+    backend (``local_release``), so both run exactly prepare-release's steps.
+    ``check-baseline`` runs on the host; with ``local`` it never falls back to
+    a published GitHub package (``--local``: fail closed).
+    """
+
+    runner = runner or run_in_container
+    host_runner = host_runner or (lambda command: subprocess.run(
+        command, cwd=workdir, env={**os.environ, "PYTHONPATH": str(workdir / "src")}).returncode)
     for step in candidate_steps(args):
         name, command = step[0], step[1:]
         print(f"[candidate] {name}", flush=True)
         if name == "check-baseline":
-            if args.skip_baseline:
+            if skip_baseline:
                 print("[candidate] check-baseline skipped (--skip-baseline); the CI run always performs it.")
                 continue
-            # On the host: legacy baselines are fetched with the GitHub CLI.
-            status = subprocess.run(
-                [sys.executable, *command[1:]], cwd=workdir, env={**os.environ, "PYTHONPATH": str(workdir / "src")}
-            ).returncode
+            status = host_runner([sys.executable, *command[1:], *(["--local"] if local else [])])
         else:
-            status = run_in_container(args.kicad, workdir, command, environment=env)
+            status = runner(args.kicad, workdir, command, environment=env)
         if status != 0:
-            print(f"error: candidate step failed: {name}", file=sys.stderr)
-            return 1
-    print(f"Release candidate {args.version} built in {workdir}")
-    print("Nothing was committed, pushed or tagged. Approval, tagging and publication stay in prepare-release.yaml.")
-    return 0
+            return name
+    return ""
 
 
 def candidate_steps(args: argparse.Namespace) -> list[list[str]]:
@@ -734,11 +756,16 @@ def main(argv: list[str] | None = None) -> int:
     return 2
 
 
+def build_command(variant: str, kicad: str, log_prefix: str, keep: list[str] | tuple[str, ...] = ()) -> list[str]:
+    """The output build inside the container; shared by ``container build`` and local publication."""
+
+    command = ["python3", "-m", "boardwright", "build", "--variant", variant, "--kicad", kicad,
+               "--log-prefix", log_prefix]
+    return command + (["--keep", *keep] if keep else [])
+
+
 def _build(args: argparse.Namespace) -> int:
-    command = ["python3", "-m", "boardwright", "build", "--variant", args.variant, "--kicad", args.kicad,
-               "--log-prefix", args.log_prefix]
-    if args.keep:
-        command += ["--keep", *args.keep]
+    command = build_command(args.variant, args.kicad, args.log_prefix, args.keep)
     if args.workdir:
         return run_in_container(args.kicad, args.workdir, command)
     repo = repository_root(Path.cwd())

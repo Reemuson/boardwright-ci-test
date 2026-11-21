@@ -32,6 +32,7 @@ from .config import load_config, update_project_config
 from .errors import BoardwrightError
 from .git_ops import commit_all, dirty_files, push_branch
 from . import local_preview
+from . import local_release_ops
 from .preview import fetch_latest_preview_artifact
 from .preview import build_preview_plan, build_preview_state, dispatch_preview, format_preview_state
 from .preview import latest_preview_variant, list_preview_runs
@@ -111,6 +112,32 @@ def local_preview_summary(root) -> str:
         + ")"
         for s in statuses
     )
+
+LOCAL_RELEASE_NOTICE = (
+    "Local approval is recorded with your Git identity (asserted, not authenticated) and is not "
+    "enforced by any server. Local tags are never pushed. Every step that writes asks for confirmation."
+)
+
+
+def release_backend_text(overview: "local_release_ops.BackendOverview") -> str:
+    """The release backend choice, explained; the default is backends.select_backend's."""
+
+    lines = [f"Default for this project: {overview.label} ({overview.reason})."]
+    lines += [f"Problem: {p}" for p in overview.problems]
+    if overview.remote_kind == "none":
+        lines.append("No GitHub remote is configured: GitHub releases are unavailable.")
+    elif overview.github_available:
+        lines.append("A local release on this GitHub project is local-only: its approval is not server-enforced "
+                     "and its tag is not pushed.")
+    lines.append("A failure is reported; the release never switches to the other backend by itself.")
+    return "\n".join(lines)
+
+
+def run_shared_local_release(config, operation: str, args, echo, **hooks) -> int:
+    """The TUI entry point: exactly the CLI's ``local_release_ops.run``."""
+
+    return local_release_ops.run(config, operation, args, echo=echo, **hooks)
+
 
 def _legal_profile_options(
     profiles: dict[str, object],
@@ -222,6 +249,7 @@ def collect_dashboard_state(
         f"{_field_value(promote_action.fields, 'variant')} | ref {promote_action.ref}"
     )
     ci_release_summary = (
+        f"local: {local_release_ops.overview_line(config)} | GitHub: "
         f"{ci_release_action.workflow} | "
         f"{_field_value(ci_release_action.fields, 'variant')} | "
         f"{_field_value(ci_release_action.fields, 'release_kind')}"
@@ -382,7 +410,11 @@ def _build_textual_app():
         AcceptMainScreen,
         CommitScreen,
         ReleaseScreen,
-        ReleaseChecklistScreen {
+        ReleaseChecklistScreen,
+        ReleaseBackendScreen,
+        LocalReleaseScreen,
+        ConfirmOperationScreen,
+        LocalReleaseReportScreen {
             align: center middle;
         }
 
@@ -406,6 +438,14 @@ def _build_textual_app():
             margin: 0;
             border: solid {BRAND_TEAL};
             background: {SURFACE_DARK};
+        }
+
+        LocalReleaseScreen #dialog, LocalReleaseReportScreen #dialog {
+            height: 90%;
+        }
+
+        #local_release_body, #local_release_report_body {
+            height: 1fr;
         }
 
         #review_status {
@@ -1144,6 +1184,136 @@ def _build_textual_app():
             if event.button.id == "confirm_release":
                 self.dismiss(self.checklist)
                 return
+            self.dismiss(None)
+
+    class ReleaseBackendScreen(ModalScreen[str | None]):
+        """Local or GitHub: the default comes from backends.select_backend; the choice is the user's."""
+
+        CSS = ChangelogEntryScreen.CSS
+
+        def __init__(self, overview: "local_release_ops.BackendOverview") -> None:
+            super().__init__()
+            self.overview = overview
+
+        def compose(self) -> ComposeResult:
+            overview = self.overview
+            with Vertical(id="dialog"):
+                yield Label("Release backend", classes="section-title")
+                yield Static(release_backend_text(overview), id="release_backend_text")
+                yield Button(local_release_ops.GITHUB_LABEL + (" (default)" if overview.default == "github" else ""),
+                             id="release_backend_github", disabled=not overview.github_available)
+                yield Button(local_release_ops.LOCAL_LABEL + (" (default)" if overview.default == "local" else ""),
+                             id="release_backend_local")
+                yield Button("Cancel", id="release_backend_cancel")
+
+        def on_button_pressed(self, event: Button.Pressed) -> None:
+            choice = {"release_backend_github": "github", "release_backend_local": "local"}.get(event.button.id or "")
+            self.dismiss(choice)
+
+    class LocalReleaseScreen(ModalScreen["tuple[str, local_release_ops.LocalArgs] | None"]):
+        """Inputs for one local-release operation; everything it does is local_release_ops.run."""
+
+        CSS = ChangelogEntryScreen.CSS
+        OPERATIONS = (("Status", "status"), ("Plan", "plan"), ("Candidate...", "candidate"),
+                      ("Review draft", "review"), ("Approve...", "approve"), ("Finalize...", "finalize"),
+                      ("Publish...", "publish"), ("Recover...", "recover"))
+
+        def __init__(self, summary_text: str, version: str = "", backend_note: str = "") -> None:
+            super().__init__()
+            self.summary_text = summary_text
+            self.version = version
+            self.backend_note = backend_note
+
+        def compose(self) -> ComposeResult:
+            with Vertical(id="dialog"):
+                yield Label(local_release_ops.LOCAL_LABEL, classes="section-title")
+                yield Static(LOCAL_RELEASE_NOTICE + (f"\n{self.backend_note}" if self.backend_note else ""),
+                             classes="muted", id="local_release_notice")
+                with VerticalScroll(id="local_release_body"):
+                    yield Static(self.summary_text, id="local_release_summary")
+                    yield Input(value=self.version, placeholder="Version, e.g. 1.2.0", id="local_version")
+                    yield Input(placeholder="Candidate id (only when a version has several)", id="local_candidate")
+                    yield Input(placeholder="Drawing revision, e.g. A (candidate)", id="local_drawing_revision")
+                    yield Input(placeholder="Revision table note, 60 chars max (candidate)",
+                                id="local_revision_description")
+                    yield Input(placeholder="Change classes (candidate)", id="local_change_classes")
+                    yield Input(placeholder="Justification (candidate)", id="local_justification")
+                    yield Input(placeholder="Release date YYYY-MM-DD (candidate; default today UTC)",
+                                id="local_release_date")
+                    yield Select([(v, v) for v in ("RELEASED", "CHECKED", "PRELIMINARY", "DRAFT")], value="RELEASED",
+                                 id="local_variant")
+                    yield Select([(k, k) for k in RELEASE_KINDS], value="release", id="local_kind")
+                    yield Input(placeholder="Completed review record path (approve)", id="local_record")
+                    yield Select([("Unsigned release commit and tag", "unsigned"),
+                                  ("Signed (needs user.signingkey; fails if signing fails)", "signed")],
+                                 value="unsigned", id="local_sign")
+                    for label, op in self.OPERATIONS:
+                        yield Button(label, id=f"local_op_{op}")
+                    # Inside the scrollable body: never clipped by the dialog on a short terminal.
+                    yield Button("Close", id="local_release_close")
+
+        def collect(self) -> "local_release_ops.LocalArgs":
+            def value(name: str) -> str:
+                return str(self.query_one(f"#{name}", Input).value).strip()
+
+            record = value("local_record")
+            return local_release_ops.LocalArgs(
+                version=value("local_version"), candidate=value("local_candidate"),
+                record=Path(record) if record else None,
+                sign=self.query_one("#local_sign", Select).value == "signed",
+                drawing_revision=value("local_drawing_revision"),
+                revision_description=value("local_revision_description"),
+                variant=str(self.query_one("#local_variant", Select).value),
+                kind=str(self.query_one("#local_kind", Select).value),
+                change_class=value("local_change_classes"), justification=value("local_justification"),
+                release_date=value("local_release_date"))
+
+        def on_button_pressed(self, event: Button.Pressed) -> None:
+            button = event.button.id or ""
+            if not button.startswith("local_op_"):
+                self.dismiss(None)
+                return
+            self.dismiss((button.removeprefix("local_op_"), self.collect()))
+
+    class ConfirmOperationScreen(ModalScreen[bool]):
+        """Explicit confirmation of an irreversible operation; Cancel has the focus."""
+
+        CSS = ChangelogEntryScreen.CSS
+
+        def __init__(self, title: str, text: str) -> None:
+            super().__init__()
+            self.title_text = title
+            self.text = text
+
+        def compose(self) -> ComposeResult:
+            with Vertical(id="dialog"):
+                yield Label(self.title_text, classes="section-title")
+                yield Static(self.text, id="confirm_text")
+                yield Button("Cancel", id="confirm_cancel")
+                yield Button("Confirm", id="confirm_run", variant="warning")
+
+        def on_mount(self) -> None:
+            self.query_one("#confirm_cancel", Button).focus()
+
+        def on_button_pressed(self, event: Button.Pressed) -> None:
+            self.dismiss(event.button.id == "confirm_run")
+
+    class LocalReleaseReportScreen(ModalScreen[None]):
+        CSS = ChangelogEntryScreen.CSS
+
+        def __init__(self, title: str, text: str) -> None:
+            super().__init__()
+            self.title_text = title
+            self.text = text
+
+        def compose(self) -> ComposeResult:
+            with Vertical(id="dialog"):
+                yield Label(self.title_text, classes="section-title")
+                with VerticalScroll(id="local_release_report_body"):
+                    yield Static(self.text, id="local_release_report")
+                    yield Button("Close", id="close_local_release_report")
+
+        def on_button_pressed(self, event: Button.Pressed) -> None:
             self.dismiss(None)
 
     class GenerateSheetScreen(ModalScreen[dict[str, str] | None]):
@@ -1887,8 +2057,9 @@ def _build_textual_app():
             if choice is None:
                 return
             variant, backend = choice
-            if getattr(self, "_preview_running", False):
-                self.notify("A preview is already running; wait for it to finish.", severity="warning")
+            if getattr(self, "_preview_running", False) or getattr(self, "_release_running", False):
+                self.notify("A preview or release operation is already running; wait for it to finish.",
+                            severity="warning")
                 return
             # Cleared in _finish_preview_dispatch. The stage lock refuses a
             # second run from another process (CLI or another TUI) as well.
@@ -2141,9 +2312,122 @@ def _build_textual_app():
             self.push_screen(AcceptMainScreen(), self._accept_main)
 
         def action_release_ci(self) -> None:
-            if not self._require_action("Release"):
+            # Backend first, read-only and offline; the user chooses, nothing switches by itself.
+            try:
+                self._release_overview = local_release_ops.backend_overview(self.local_release_config())
+            except (BoardwrightError, OSError) as exc:
+                self.notify(f"Release backend: {exc}", severity="error")
                 return
-            self.push_screen(ReleaseScreen(), self._release_ci)
+            self.push_screen(ReleaseBackendScreen(self._release_overview), self._choose_release_backend)
+
+        def _choose_release_backend(self, choice: str | None) -> None:
+            if choice == "github":
+                if not self._require_action("Release"):
+                    return
+                self.push_screen(ReleaseScreen(), self._release_ci)
+            elif choice == "local":
+                self.open_local_release()
+
+        # -- local releases: all policy is local_release_ops / local_release ------
+        local_release_hooks: dict = {}  # tests inject the disposable engine here
+
+        def local_release_config(self):
+            return load_config()
+
+        def _local_override(self) -> str:
+            overview = getattr(self, "_release_overview", None)
+            # The choice of "Local release" on a project whose default is not local is an explicit override.
+            return "" if overview is not None and overview.default == "local" else "local"
+
+        def open_local_release(self, version: str = "") -> None:
+            Thread(target=self._load_local_release, args=(version,), daemon=True).start()
+
+        def _load_local_release(self, version: str) -> None:
+            # Read-only: summaries never build, write or repair anything.
+            try:
+                header, items = local_release_ops.summaries(self.local_release_config())
+                text = "\n\n".join([header] + [local_release_ops.format_summary(s) for s in items])
+                version = version or (items[-1].version if items else "")
+            except Exception as exc:  # the screen still opens; the error is shown
+                text = f"Local release status unavailable: {exc}"
+            note = "" if self._local_override() == "" else (
+                "Explicit local backend: this project's default is not a local release.")
+            self._call_from_worker(lambda: self.push_screen(LocalReleaseScreen(text, version, note),
+                                                            self._local_release_request))
+
+        def _local_release_request(self, result) -> None:
+            if result is None:
+                return
+            operation, args = result
+            args.backend = self._local_override()
+            if operation in local_release_ops.IRREVERSIBLE:
+                text = local_release_ops.confirmation_text(self.local_release_config(), operation, args)
+                self.push_screen(ConfirmOperationScreen(f"Confirm local {operation}", text),
+                                 lambda ok: self.start_local_release(operation, args) if ok else self._local_cancelled(operation))
+                return
+            self.start_local_release(operation, args)
+
+        def _local_cancelled(self, operation: str) -> None:
+            self.notify(f"Local {operation} cancelled; nothing was run.")
+
+        def start_local_release(self, operation: str, args) -> bool:
+            if getattr(self, "_release_running", False) or getattr(self, "_preview_running", False):
+                self.notify("Another release or preview operation is running; wait for it to finish.",
+                            severity="warning")
+                return False
+            # Cleared in _finish_local_release. The release-store lock refuses a
+            # concurrent run from another process (CLI or another TUI) as well.
+            self._release_running = True
+            self.ci_status = f"Local {operation} {args.version}: starting..."
+            self._render_state()
+            Thread(target=self._run_local_release, args=(operation, args), daemon=True).start()
+            return True
+
+        def _run_local_release(self, operation: str, args) -> None:
+            lines: list[str] = []
+
+            def echo(line: str) -> None:
+                lines.append(str(line))
+                self._call_from_worker(self._local_release_progress, operation, str(line))
+
+            try:
+                status = run_shared_local_release(self.local_release_config(), operation, args, echo,
+                                                  **self.local_release_hooks)
+            except Exception as exc:  # always release the in-app guard
+                lines.append(f"error: {exc or type(exc).__name__}")
+                status = 2
+            self._call_from_worker(self._finish_local_release, operation, args, status, "\n".join(lines))
+
+        def _local_release_progress(self, operation: str, line: str) -> None:
+            first = line.splitlines()[0] if line else ""
+            if first:
+                self.ci_status = f"Local {operation}: {first[:150]}"
+                self._render_state()
+
+        def _finish_local_release(self, operation: str, args, status: int, output: str) -> None:
+            self._release_running = False
+            self._quit_armed = False
+            self.last_local_release = (operation, status, output)
+            if operation not in local_release_ops.READ_ONLY:
+                try:
+                    self.state = collect_dashboard_state()
+                except Exception:  # keep the previous dashboard; the result below still shows
+                    pass
+            ok = status == 0
+            self.ci_status = f"Local {operation} {args.version}: " + ("done" if ok else f"failed (exit {status})")
+            self._render_state()
+            self.notify(self.ci_status + ("" if ok else " - nothing switches to GitHub; see the report"),
+                        severity="information" if ok else "error")
+            if operation in ("status", "plan", "review", "recover") or not ok:
+                self.push_screen(LocalReleaseReportScreen(f"Local {operation}", output or "(no output)"))
+
+        def action_quit(self) -> None:  # type: ignore[override]
+            if getattr(self, "_release_running", False) and not getattr(self, "_quit_armed", False):
+                self._quit_armed = True
+                self.notify("A local release operation is running. Quitting interrupts it; Status then shows the "
+                            "state and Recover completes it. Press q again to quit anyway.", severity="warning")
+                return
+            self.exit()
 
         def action_show_shortcuts(self) -> None:
             self.push_screen(ShortcutHelpScreen())

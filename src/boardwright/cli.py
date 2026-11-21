@@ -79,6 +79,10 @@ def main(argv: list[str] | None = None) -> int:
         from .container import main as container_main
 
         return container_main(arguments[1:])
+    if arguments[:2] == ["release", "local"]:
+        from .local_release import main as local_release_main
+
+        return local_release_main(arguments[2:])
     parser = _build_parser()
     args = parser.parse_args(argv)
 
@@ -1209,7 +1213,8 @@ def _backends(args: argparse.Namespace) -> int:
                                (backends.Operation.RELEASE, release_setting or "auto")):
         print(backends.format_selection(backends.select_backend(
             operation, remote=remote, docker=docker, variant=config.preview_variant, project_setting=setting)))
-    print("Selection only; nothing was run. Local releases are not implemented yet.")
+    print("Selection only; nothing was run. Local releases: `boardwright release local` (candidate, review, "
+          "approve, finalize, publish, status, recover).")
     return 0
 
 

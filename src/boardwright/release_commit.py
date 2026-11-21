@@ -38,6 +38,8 @@ FORCED = (
     (".boardwright/releases.yaml", ".boardwright/accepted_manifest.json", ".boardwright/review_candidate.json"),
 )
 RENDERS = "assets/renders/*.png"
+# A local release commits its approval provenance (LOCAL_FIRST.md section 5.2).
+LOCAL_APPROVAL = ".boardwright/approval.json"
 
 
 class NothingToCommit(RuntimeError):
@@ -51,8 +53,8 @@ def _git(root: Path, *args: str, check: bool = True) -> subprocess.CompletedProc
     return done
 
 
-def stage_release(root: Path) -> None:
-    """Stage exactly what the workflow staged."""
+def stage_release(root: Path, *, local_approval: bool = False) -> None:
+    """Stage exactly what the workflow staged; a local approval adds ``approval.json``."""
 
     _git(root, "rm", "-r", "--ignore-unmatch", "--quiet", *GENERATED_TREES)
     _git(root, "add", *TRACKED)
@@ -67,6 +69,10 @@ def stage_release(root: Path) -> None:
     renders = sorted(Path(m).relative_to(root).as_posix() for m in glob.glob(str(root / RENDERS)))
     if renders:
         _git(root, "add", "--", *renders)
+    if local_approval:
+        if not (root / LOCAL_APPROVAL).is_file():
+            raise FileNotFoundError(f"A local release commit needs {LOCAL_APPROVAL}.")
+        _git(root, "add", "-f", LOCAL_APPROVAL)
 
 
 def trailers(
@@ -113,7 +119,7 @@ def commit_release(
 
     lines = trailers(source_sha, reviewed_run_url=reviewed_run_url,
                      reviewed_candidate=reviewed_candidate, local_approval=local_approval)
-    stage_release(root)
+    stage_release(root, local_approval=local_approval)
     if _git(root, "diff", "--cached", "--quiet", check=False).returncode == 0:
         raise NothingToCommit("No release changes to commit.")
     args = ["commit", "-m", subject(version, variant), "-m", "\n".join(lines)]
