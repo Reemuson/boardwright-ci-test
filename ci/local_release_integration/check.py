@@ -112,10 +112,11 @@ def rewrite_sums(entry: Path) -> None:
 
 
 class Harness:
-    def __init__(self, checkout: Path, temp: Path, held: Path | None) -> None:
+    def __init__(self, checkout: Path, temp: Path, held: Path | None, held_run: str | None = None) -> None:
         self.checkout = checkout
         self.temp = temp
         self.held = held
+        self.held_run = held_run
         self.repo = temp / "bw local rélease" / "FIC board"
         self.store_base = temp / "release store é"
         self.env = {**clean_env(), "PYTHONPATH": str(self.repo / "src"), "PYTHONIOENCODING": "utf-8",
@@ -136,6 +137,11 @@ class Harness:
             env["BOARDWRIGHT_RELEASE_STORE"] = str(store)
         command = [sys.executable, str(HERE / "interrupt.py"), *interrupt, "--"] if interrupt else \
             [sys.executable, "-m", "boardwright", "release", "local"]
+        operation = next((a for a in args if a in ("candidate", "finalize", "publish")), "")
+        if operation:  # may run a pinned-Docker build: record the free disk space first
+            free = round(shutil.disk_usage(self.temp).free / 1e9, 1)
+            self.timings[f"free-disk-gb-before-{label}"] = free
+            print(f"DISK {free} GB free before {label} ({operation})", flush=True)
         start = time.perf_counter()
         done = subprocess.run([*command, *args], cwd=cwd or self.repo, env=env, capture_output=True, text=True,
                               encoding="utf-8", errors="replace")
@@ -330,7 +336,14 @@ class Harness:
               record["source_sha"] == source and entry.name ==
               hashlib.sha256((entry / ".boardwright" / "review_candidate.json").read_bytes()).hexdigest())
         identities["A"] = {"source": source, "candidate_id": entry.name, "manifest_sha256": record["manifest_sha256"]}
-        if self.held:
+        # The held GitHub candidate comparison is required, never skipped silently.
+        held_file = self.held / ".boardwright" / "review_candidate.json" if self.held else None
+        held_ok = bool(held_file) and held_file.is_file()
+        held_source = json.loads(held_file.read_text(encoding="utf-8")).get("source_sha") if held_ok else None
+        checkout = git(self.checkout, "rev-parse", "HEAD").strip()
+        identities["held"] = {"run_id": self.held_run, "source": held_source, "checkout": checkout}
+        if check("[A] the held GitHub 0.1.8 candidate is available and built from this checkout's commit",
+                 held_ok and held_source == checkout, identities["held"]):
             self.compare_with_held(entry)
 
         draft = self.store().root / "drafts"
@@ -986,11 +999,12 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--temp", required=True, type=Path)
     parser.add_argument("--held-candidate", type=Path, default=None)
+    parser.add_argument("--held-run", default=None, help="run ID of the held candidate (recorded only)")
     parser.add_argument("--out", required=True, type=Path)
     args = parser.parse_args()
     sys.dont_write_bytecode = True  # the disposable repository and this checkout stay byte-for-byte unchanged
     args.temp.mkdir(parents=True, exist_ok=True)
-    harness = Harness(Path.cwd(), args.temp, args.held_candidate)
+    harness = Harness(Path.cwd(), args.temp, args.held_candidate, args.held_run)
     started = time.perf_counter()
     try:
         harness.setup()

@@ -9,14 +9,19 @@
 # docs/LOCAL_RELEASE_INTEGRATION.md.
 #
 # Credentials: the read-only token is given only to the two snapshot steps and
-# the held-candidate download. The integration step has no token; its
+# the verified held-candidate fetch. The integration step has no token; its
 # local-release processes also run with every credential-like variable removed.
 
 name: Local release integration (non-publishing)
-run-name: Local release integration on ${{ github.sha }}
+run-name: Local release integration on ${{ github.sha }} (held run ${{ inputs.held_run_id }})
 
 on:
   workflow_dispatch:
+    inputs:
+      held_run_id:
+        description: Run ID of a successful held 0.1.8 prepare-release run (review_hold, not approved) on this commit
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -41,36 +46,38 @@ jobs:
       - name: Install Boardwright and the TUI dependency
         run: python -m pip install -e ".[tui]"
 
-      - name: Snapshot the repository before (read-only)
+      - name: Snapshot the repository before and verify the held run (read-only)
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python ci/local_release_integration/remote_snapshot.py capture "$RUNNER_TEMP/remote-before.json"
+          HELD_RUN_ID: ${{ inputs.held_run_id }}
+        run: python ci/local_release_integration/remote_snapshot.py capture "$RUNNER_TEMP/remote-before.json" "$HELD_RUN_ID"
 
-      - name: Download the held 0.1.8 candidate (comparison only, never approved)
-        uses: actions/download-artifact@v4
-        with:
-          name: boardwright-release-candidate-0.1.8
-          run-id: 44670323650
-          github-token: ${{ github.token }}
-          path: ${{ runner.temp }}/held-0.1.8
+      - name: Fetch and verify the held 0.1.8 candidate (comparison only, never approved)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HELD_RUN_ID: ${{ inputs.held_run_id }}
+        run: python ci/local_release_integration/remote_snapshot.py fetch-held "$HELD_RUN_ID" "$RUNNER_TEMP/held-0.1.8"
 
       - name: Run the local release integration (no token)
         shell: bash
+        env:
+          HELD_RUN_ID: ${{ inputs.held_run_id }}
         run: |
           set -euo pipefail
           git config --global user.name "local-release-integration"
           git config --global user.email "local-release-integration@example.invalid"
           python ci/local_release_integration/check.py \
             --temp "$RUNNER_TEMP/local-release-integration" \
-            --held-candidate "$RUNNER_TEMP/held-0.1.8" \
+            --held-candidate "$RUNNER_TEMP/held-0.1.8" --held-run "$HELD_RUN_ID" \
             --out "$RUNNER_TEMP/local-release-integration-results.json" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Snapshot the repository after and compare (read-only)
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
+          HELD_RUN_ID: ${{ inputs.held_run_id }}
         run: |
-          python ci/local_release_integration/remote_snapshot.py capture "$RUNNER_TEMP/remote-after.json"
+          python ci/local_release_integration/remote_snapshot.py capture "$RUNNER_TEMP/remote-after.json" "$HELD_RUN_ID"
           python ci/local_release_integration/remote_snapshot.py compare \
             "$RUNNER_TEMP/remote-before.json" "$RUNNER_TEMP/remote-after.json" | tee -a "$GITHUB_STEP_SUMMARY"
 
@@ -83,4 +90,6 @@ jobs:
             ${{ runner.temp }}/local-release-integration-results.json
             ${{ runner.temp }}/remote-before.json
             ${{ runner.temp }}/remote-after.json
+            ${{ runner.temp }}/held-0.1.8.json
+            ${{ runner.temp }}/held-0.1.8.SHA256SUMS
             ${{ runner.temp }}/local-release-integration/*.log
